@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0a0f1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- Versión: v3.1 — 2026-04-29 -->
 <title>CONPAX-Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -241,6 +245,19 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
 .loading-spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
+<!-- Auto-actualización: fuerza nueva versión en cada carga -->
+<script>
+  // Cada vez que carga la página, verifica si hay una versión nueva
+  const VERSION = 'v3.1-20260429';
+  const storedVersion = localStorage.getItem('app_version');
+  if (storedVersion && storedVersion !== VERSION) {
+    // Hay versión nueva — limpiar caché y recargar
+    localStorage.setItem('app_version', VERSION);
+    window.location.reload(true);
+  } else {
+    localStorage.setItem('app_version', VERSION);
+  }
+</script>
 </head>
 <body>
 
