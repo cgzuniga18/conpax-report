@@ -14,8 +14,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, setDoc, getDocs, doc, query, where, orderBy, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBHr6FuGOUWvAbKUTXPxSAw39MDCXdobnI",
     authDomain: "conpax-report.firebaseapp.com",
@@ -25,919 +24,239 @@
     appId: "1:230597386490:web:92a4e0f4421acb6afa2943",
     measurementId: "G-9TZK8E0CP1"
   };
-
   const app  = initializeApp(firebaseConfig);
   const db   = getFirestore(app);
   const auth = getAuth(app);
-
-  // Exponer globalmente
-  window._db         = db;
-  window._auth       = auth;
-  window._fsSetDoc   = setDoc;
-  window._fsGetDoc   = getDoc;
-  window._fsGetDocs  = getDocs;
-  window._fsDoc      = doc;
-  window._fsCollection = collection;
-  window._fsQuery    = query;
-  window._fsWhere    = where;
-  window._fsOrderBy  = orderBy;
+  window._db = db; window._auth = auth;
+  window._fsSetDoc = setDoc; window._fsGetDoc = getDoc; window._fsGetDocs = getDocs;
+  window._fsDoc = doc; window._fsCollection = collection;
+  window._fsQuery = query; window._fsWhere = where; window._fsOrderBy = orderBy;
   window._fsUpdateDoc = updateDoc;
-  window._signIn     = signInWithEmailAndPassword;
-  window._signOut    = signOut;
+  window._signIn = signInWithEmailAndPassword;
+  window._createUser = createUserWithEmailAndPassword;
+  window._signOut = signOut;
   window._onAuthStateChanged = onAuthStateChanged;
   window._firebaseReady = true;
   document.dispatchEvent(new Event('firebaseReady'));
 </script>
 
+<!-- SheetJS para exportar Excel real -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <style>
-/* ══════════════════════════════════════
-   CONPAX-REPORT v2 — Design System
-══════════════════════════════════════ */
 :root {
-  --bg:        #0a0f1a;
-  --surface:   #101726;
-  --card:      #161f30;
-  --card2:     #1c2840;
-  --border:    #1e2e45;
-  --border2:   #2a3f5f;
-  --blue:      #2563eb;
-  --blue-dim:  rgba(37,99,235,0.12);
-  --blue-glow: rgba(37,99,235,0.25);
-  --green:     #10b981;
-  --green-dim: rgba(16,185,129,0.1);
-  --amber:     #f59e0b;
-  --amber-dim: rgba(245,158,11,0.1);
-  --red:       #ef4444;
-  --red-dim:   rgba(239,68,68,0.1);
-  --purple:    #8b5cf6;
-  --text:      #e2e8f0;
-  --text2:     #94a3b8;
-  --text3:     #4a6080;
-  --input-bg:  #0d1625;
-  --r:         8px;
-  --rr:        14px;
+  --bg:#0a0f1a; --surface:#101726; --card:#161f30; --card2:#1c2840;
+  --border:#1e2e45; --border2:#2a3f5f;
+  --blue:#2563eb; --blue-dim:rgba(37,99,235,0.12); --blue-glow:rgba(37,99,235,0.25);
+  --green:#10b981; --green-dim:rgba(16,185,129,0.1);
+  --amber:#f59e0b; --amber-dim:rgba(245,158,11,0.1);
+  --red:#ef4444; --red-dim:rgba(239,68,68,0.1);
+  --purple:#8b5cf6;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#4a6080;
+  --input-bg:#0d1625; --r:8px; --rr:14px;
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+.hidden{display:none!important;}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* LOGIN */
+#screen-login,#screen-register{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden;}
+#screen-login::before,#screen-register::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,rgba(37,99,235,0.08) 0%,transparent 50%),repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(37,99,235,0.04) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(37,99,235,0.04) 40px);pointer-events:none;}
+.login-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 28px;position:relative;box-shadow:0 0 60px rgba(37,99,235,0.1),0 24px 48px rgba(0,0,0,0.5);}
+.login-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;letter-spacing:-0.03em;color:var(--blue);}
+.login-logo-text span{color:var(--text);font-weight:400;}
+.login-project{font-size:10px;color:var(--text3);text-align:center;letter-spacing:0.08em;text-transform:uppercase;margin-top:4px;line-height:1.5;}
+.login-divider{height:1px;background:var(--border);margin:20px 0;}
+.login-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;display:block;}
+.login-input{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;padding:11px 14px;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:14px;}
+.login-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-glow);}
+.login-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;cursor:pointer;transition:all .2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.login-btn:hover{background:#1d4ed8;transform:translateY(-1px);}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.login-error{background:var(--red-dim);border:1px solid rgba(239,68,68,0.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);margin-top:12px;display:none;}
+.login-error.show{display:block;}
 
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 15px;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
+/* APP SHELL */
+#app{display:none;min-height:100vh;flex-direction:column;}
+#app.active{display:flex;}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:-0.02em;color:var(--blue);}
+.header-logo span{color:var(--text2);font-weight:400;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.header-user{display:flex;align-items:center;gap:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:999px;padding:4px 12px 4px 4px;}
+.user-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;}
+.user-name{font-size:12px;font-weight:600;line-height:1.2;}
+.user-role{font-size:10px;color:var(--text2);line-height:1.2;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite;}
+.sync-dot.online{background:var(--green);animation:none;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;padding:4px 8px;cursor:pointer;transition:all .2s;line-height:1;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
 
-/* ── UTILIDADES ── */
-.hidden { display: none !important; }
-.mono { font-family: 'DM Mono', monospace; }
+/* TABS */
+.app-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.app-tabs::-webkit-scrollbar{display:none;}
+.app-tab{flex:1;min-width:90px;padding:11px 8px;text-align:center;font-size:11px;font-weight:500;color:var(--text3);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'DM Sans',sans-serif;}
+.app-tab .tab-ico{display:block;font-size:17px;margin-bottom:2px;}
+.app-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
 
-/* ══════════════════════════════════════
-   PANTALLA LOGIN
-══════════════════════════════════════ */
-#screen-login {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-}
+/* SCREENS */
+.screen{display:none;flex:1;overflow-y:auto;}
+.screen.active{display:block;}
+.screen-inner{max-width:480px;margin:0 auto;padding:16px 16px 100px;}
 
-/* Fondo con grid y gradiente */
-#screen-login::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(37,99,235,0.08) 0%, transparent 50%),
-    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(37,99,235,0.04) 40px),
-    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(37,99,235,0.04) 40px);
-  pointer-events: none;
-}
+/* FORM COMPONENTS */
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);margin-bottom:14px;overflow:hidden;}
+.section-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);background:rgba(37,99,235,0.04);}
+.section-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:5px;padding:2px 6px;}
+.section-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);}
+.section-body{padding:14px;}
+.field{margin-bottom:13px;}
+.field:last-child{margin-bottom:0;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+label{display:block;font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=email],input[type=password],select,textarea{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color .2s,box-shadow .2s;appearance:none;-webkit-appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-glow);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a6080' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+select option{background:var(--card2);}
+textarea{resize:vertical;min-height:80px;}
+hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
 
-.login-card {
-  width: 100%;
-  max-width: 380px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 36px 28px;
-  position: relative;
-  box-shadow: 0 0 60px rgba(37,99,235,0.1), 0 24px 48px rgba(0,0,0,0.5);
-}
+/* TURNO */
+.turno-options{display:flex;gap:8px;}
+.turno-btn{flex:1;padding:10px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;text-align:center;}
+.turno-btn.selected{border-color:var(--blue);color:var(--blue);background:var(--blue-dim);}
 
-.login-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 50%; transform: translateX(-50%);
-  width: 60%; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--blue), transparent);
-}
+/* HORÓMETRO */
+.horo-diff{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
+.horo-diff .hd-label{font-size:11px;color:var(--text3);}
+.horo-diff .hd-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--green);}
 
-.login-logo {
-  text-align: center;
-  margin-bottom: 28px;
-}
+/* OPERATIVIDAD */
+.op-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.op-item label{margin-bottom:4px;}
+.op-item input{text-align:right;font-family:'DM Mono',monospace;}
+.op-total{margin-top:10px;background:var(--green-dim);border:1px solid rgba(16,185,129,0.2);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+.op-total .ot-label{font-size:12px;color:var(--green);font-weight:500;}
+.op-total .ot-val{font-family:'DM Mono',monospace;font-size:18px;color:var(--green);}
 
-.login-logo-text {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 26px;
-  letter-spacing: -0.03em;
-  color: var(--blue);
-}
-.login-logo-text span { color: var(--text); font-weight: 400; }
+/* DETALLE TIEMPOS */
+.tiempo-group{margin-bottom:12px;}
+.tiempo-group-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.06em;padding:6px 10px;background:var(--blue-dim);border-radius:6px;margin-bottom:6px;}
+.tiempo-sub-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;padding:4px 0 4px 8px;border-left:2px solid var(--border2);margin:6px 0 4px;}
+.tiempo-item{display:flex;align-items:center;gap:8px;margin-bottom:5px;padding:4px 0;}
+.tiempo-item label{font-size:11px;color:var(--text2);text-transform:none;letter-spacing:0;margin:0;flex:1;white-space:normal;line-height:1.4;}
+.tiempo-item input{width:72px;flex-shrink:0;text-align:right;font-family:'DM Mono',monospace;font-size:13px;padding:6px 8px;margin:0;}
 
-.login-project {
-  font-size: 10px;
-  color: var(--text3);
-  text-align: center;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 4px;
-  line-height: 1.5;
-}
+/* ACTIVIDAD CARD */
+.actividad-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--rr);padding:13px;margin-bottom:10px;}
+.actividad-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.actividad-card-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:5px;padding:2px 7px;}
+.actividad-del{background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:2px 6px;line-height:1;}
 
-.login-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 20px 0;
-}
+.add-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;background:none;border:1px dashed var(--border2);border-radius:var(--r);color:var(--text3);font-size:13px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.add-btn:hover{border-color:var(--blue);color:var(--blue);}
+.submit-btn{width:100%;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:var(--rr);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+.submit-btn:hover{background:#1d4ed8;transform:translateY(-1px);}
 
-.login-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 6px;
-  display: block;
-}
+/* FORM META */
+.form-meta{background:var(--surface);border:1px solid var(--border);border-radius:var(--rr);padding:12px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.meta-top{grid-column:1/-1;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:2px;}
+.meta-proyecto{font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;line-height:1.5;}
+.meta-proyecto strong{color:var(--text2);font-size:11px;display:block;margin-bottom:1px;}
 
-.login-input {
-  width: 100%;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  padding: 11px 14px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  margin-bottom: 14px;
-}
-.login-input:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px var(--blue-glow);
-}
+/* RECORDS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:12px 14px;text-align:center;}
+.stat-box .sb-val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;line-height:1;margin-bottom:4px;}
+.stat-box .sb-label{font-size:10px;color:var(--text3);letter-spacing:0.05em;text-transform:uppercase;}
+.sb-blue{color:var(--blue);} .sb-amber{color:var(--amber);} .sb-green{color:var(--green);}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;align-items:center;}
+.filter-input{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;padding:8px 12px;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif;}
+.filter-input:focus{border-color:var(--blue);}
+.filter-btn{background:var(--card);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:12px;padding:8px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'DM Sans',sans-serif;}
+.filter-btn.active{border-color:var(--blue);color:var(--blue);background:var(--blue-dim);}
+.record-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:border-color .2s,box-shadow .2s;position:relative;overflow:hidden;}
+.record-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--border2);transition:background .2s;}
+.record-card.pending::before{background:var(--amber);}
+.record-card.synced::before{background:var(--green);}
+.record-card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,0.3);}
+.rc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.rc-equipo{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.rc-operador{font-size:11px;color:var(--text2);margin-top:2px;}
+.status-pill{font-size:9px;font-weight:600;padding:3px 8px;border-radius:999px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.pill-pending{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.25);}
+.pill-synced{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+.rc-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text2);}
+.rc-meta-item{display:flex;align-items:center;gap:4px;}
+.rc-acts{margin-top:7px;font-size:10px;color:var(--text3);line-height:1.6;border-top:1px solid var(--border);padding-top:7px;}
+.no-records{text-align:center;padding:48px 20px;color:var(--text3);}
+.no-records-ico{font-size:40px;margin-bottom:12px;opacity:.5;}
+.no-records-txt{font-size:14px;line-height:1.6;}
 
-.login-btn {
-  width: 100%;
-  padding: 13px;
-  background: var(--blue);
-  color: #fff;
-  border: none;
-  border-radius: var(--r);
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: all .2s;
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.login-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,0.35); }
-.login-btn:active { transform: scale(0.98); }
-.login-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+/* SYNC */
+.sync-status-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:24px 20px;text-align:center;margin-bottom:14px;position:relative;overflow:hidden;}
+.sync-status-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:50%;height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);}
+.sync-big-ico{font-size:44px;margin-bottom:10px;}
+.sync-status-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:5px;}
+.sync-status-desc{font-size:12px;color:var(--text2);line-height:1.6;}
+.sync-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.sync-stat-box{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--rr);padding:14px;text-align:center;}
+.ssb-val{font-family:'DM Mono',monospace;font-size:28px;margin-bottom:3px;}
+.ssb-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.sync-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--rr);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.sync-btn:hover:not(:disabled){background:#1d4ed8;transform:translateY(-1px);}
+.sync-btn:disabled{opacity:.5;cursor:not-allowed;}
+.export-btn{width:100%;padding:13px;background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.3);border-radius:var(--rr);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.export-btn:hover{background:rgba(16,185,129,.2);transform:translateY(-1px);}
 
-.login-error {
-  background: var(--red-dim);
-  border: 1px solid rgba(239,68,68,0.25);
-  border-radius: var(--r);
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--red);
-  margin-top: 12px;
-  display: none;
-}
-.login-error.show { display: block; }
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-sheet{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px 18px 40px;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;border-radius:999px;background:var(--border2);margin:0 auto 20px;}
+.modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:4px;}
+.modal-subtitle{font-size:12px;color:var(--text2);margin-bottom:18px;}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;gap:12px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{color:var(--text3);flex-shrink:0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+.detail-val{color:var(--text);text-align:right;font-family:'DM Mono',monospace;font-size:12px;}
+.modal-section-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
 
-/* ══════════════════════════════════════
-   APP SHELL (post-login)
-══════════════════════════════════════ */
-#app { display: none; min-height: 100vh; flex-direction: column; }
-#app.active { display: flex; }
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#000;font-weight:600;font-size:13px;padding:10px 20px;border-radius:999px;transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.warn{background:var(--amber);}
+.toast.err{background:var(--red);color:#fff;}
 
-/* ── HEADER ── */
-.app-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
-  height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-logo {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: -0.02em;
-  color: var(--blue);
-}
-.header-logo span { color: var(--text2); font-weight: 400; }
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-user {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 12px 4px 4px;
-}
-
-.user-avatar {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: 'Syne', sans-serif;
-  flex-shrink: 0;
-}
-
-.user-info { display: flex; flex-direction: column; }
-.user-name { font-size: 12px; font-weight: 600; line-height: 1.2; }
-.user-role { font-size: 10px; color: var(--text2); line-height: 1.2; }
-
-.sync-dot-wrap {
-  display: flex; align-items: center; gap: 5px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  color: var(--text3);
-  cursor: pointer;
-}
-.sync-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--amber);
-  animation: pulse 2s infinite;
-}
-.sync-dot.online { background: var(--green); animation: none; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-.logout-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text2);
-  font-size: 18px;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: all .2s;
-  line-height: 1;
-}
-.logout-btn:hover { border-color: var(--red); color: var(--red); }
-
-/* ── TABS ── */
-.app-tabs {
-  display: flex;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex-shrink: 0;
-}
-.app-tabs::-webkit-scrollbar { display: none; }
-
-.app-tab {
-  flex: 1;
-  min-width: 90px;
-  padding: 11px 8px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text3);
-  border: none;
-  background: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all .2s;
-  white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
-}
-.app-tab .tab-ico { display: block; font-size: 17px; margin-bottom: 2px; }
-.app-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
-.tab-badge {
-  display: inline-block;
-  background: var(--blue);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 1px 5px;
-  margin-left: 3px;
-  vertical-align: middle;
-  font-family: 'DM Mono', monospace;
-}
-
-/* ── SCREENS ── */
-.screen { display: none; flex: 1; overflow-y: auto; }
-.screen.active { display: block; }
-.screen-inner { max-width: 480px; margin: 0 auto; padding: 16px 16px 100px; }
-
-/* ══════════════════════════════════════
-   COMPONENTES COMPARTIDOS
-══════════════════════════════════════ */
-
-/* Pill de rol */
-.role-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-family: 'DM Mono', monospace;
-}
-.role-operador  { background: var(--blue-dim);  color: var(--blue);  border: 1px solid var(--blue-glow); }
-.role-capataz   { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
-.role-jefe      { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,.25); }
-.role-supervisor{ background: rgba(139,92,246,.1); color: var(--purple); border: 1px solid rgba(139,92,246,.25); }
-.role-admin     { background: rgba(239,68,68,.1); color: var(--red);   border: 1px solid rgba(239,68,68,.25); }
-
-/* Section card */
-.section-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--rr);
-  margin-bottom: 14px;
-  overflow: hidden;
-}
-.section-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(37,99,235,0.04);
-}
-.section-num {
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  color: var(--blue);
-  background: var(--blue-dim);
-  border: 1px solid var(--blue-glow);
-  border-radius: 5px;
-  padding: 2px 6px;
-}
-.section-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text);
-}
-.section-body { padding: 14px; }
-
-/* Fields */
-.field { margin-bottom: 13px; }
-.field:last-child { margin-bottom: 0; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-
-label {
-  display: block;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 5px;
-}
-
-input[type=text], input[type=number], input[type=date],
-input[type=time], input[type=email], input[type=password],
-select, textarea {
-  width: 100%;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  padding: 10px 12px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  appearance: none;
-  -webkit-appearance: none;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px var(--blue-glow);
-}
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a6080' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
-}
-select option { background: var(--card2); }
-textarea { resize: vertical; min-height: 80px; }
-
-/* Divider */
-hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; }
-
-/* Turno buttons */
-.turno-options { display: flex; gap: 8px; }
-.turno-btn {
-  flex: 1; padding: 10px;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text2);
-  font-size: 13px; font-weight: 500;
-  cursor: pointer; transition: all .15s;
-  font-family: 'DM Sans', sans-serif;
-  text-align: center;
-}
-.turno-btn.selected {
-  border-color: var(--blue);
-  color: var(--blue);
-  background: var(--blue-dim);
-}
-
-/* Actividad card dinámica */
-.actividad-card {
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: var(--rr);
-  padding: 13px;
-  margin-bottom: 10px;
-}
-.actividad-card-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-}
-.actividad-card-num {
-  font-family: 'DM Mono', monospace; font-size: 10px;
-  color: var(--blue); background: var(--blue-dim);
-  border: 1px solid var(--blue-glow);
-  border-radius: 5px; padding: 2px 7px;
-}
-.actividad-del {
-  background: none; border: none;
-  color: var(--red); font-size: 16px;
-  cursor: pointer; padding: 2px 6px; line-height: 1;
-}
-
-/* Horómetro diff */
-.horo-diff {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 10px 12px;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 10px;
-}
-.horo-diff .hd-label { font-size: 11px; color: var(--text3); }
-.horo-diff .hd-val {
-  font-family: 'DM Mono', monospace;
-  font-size: 18px; font-weight: 500;
-  color: var(--green);
-}
-
-/* Frentes grid */
-.frente-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
-.frente-item {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 11px;
-  cursor: pointer;
-  transition: all .15s;
-  display: flex; align-items: flex-start; gap: 8px;
-}
-.frente-item:hover { border-color: var(--border2); }
-.frente-item.selected {
-  border-color: var(--blue);
-  background: var(--blue-dim);
-}
-.frente-check {
-  width: 16px; height: 16px; border-radius: 50%;
-  border: 1.5px solid var(--border2);
-  flex-shrink: 0; margin-top: 1px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all .15s;
-}
-.frente-item.selected .frente-check {
-  background: var(--blue); border-color: var(--blue);
-}
-.frente-item.selected .frente-check::after {
-  content: '✓'; font-size: 9px; color: #fff; font-weight: 700;
-}
-.frente-label { font-size: 11px; color: var(--text); line-height: 1.4; }
-
-/* Actividades */
-.actividad-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-}
-.act-num {
-  font-family: 'DM Mono', monospace; font-size: 11px;
-  color: var(--text3); width: 18px; flex-shrink: 0;
-}
-.actividad-row input { flex: 1; margin: 0; }
-
-/* Operatividad grid */
-.op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.op-item label { margin-bottom: 4px; }
-.op-item input { text-align: right; font-family: 'DM Mono', monospace; }
-.op-total {
-  margin-top: 10px;
-  background: var(--green-dim);
-  border: 1px solid rgba(16,185,129,0.2);
-  border-radius: var(--r);
-  padding: 10px 14px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.op-total .ot-label { font-size: 12px; color: var(--green); font-weight: 500; }
-.op-total .ot-val { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--green); }
-
-/* Pannes */
-.panne-row {
-  background: var(--input-bg); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 12px; margin-bottom: 8px; position: relative;
-}
-.panne-row .del-btn {
-  position: absolute; top: 8px; right: 8px;
-  background: none; border: none; color: var(--red); font-size: 15px;
-  cursor: pointer; padding: 2px 6px;
-}
-.add-btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; padding: 10px;
-  background: none; border: 1px dashed var(--border2);
-  border-radius: var(--r); color: var(--text3); font-size: 13px;
-  cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif;
-}
-.add-btn:hover { border-color: var(--blue); color: var(--blue); }
-
-/* Submit btn */
-.submit-btn {
-  width: 100%; padding: 14px;
-  background: var(--blue); color: #fff;
-  border: none; border-radius: var(--rr);
-  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-  letter-spacing: 0.04em; cursor: pointer; transition: all .2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 8px;
-}
-.submit-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,0.35); }
-.submit-btn:active { transform: scale(0.98); }
-
-/* ── FORM META (header del formulario) ── */
-.form-meta {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--rr);
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.meta-top {
-  grid-column: 1/-1;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
-  margin-bottom: 2px;
-}
-.meta-proyecto {
-  font-size: 9px;
-  color: var(--text3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  line-height: 1.5;
-}
-.meta-proyecto strong { color: var(--text2); font-size: 11px; display: block; margin-bottom: 1px; }
-
-/* ══════════════════════════════════════
-   SCREEN: REGISTROS
-══════════════════════════════════════ */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.stat-box {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--rr);
-  padding: 12px 14px;
-  text-align: center;
-}
-.stat-box .sb-val {
-  font-family: 'DM Mono', monospace;
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.stat-box .sb-label {
-  font-size: 10px;
-  color: var(--text3);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.sb-blue   { color: var(--blue); }
-.sb-amber  { color: var(--amber); }
-.sb-green  { color: var(--green); }
-
-/* Filtros */
-.filter-row {
-  display: flex; gap: 8px; margin-bottom: 12px; align-items: center;
-}
-.filter-input {
-  flex: 1;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text); font-size: 13px;
-  padding: 8px 12px; outline: none;
-  transition: border-color .2s;
-  font-family: 'DM Sans', sans-serif;
-}
-.filter-input:focus { border-color: var(--blue); }
-.filter-btn {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text2); font-size: 12px;
-  padding: 8px 12px; cursor: pointer;
-  transition: all .2s; white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
-}
-.filter-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
-
-/* Record card */
-.record-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--rr);
-  padding: 13px 14px;
-  margin-bottom: 9px;
-  cursor: pointer;
-  transition: border-color .2s, box-shadow .2s;
-  position: relative;
-  overflow: hidden;
-}
-.record-card::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--border2);
-  transition: background .2s;
-}
-.record-card.pending::before { background: var(--amber); }
-.record-card.synced::before  { background: var(--green); }
-.record-card:hover { border-color: var(--border2); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-
-.rc-top {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: 8px;
-}
-.rc-equipo {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 14px;
-}
-.rc-operador {
-  font-size: 11px; color: var(--text2); margin-top: 2px;
-}
-
-.status-pill {
-  font-size: 9px; font-weight: 600;
-  padding: 3px 8px; border-radius: 999px;
-  font-family: 'DM Mono', monospace;
-  white-space: nowrap;
-}
-.pill-pending { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
-.pill-synced  { background: var(--green-dim);  color: var(--green); border: 1px solid rgba(16,185,129,.25); }
-
-.rc-meta {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  font-size: 11px; color: var(--text2);
-}
-.rc-meta-item { display: flex; align-items: center; gap: 4px; }
-.rc-acts {
-  margin-top: 7px; font-size: 10px; color: var(--text3);
-  line-height: 1.6; border-top: 1px solid var(--border); padding-top: 7px;
-}
-
-.no-records {
-  text-align: center; padding: 48px 20px; color: var(--text3);
-}
-.no-records-ico { font-size: 40px; margin-bottom: 12px; opacity: .5; }
-.no-records-txt { font-size: 14px; line-height: 1.6; }
-
-/* ══════════════════════════════════════
-   SCREEN: SYNC
-══════════════════════════════════════ */
-.sync-status-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--rr);
-  padding: 24px 20px;
-  text-align: center;
-  margin-bottom: 14px;
-  position: relative;
-  overflow: hidden;
-}
-.sync-status-card::before {
-  content: '';
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 50%; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--blue), transparent);
-}
-.sync-big-ico { font-size: 44px; margin-bottom: 10px; }
-.sync-status-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 5px; }
-.sync-status-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
-
-.sync-stats {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
-}
-.sync-stat-box {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--rr); padding: 14px;
-  text-align: center;
-}
-.ssb-val { font-family: 'DM Mono', monospace; font-size: 28px; margin-bottom: 3px; }
-.ssb-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
-
-.sync-btn {
-  width: 100%; padding: 13px;
-  background: var(--blue); color: #fff;
-  border: none; border-radius: var(--rr);
-  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: all .2s; margin-bottom: 10px;
-}
-.sync-btn:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
-.sync-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-.export-btn {
-  width: 100%; padding: 13px;
-  background: var(--green-dim);
-  color: var(--green);
-  border: 1px solid rgba(16,185,129,.3);
-  border-radius: var(--rr);
-  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: all .2s;
-}
-.export-btn:hover { background: rgba(16,185,129,.2); transform: translateY(-1px); }
-
-/* ══════════════════════════════════════
-   MODAL DETALLE REGISTRO
-══════════════════════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  display: none;
-  align-items: flex-end;
-  justify-content: center;
-}
-.modal-overlay.show { display: flex; }
-
-.modal-sheet {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 20px 20px 0 0;
-  width: 100%; max-width: 480px;
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 20px 18px 40px;
-  animation: slideUp .25s ease;
-}
-@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-
-.modal-handle {
-  width: 36px; height: 4px; border-radius: 999px;
-  background: var(--border2); margin: 0 auto 20px;
-}
-.modal-title {
-  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px;
-  margin-bottom: 4px;
-}
-.modal-subtitle { font-size: 12px; color: var(--text2); margin-bottom: 18px; }
-
-.detail-row {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  padding: 9px 0; border-bottom: 1px solid var(--border);
-  font-size: 13px; gap: 12px;
-}
-.detail-row:last-child { border-bottom: none; }
-.detail-label { color: var(--text3); flex-shrink: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
-.detail-val { color: var(--text); text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; }
-
-.modal-section-title {
-  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 600;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--blue);
-  margin: 16px 0 8px;
-  padding-bottom: 5px; border-bottom: 1px solid var(--border);
-}
-
-/* ══════════════════════════════════════
-   TOAST
-══════════════════════════════════════ */
-.toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: var(--green); color: #000;
-  font-weight: 600; font-size: 13px;
-  padding: 10px 20px; border-radius: 999px;
-  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
-  z-index: 999; white-space: nowrap;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-.toast.show { transform: translateX(-50%) translateY(0); }
-.toast.warn { background: var(--amber); }
-.toast.err  { background: var(--red); color: #fff; }
-
-/* ══════════════════════════════════════
-   PANTALLA DE CARGA / ROLES
-══════════════════════════════════════ */
-.loading-screen {
-  position: fixed; inset: 0;
-  background: var(--bg);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  z-index: 500;
-  transition: opacity .3s;
-}
-.loading-screen.hidden { opacity: 0; pointer-events: none; }
-.loading-logo {
-  font-family: 'Syne', sans-serif; font-weight: 800;
-  font-size: 28px; color: var(--blue); letter-spacing: -0.03em;
-  margin-bottom: 24px;
-}
-.loading-logo span { color: var(--text2); font-weight: 400; }
-.loading-spinner {
-  width: 32px; height: 32px;
-  border: 2px solid var(--border2);
-  border-top-color: var(--blue);
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;transition:opacity .3s;}
+.loading-screen.hidden{opacity:0;pointer-events:none;}
+.loading-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--blue);letter-spacing:-0.03em;margin-bottom:24px;}
+.loading-logo span{color:var(--text2);font-weight:400;}
+.loading-spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- ══ LOADING ══ -->
+<!-- LOADING -->
 <div class="loading-screen" id="loadingScreen">
   <div class="loading-logo">Conpax<span>-Report</span></div>
   <div class="loading-spinner"></div>
 </div>
 
-<!-- ══ LOGIN ══ -->
+<!-- LOGIN -->
 <div id="screen-login" class="hidden">
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-text">Conpax<span>-Report</span></div>
-      <div class="login-project">
-        Proyecto Construcción<br>
-        <strong style="color:var(--text2); font-size:11px;">OBRAS COMPLEMENTARIAS HABILITACIÓN POLO SUR EN CASO BASE</strong>
+      <div class="login-project">Proyecto Construcción<br>
+        <strong style="color:var(--text2);font-size:11px;">OBRAS COMPLEMENTARIAS HABILITACIÓN POLO SUR EN CASO BASE</strong>
       </div>
     </div>
     <div class="login-divider"></div>
@@ -949,27 +268,49 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
       <label class="login-label">Contraseña</label>
       <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
     </div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">
-      <span>Ingresar</span>
-    </button>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()"><span>Ingresar</span></button>
     <div class="login-error" id="loginError"></div>
+    <div style="text-align:center;margin-top:14px;">
+      <span style="font-size:12px;color:var(--text3)">¿Primera vez? </span>
+      <button onclick="showRegister()" style="background:none;border:none;color:var(--blue);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">Solicitar acceso</button>
+    </div>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
-<div id="app">
+<!-- REGISTRO -->
+<div id="screen-register" class="hidden">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-text">Conpax<span>-Report</span></div>
+      <div class="login-project">Solicitar acceso al sistema</div>
+    </div>
+    <div class="login-divider"></div>
+    <div class="field"><label class="login-label">Nombre completo</label><input class="login-input" type="text" id="regNombre" placeholder="Tu nombre completo"></div>
+    <div class="field"><label class="login-label">Correo electrónico</label><input class="login-input" type="email" id="regEmail" placeholder="tu@correo.cl"></div>
+    <div class="field"><label class="login-label">Contraseña</label><input class="login-input" type="password" id="regPass" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label class="login-label">Confirmar contraseña</label><input class="login-input" type="password" id="regPass2" placeholder="Repite la contraseña"></div>
+    <button class="login-btn" id="regBtn" onclick="doRegister()"><span>Solicitar acceso</span></button>
+    <div class="login-error" id="regError"></div>
+    <div id="regSuccess" style="display:none;background:var(--green-dim);border:1px solid rgba(16,185,129,.25);border-radius:var(--r);padding:12px 14px;margin-top:12px;font-size:13px;color:var(--green);line-height:1.6;">
+      ✅ <strong>Cuenta creada.</strong><br>Tu acceso está pendiente de aprobación. El administrador asignará tu rol.
+    </div>
+    <div style="text-align:center;margin-top:14px;">
+      <button onclick="showLoginScreen()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">← Volver al login</button>
+    </div>
+  </div>
+</div>
 
-  <!-- Header -->
+<!-- APP -->
+<div id="app">
   <header class="app-header">
     <div class="header-logo">Conpax<span>-Report</span></div>
     <div class="header-right">
-      <div class="sync-dot-wrap" onclick="checkOnline()">
+      <div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="checkOnline()">
         <div class="sync-dot" id="syncDot"></div>
-        <span id="syncTxt" style="display:none"></span>
       </div>
       <div class="header-user">
         <div class="user-avatar" id="userAvatar"></div>
-        <div class="user-info">
+        <div>
           <div class="user-name" id="userName">—</div>
           <div class="user-role" id="userRoleLabel">—</div>
         </div>
@@ -977,15 +318,11 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
       <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión">⏏</button>
     </div>
   </header>
-
-  <!-- Tabs — se muestran según rol -->
   <nav class="app-tabs" id="appTabs"></nav>
 
-  <!-- Screen: Formulario Maquinaria -->
+  <!-- FORMULARIO MAQUINARIA -->
   <div class="screen" id="screen-form-maq">
     <div class="screen-inner">
-
-      <!-- Meta -->
       <div class="form-meta">
         <div class="meta-top">
           <div class="meta-proyecto">
@@ -995,7 +332,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
         </div>
         <div class="field" style="margin:0">
           <label>Fecha</label>
-          <input type="date" id="maq-fecha" style="font-size:13px; padding:8px 10px">
+          <input type="date" id="maq-fecha" style="font-size:13px;padding:8px 10px">
         </div>
         <div class="field" style="margin:0">
           <label>Turno</label>
@@ -1006,26 +343,17 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
         </div>
       </div>
 
-      <!-- 01. Información General -->
+      <!-- 01 Info general -->
       <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">01</span>
-          <span class="section-title">Información General</span>
-        </div>
+        <div class="section-head"><span class="section-num">01</span><span class="section-title">Información General</span></div>
         <div class="section-body">
-          <div class="field">
-            <label>Nombre Operador</label>
-            <input type="text" id="maq-operador" placeholder="Nombre completo del operador">
-          </div>
+          <div class="field"><label>Nombre Operador</label><input type="text" id="maq-operador" placeholder="Nombre completo del operador"></div>
         </div>
       </div>
 
-      <!-- 02. Tipo de Máquina -->
+      <!-- 02 Tipo máquina -->
       <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">02</span>
-          <span class="section-title">Tipo de Máquina</span>
-        </div>
+        <div class="section-head"><span class="section-num">02</span><span class="section-title">Tipo de Máquina</span></div>
         <div class="section-body">
           <div class="field">
             <label>Seleccionar equipo</label>
@@ -1048,26 +376,14 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
         </div>
       </div>
 
-      <!-- 03. Información de Maquinaria -->
+      <!-- 03 Info maquinaria -->
       <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">03</span>
-          <span class="section-title">Información de Maquinaria</span>
-        </div>
+        <div class="section-head"><span class="section-num">03</span><span class="section-title">Información de Maquinaria</span></div>
         <div class="section-body">
-          <div class="field">
-            <label>N° Interno Equipo</label>
-            <input type="text" id="maq-nEquipo" placeholder="Ej: EQ-021">
-          </div>
+          <div class="field"><label>N° Interno Equipo</label><input type="text" id="maq-nEquipo" placeholder="Ej: EQ-021"></div>
           <div class="field-row">
-            <div class="field">
-              <label>Horómetro Inicial (hrs)</label>
-              <input type="number" id="maq-horoIni" placeholder="0.0" step="0.1" oninput="calcHoro()">
-            </div>
-            <div class="field">
-              <label>Horómetro Final (hrs)</label>
-              <input type="number" id="maq-horoFin" placeholder="0.0" step="0.1" oninput="calcHoro()">
-            </div>
+            <div class="field"><label>Horómetro Inicial (hrs)</label><input type="number" id="maq-horoIni" placeholder="0.0" step="0.1" oninput="calcHoro()"></div>
+            <div class="field"><label>Horómetro Final (hrs)</label><input type="number" id="maq-horoFin" placeholder="0.0" step="0.1" oninput="calcHoro()"></div>
           </div>
           <div class="horo-diff">
             <span class="hd-label">Total horas trabajadas</span>
@@ -1075,199 +391,191 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
           </div>
           <hr class="divider">
           <div class="field-row">
-            <div class="field">
-              <label>Km Inicial</label>
-              <input type="number" id="maq-kmIni" placeholder="0">
-            </div>
-            <div class="field">
-              <label>Km Final</label>
-              <input type="number" id="maq-kmFin" placeholder="0">
-            </div>
+            <div class="field"><label>Km Inicial</label><input type="number" id="maq-kmIni" placeholder="0"></div>
+            <div class="field"><label>Km Final</label><input type="number" id="maq-kmFin" placeholder="0"></div>
           </div>
-          <div class="field">
-            <label>Patente Equipo</label>
-            <input type="text" id="maq-patente" placeholder="Ej: BCDK-45" style="text-transform:uppercase">
-          </div>
+          <div class="field"><label>Patente Equipo</label><input type="text" id="maq-patente" placeholder="Ej: BCDK-45" style="text-transform:uppercase"></div>
         </div>
       </div>
 
-      <!-- 04. Detalle de Actividades (dinámico) -->
+      <!-- 04 Actividades -->
       <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">04</span>
-          <span class="section-title">Detalle de Actividades</span>
-        </div>
+        <div class="section-head"><span class="section-num">04</span><span class="section-title">Detalle de Actividades</span></div>
         <div class="section-body">
           <div id="actividadesContainer"></div>
           <button class="add-btn" onclick="addActividad()">+ Agregar actividad</button>
         </div>
       </div>
 
-      <!-- 05. Operatividad -->
+      <!-- 05 Operatividad -->
       <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">05</span>
-          <span class="section-title">Operatividad de Máquina</span>
-        </div>
+        <div class="section-head"><span class="section-num">05</span><span class="section-title">Operatividad de Máquina (HM)</span></div>
         <div class="section-body">
           <div class="op-grid">
-            <div class="op-item">
-              <label>HM Operativas</label>
-              <input type="number" id="maq-hrsOp" placeholder="0" step="0.5" oninput="calcOpTotal()">
-            </div>
-            <div class="op-item">
-              <label>HM Stand By / Disponible</label>
-              <input type="number" id="maq-hrsStandby" placeholder="0" step="0.5" oninput="calcOpTotal()">
-            </div>
-            <div class="op-item">
-              <label>HM Sin Frente</label>
-              <input type="number" id="maq-hrsSinFrente" placeholder="0" step="0.5" oninput="calcOpTotal()">
-            </div>
+            <div class="op-item"><label>HM Jornada Total</label><input type="number" id="maq-hmJornada" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+            <div class="op-item"><label>HM Operativos</label><input type="number" id="maq-hrsOp" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+            <div class="op-item"><label>Mantención Correctiva</label><input type="number" id="maq-mantCorrectiva" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+            <div class="op-item"><label>Mantención Preventiva</label><input type="number" id="maq-mantPreventiva" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+            <div class="op-item"><label>Fuera de Servicio</label><input type="number" id="maq-fueraServicio" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+            <div class="op-item"><label>En Espera / Stand By</label><input type="number" id="maq-enEspera" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+            <div class="op-item"><label>Sin Operador</label><input type="number" id="maq-sinOperador" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
           </div>
-
-          <!-- Mantenimiento con subtipo -->
-          <div style="margin-top:10px;">
-            <label style="margin-bottom:6px">HM Mantenimiento</label>
-            <input type="number" id="maq-hrsMant" placeholder="0" step="0.5" oninput="calcOpTotal()" style="margin-bottom:8px">
-            <div id="mantSubtipo" style="display:none">
-              <label style="margin-bottom:6px; color:var(--text3)">Tipo de mantenimiento</label>
-              <div style="display:flex; gap:8px;">
-                <button class="turno-btn" id="mant-prog" onclick="selectMant(this,'Programada')">Programada</button>
-                <button class="turno-btn" id="mant-correc" onclick="selectMant(this,'No programada / Correctiva')">No programada / Correctiva</button>
-              </div>
-            </div>
-          </div>
-
           <div class="op-total" style="margin-top:12px">
-            <span class="ot-label">Total horas turno</span>
+            <span class="ot-label">Total HM ingresados</span>
             <span class="ot-val" id="opTotal">0.0 hrs</span>
           </div>
         </div>
       </div>
 
-      <!-- 06. Campos dinámicos según tipo equipo -->
-      <!-- Camión Tolva -->
-      <div class="section-card hidden" id="section-tolva">
-        <div class="section-head">
-          <span class="section-num">06</span>
-          <span class="section-title">Datos Camión Tolva</span>
-        </div>
+      <!-- 06 Detalle de tiempos -->
+      <div class="section-card">
+        <div class="section-head"><span class="section-num">06</span><span class="section-title">Detalle de Tiempos</span></div>
         <div class="section-body">
-          <div style="margin-bottom:10px; font-size:12px; color:var(--text2)">Selecciona el tipo de material transportado:</div>
-          <div style="display:flex; gap:8px; margin-bottom:14px">
+
+          <!-- MANTENIMIENTO PROGRAMADO -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">🔧 Mantención Programada</div>
+            <div class="tiempo-item"><label>Traslado a área de mantención programada</label><input type="number" id="t-mp-traslado" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Mantención predictiva</label><input type="number" id="t-mp-predictiva" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Mantención planificada (incluye lavado)</label><input type="number" id="t-mp-planificada" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+          <!-- MANTENIMIENTO NO PROGRAMADO -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">🔴 Mantención No Programada</div>
+            <div class="tiempo-item"><label>Equipo con alerta o falla</label><input type="number" id="t-mnp-alerta" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Traslado a mantención no programada</label><input type="number" id="t-mnp-traslado" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Tiempo en mantención</label><input type="number" id="t-mnp-tiempo" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Traslado a operaciones</label><input type="number" id="t-mnp-traslado-op" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Incidentes operacionales por condiciones</label><input type="number" id="t-mnp-incidentes" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Instalación/cambios de componentes</label><input type="number" id="t-mnp-componentes" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+          <!-- RESERVAS -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">⏸ Reservas</div>
+            <div class="tiempo-item"><label>Equipo sin operador</label><input type="number" id="t-res-sinop" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Sin programa de trabajo</label><input type="number" id="t-res-sinprog" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Mala condición climática</label><input type="number" id="t-res-clima" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Enfermedad común</label><input type="number" id="t-res-enfermedad" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Emergencia</label><input type="number" id="t-res-emergencia" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Detenido por somnolencia</label><input type="number" id="t-res-somnolencia" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Licencia médica</label><input type="number" id="t-res-licencia" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+          <!-- DEMORAS PROGRAMADAS -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">🕐 Demoras Programadas</div>
+            <div class="tiempo-item"><label>Colación</label><input type="number" id="t-dp-colacion" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Cambio de turno día</label><input type="number" id="t-dp-cambioturno" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Casa de cambio</label><input type="number" id="t-dp-casacambio" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Traslado casa de cambio a frente trabajo</label><input type="number" id="t-dp-traslado1" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Traslado hacia colación</label><input type="number" id="t-dp-traslado2" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Traslado desde colación</label><input type="number" id="t-dp-traslado3" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Charla de seguridad</label><input type="number" id="t-dp-charla" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Abastecimiento de petróleo (máx 15 min)</label><input type="number" id="t-dp-petroleo" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Entrega de maquinaria a operaciones</label><input type="number" id="t-dp-entrega" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Interrupción del ciclo de trabajo</label><input type="number" id="t-dp-interrupcion" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Baño</label><input type="number" id="t-dp-bano" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+          <!-- DEMORAS NO PROGRAMADAS -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">🔶 Demoras No Programadas</div>
+            <div class="tiempo-item"><label>Indisponibilidad de casino</label><input type="number" id="t-dnp-casino" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>No se respeta asignación fin de turno</label><input type="number" id="t-dnp-asignacion" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Falla en petrolera</label><input type="number" id="t-dnp-petrolera" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Bajo nivel de petróleo en maquinaria</label><input type="number" id="t-dnp-bajopetroleo" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Problema en sistema de llenado de petróleo</label><input type="number" id="t-dnp-sistpetroleo" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Problemas en cambio de turno</label><input type="number" id="t-dnp-cambioturno" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Sin equipo petrolero</label><input type="number" id="t-dnp-sinpetrolero" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+          <!-- PÉRDIDAS OPERACIONALES -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">📉 Pérdidas Operacionales</div>
+            <div class="tiempo-item"><label>Esperas por otros equipos / condiciones externas</label><input type="number" id="t-po-esperas" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Espera para cargar</label><input type="number" id="t-po-cargar" placeholder="0" step="0.1" min="0"></div>
+            <div class="tiempo-item"><label>Espera para descargar</label><input type="number" id="t-po-descargar" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+          <!-- TIEMPO EFECTIVO -->
+          <div class="tiempo-group">
+            <div class="tiempo-group-title">✅ Tiempo Efectivo</div>
+            <div class="tiempo-item"><label>Equipo cumpliendo su función</label><input type="number" id="t-te-efectivo" placeholder="0" step="0.1" min="0"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 07 Camión Tolva -->
+      <div class="section-card hidden" id="section-tolva">
+        <div class="section-head"><span class="section-num">07</span><span class="section-title">Datos Camión Tolva</span></div>
+        <div class="section-body">
+          <div style="margin-bottom:10px;font-size:12px;color:var(--text2)">Tipo de material transportado:</div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
             <button class="turno-btn" id="tolva-relleno-btn" onclick="selectTipoMaterial('relleno')">Material de Relleno</button>
             <button class="turno-btn" id="tolva-excav-btn" onclick="selectTipoMaterial('excavacion')">Material de Excavación</button>
           </div>
-
-          <!-- Relleno -->
           <div id="tolva-relleno" style="display:none">
-            <div class="field">
-              <label>Nombre o Pozo de Extracción</label>
-              <input type="text" id="tolva-pozo" placeholder="Nombre del pozo o lugar de extracción">
-            </div>
+            <div class="field"><label>Nombre o Pozo de Extracción</label><input type="text" id="tolva-pozo" placeholder="Nombre del pozo o lugar de extracción"></div>
             <div class="field-row">
-              <div class="field">
-                <label>Cantidad de Vueltas</label>
-                <input type="number" id="tolva-vueltas-rell" placeholder="0">
-              </div>
-              <div class="field">
-                <label>M³ de Relleno</label>
-                <input type="number" id="tolva-m3-rell" placeholder="0.0" step="0.1">
-              </div>
+              <div class="field"><label>Cantidad de Vueltas</label><input type="number" id="tolva-vueltas-rell" placeholder="0"></div>
+              <div class="field"><label>M³ de Relleno</label><input type="number" id="tolva-m3-rell" placeholder="0.0" step="0.1"></div>
             </div>
           </div>
-
-          <!-- Excavación -->
           <div id="tolva-excavacion" style="display:none">
             <div class="field-row">
-              <div class="field">
-                <label>Cantidad de Vueltas</label>
-                <input type="number" id="tolva-vueltas-excav" placeholder="0">
-              </div>
-              <div class="field">
-                <label>M³ de Material</label>
-                <input type="number" id="tolva-m3-excav" placeholder="0.0" step="0.1">
-              </div>
+              <div class="field"><label>Cantidad de Vueltas</label><input type="number" id="tolva-vueltas-excav" placeholder="0"></div>
+              <div class="field"><label>M³ de Material</label><input type="number" id="tolva-m3-excav" placeholder="0.0" step="0.1"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Camión Aljibe -->
+      <!-- 07 Camión Aljibe -->
       <div class="section-card hidden" id="section-aljibe">
-        <div class="section-head">
-          <span class="section-num">06</span>
-          <span class="section-title">Datos Camión Aljibe</span>
-        </div>
+        <div class="section-head"><span class="section-num">07</span><span class="section-title">Datos Camión Aljibe</span></div>
         <div class="section-body">
-          <div class="field">
-            <label>Nombre Cachimba</label>
-            <input type="text" id="aljibe-cachimba" placeholder="Nombre de la cachimba abastecida">
-          </div>
+          <div class="field"><label>Nombre Cachimba</label><input type="text" id="aljibe-cachimba" placeholder="Nombre de la cachimba abastecida"></div>
           <div class="field-row">
-            <div class="field">
-              <label>Cantidad de Vueltas</label>
-              <input type="number" id="aljibe-vueltas" placeholder="0">
-            </div>
-            <div class="field">
-              <label>M³</label>
-              <input type="number" id="aljibe-m3" placeholder="0.0" step="0.1">
-            </div>
+            <div class="field"><label>Cantidad de Vueltas</label><input type="number" id="aljibe-vueltas" placeholder="0"></div>
+            <div class="field"><label>M³</label><input type="number" id="aljibe-m3" placeholder="0.0" step="0.1"></div>
           </div>
         </div>
       </div>
 
       <!-- Observaciones -->
       <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">✎</span>
-          <span class="section-title">Observaciones</span>
-        </div>
+        <div class="section-head"><span class="section-num">✎</span><span class="section-title">Observaciones</span></div>
         <div class="section-body">
-          <div class="field">
-            <label>Observaciones Generales</label>
-            <textarea id="maq-observaciones" placeholder="Indicar observaciones relevantes del turno..."></textarea>
-          </div>
+          <div class="field"><label>Observaciones Generales</label><textarea id="maq-observaciones" placeholder="Indicar observaciones relevantes del turno..."></textarea></div>
         </div>
       </div>
 
-      <button class="submit-btn" onclick="guardarMaquinaria()">
-        💾 Guardar Report Maquinaria
-      </button>
-
+      <button class="submit-btn" onclick="guardarMaquinaria()">💾 Guardar Report Maquinaria</button>
     </div>
   </div>
 
-  <!-- Screen: Mis Registros -->
+  <!-- REGISTROS -->
   <div class="screen" id="screen-records">
     <div class="screen-inner">
-      <div class="stats-row" id="statsRow">
-        <div class="stat-box">
-          <div class="sb-val sb-blue" id="stat-total">0</div>
-          <div class="sb-label">Total</div>
-        </div>
-        <div class="stat-box">
-          <div class="sb-val sb-amber" id="stat-pending">0</div>
-          <div class="sb-label">Pendientes</div>
-        </div>
-        <div class="stat-box">
-          <div class="sb-val sb-green" id="stat-synced">0</div>
-          <div class="sb-label">Sincronizados</div>
-        </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="sb-val sb-blue" id="stat-total">0</div><div class="sb-label">Total</div></div>
+        <div class="stat-box"><div class="sb-val sb-amber" id="stat-pending">0</div><div class="sb-label">Pendientes</div></div>
+        <div class="stat-box"><div class="sb-val sb-green" id="stat-synced">0</div><div class="sb-label">Sincronizados</div></div>
       </div>
-
       <div class="filter-row">
         <input class="filter-input" type="date" id="filterFecha" onchange="renderRecords()">
         <button class="filter-btn active" id="filterAll" onclick="setFilter('all')">Todos</button>
         <button class="filter-btn" id="filterPending" onclick="setFilter('pending')">⏳</button>
         <button class="filter-btn" id="filterSynced" onclick="setFilter('synced')">✓</button>
       </div>
-
       <div id="recordsList"></div>
     </div>
   </div>
 
-  <!-- Screen: Sync -->
+  <!-- SYNC -->
   <div class="screen" id="screen-sync">
     <div class="screen-inner">
       <div class="sync-status-card">
@@ -1276,23 +584,16 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
         <div class="sync-status-desc" id="syncStatusDesc">Los registros se guardan localmente y se envían cuando haya señal.</div>
       </div>
       <div class="sync-stats">
-        <div class="sync-stat-box">
-          <div class="ssb-val" style="color:var(--amber)" id="sync-pending">0</div>
-          <div class="ssb-label">Pendientes</div>
-        </div>
-        <div class="sync-stat-box">
-          <div class="ssb-val" style="color:var(--green)" id="sync-synced">0</div>
-          <div class="ssb-label">Sincronizados</div>
-        </div>
+        <div class="sync-stat-box"><div class="ssb-val" style="color:var(--amber)" id="sync-pending">0</div><div class="ssb-label">Pendientes</div></div>
+        <div class="sync-stat-box"><div class="ssb-val" style="color:var(--green)" id="sync-synced">0</div><div class="ssb-label">Sincronizados</div></div>
       </div>
       <button class="sync-btn" id="syncBtn" onclick="syncNow()">🔄 Sincronizar ahora</button>
-      <button class="export-btn" onclick="exportCSV()">📊 Exportar a Excel (CSV)</button>
+      <button class="export-btn" onclick="exportExcel()">📊 Exportar a Excel (.xlsx)</button>
     </div>
   </div>
+</div>
 
-</div><!-- /app -->
-
-<!-- Modal Detalle -->
+<!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal-sheet" id="modalSheet">
     <div class="modal-handle"></div>
@@ -1305,47 +606,79 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
 
 <script>
 // ══════════════════════════════════════
-// CONPAX-REPORT v2 — Core JS
+// CONPAX-REPORT v3
 // ══════════════════════════════════════
 
-/* ── CONSTANTES ── */
-const STORAGE_KEY = 'conpax_v2_maq_records';
-const USERS_KEY   = 'conpax_v2_users'; // caché local de usuarios
+const STORAGE_KEY = 'conpax_v3_maq_records';
 
 const FRENTES = [
   'OA Camino CAEX PS-OXE',
   'Cruce C Min PS-OXE-c contorno sur',
-  'OA C Vehículos Livianos PS-OXE',
-  'Canal de Contorno 1 (3,3 km)',
-  'Canal de Contorno 2 (2,3 km)',
-  'Canal de Contorno 3 (3,2 km)',
-  'Pisc. Agua de Mar y plataforma anexa',
+  'OA Cam Vehículos Livianos PS-OXE',
+  'Canal de Contorno 1 (largo 3,3 km)',
+  'Canal de Contorno 2 (largo 2,3 km)',
+  'Canal de Contorno 3 (largo 3,2 km)',
+  'Pisc. Agua de Mar/Plataforma',
   'Cachimba Mina Polo Sur',
-  'Suministro agua a cachimbas',
+  'Suministro agua Cachimbas',
+  'Recepción agua en Cachimbas',
   'Recepción agua en Piscina',
-  'Otro',
 ];
 
-// Configuración de roles
 const ROL_CONFIG = {
-  operador: {
-    label: 'Operador',
-    color: 'var(--blue)',
-    bg: 'var(--blue-dim)',
-    tabs: ['form-maq', 'records', 'sync'],
-  },
-  admin: {
-    label: 'Control Producción',
-    color: 'var(--red)',
-    bg: 'rgba(239,68,68,.1)',
-    tabs: ['form-maq', 'records', 'sync'],
-  },
+  operador: { label:'Operador', color:'var(--blue)', bg:'var(--blue-dim)', tabs:['form-maq','records','sync'] },
+  capataz:  { label:'Capataz', color:'var(--amber)', bg:'var(--amber-dim)', tabs:['records','sync'] },
+  jefe:     { label:'Jefe de Terreno', color:'var(--green)', bg:'var(--green-dim)', tabs:['records','sync'] },
+  supervisor:{ label:'Supervisor', color:'var(--purple)', bg:'rgba(139,92,246,.1)', tabs:['records','sync'] },
+  admin:    { label:'Control Producción', color:'var(--red)', bg:'rgba(239,68,68,.1)', tabs:['form-maq','records','sync'] },
 };
 
 const TAB_DEF = [
-  { id: 'form-maq', label: 'Formulario', ico: '📋' },
-  { id: 'records',  label: 'Registros',  ico: '📁' },
-  { id: 'sync',     label: 'Sincronizar', ico: '🔄' },
+  { id:'form-maq', label:'Formulario', ico:'📋' },
+  { id:'records',  label:'Registros',  ico:'📁' },
+  { id:'sync',     label:'Sincronizar', ico:'🔄' },
+];
+
+// IDs de todos los campos de tiempos
+const TIEMPO_FIELDS = [
+  { id:'t-mp-traslado',    grupo:'Mantención Programada',    label:'Traslado a área mantención programada' },
+  { id:'t-mp-predictiva',  grupo:'Mantención Programada',    label:'Mantención predictiva' },
+  { id:'t-mp-planificada', grupo:'Mantención Programada',    label:'Mantención planificada (incluye lavado)' },
+  { id:'t-mnp-alerta',     grupo:'Mantención No Programada', label:'Equipo con alerta o falla' },
+  { id:'t-mnp-traslado',   grupo:'Mantención No Programada', label:'Traslado a mantención no programada' },
+  { id:'t-mnp-tiempo',     grupo:'Mantención No Programada', label:'Tiempo en mantención' },
+  { id:'t-mnp-traslado-op',grupo:'Mantención No Programada', label:'Traslado a operaciones' },
+  { id:'t-mnp-incidentes', grupo:'Mantención No Programada', label:'Incidentes operacionales' },
+  { id:'t-mnp-componentes',grupo:'Mantención No Programada', label:'Instalación/cambios de componentes' },
+  { id:'t-res-sinop',      grupo:'Reservas',                 label:'Equipo sin operador' },
+  { id:'t-res-sinprog',    grupo:'Reservas',                 label:'Sin programa de trabajo' },
+  { id:'t-res-clima',      grupo:'Reservas',                 label:'Mala condición climática' },
+  { id:'t-res-enfermedad', grupo:'Reservas',                 label:'Enfermedad común' },
+  { id:'t-res-emergencia', grupo:'Reservas',                 label:'Emergencia' },
+  { id:'t-res-somnolencia',grupo:'Reservas',                 label:'Detenido por somnolencia' },
+  { id:'t-res-licencia',   grupo:'Reservas',                 label:'Licencia médica' },
+  { id:'t-dp-colacion',    grupo:'Demoras Programadas',      label:'Colación' },
+  { id:'t-dp-cambioturno', grupo:'Demoras Programadas',      label:'Cambio de turno día' },
+  { id:'t-dp-casacambio',  grupo:'Demoras Programadas',      label:'Casa de cambio' },
+  { id:'t-dp-traslado1',   grupo:'Demoras Programadas',      label:'Traslado casa de cambio a frente' },
+  { id:'t-dp-traslado2',   grupo:'Demoras Programadas',      label:'Traslado hacia colación' },
+  { id:'t-dp-traslado3',   grupo:'Demoras Programadas',      label:'Traslado desde colación' },
+  { id:'t-dp-charla',      grupo:'Demoras Programadas',      label:'Charla de seguridad' },
+  { id:'t-dp-petroleo',    grupo:'Demoras Programadas',      label:'Abastecimiento de petróleo' },
+  { id:'t-dp-entrega',     grupo:'Demoras Programadas',      label:'Entrega de maquinaria a operaciones' },
+  { id:'t-dp-interrupcion',grupo:'Demoras Programadas',      label:'Interrupción del ciclo de trabajo' },
+  { id:'t-dp-bano',        grupo:'Demoras Programadas',      label:'Baño' },
+  { id:'t-dnp-casino',     grupo:'Demoras No Programadas',   label:'Indisponibilidad de casino' },
+  { id:'t-dnp-asignacion', grupo:'Demoras No Programadas',   label:'No se respeta asignación fin de turno' },
+  { id:'t-dnp-petrolera',  grupo:'Demoras No Programadas',   label:'Falla en petrolera' },
+  { id:'t-dnp-bajopetroleo',grupo:'Demoras No Programadas',  label:'Bajo nivel de petróleo en maquinaria' },
+  { id:'t-dnp-sistpetroleo',grupo:'Demoras No Programadas',  label:'Problema en sistema de llenado de petróleo' },
+  { id:'t-dnp-cambioturno',grupo:'Demoras No Programadas',   label:'Problemas en cambio de turno' },
+  { id:'t-dnp-sinpetrolero',grupo:'Demoras No Programadas',  label:'Sin equipo petrolero' },
+  { id:'t-po-esperas',     grupo:'Pérdidas Operacionales',   label:'Esperas por otros equipos/condiciones externas' },
+  { id:'t-po-cargar',      grupo:'Pérdidas Operacionales',   label:'Espera para cargar' },
+  { id:'t-po-descargar',   grupo:'Pérdidas Operacionales',   label:'Espera para descargar' },
+  { id:'t-te-efectivo',    grupo:'Tiempo Efectivo',          label:'Equipo cumpliendo su función' },
 ];
 
 /* ── ESTADO GLOBAL ── */
@@ -1353,7 +686,6 @@ let currentUser      = null;
 let records          = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let isOnline         = navigator.onLine;
 let selectedTurno    = 'A';
-let selectedMant     = null;
 let selectedTipoMaterial = null;
 let actividadCount   = 0;
 let activeFilter     = 'all';
@@ -1363,9 +695,7 @@ let activeTab        = 'form-maq';
 window.addEventListener('online',  () => { isOnline = true;  updateSyncUI(); showToast('📶 Conexión recuperada'); syncNow(); });
 window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); showToast('📡 Sin conexión', 'warn'); });
 
-/* ══════════════════════════════════════
-   AUTENTICACIÓN
-══════════════════════════════════════ */
+/* ══ AUTENTICACIÓN ══ */
 document.addEventListener('firebaseReady', () => {
   window._onAuthStateChanged(window._auth, async (fbUser) => {
     if (fbUser) {
@@ -1373,16 +703,23 @@ document.addEventListener('firebaseReady', () => {
         const snap = await window._fsGetDoc(window._fsDoc(window._db, 'usuarios', fbUser.uid));
         if (snap.exists()) {
           const data = snap.data();
-          currentUser = { uid: fbUser.uid, email: fbUser.email, nombre: data.nombre || fbUser.email, rol: data.rol || 'operador' };
+          if (data.rol === 'pendiente') {
+            await window._signOut(window._auth);
+            const err = document.getElementById('loginError');
+            err.textContent = '⏳ Tu cuenta está pendiente de aprobación. Contacta al administrador.';
+            err.classList.add('show');
+            showLoginScreen(); return;
+          }
+          currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:data.nombre||fbUser.email, rol:data.rol||'operador' };
         } else {
-          currentUser = { uid: fbUser.uid, email: fbUser.email, nombre: fbUser.email.split('@')[0], rol: 'operador' };
+          currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:fbUser.email.split('@')[0], rol:'operador' };
         }
-      } catch (e) {
-        currentUser = { uid: fbUser.uid, email: fbUser.email, nombre: fbUser.email.split('@')[0], rol: 'operador' };
+      } catch(e) {
+        currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:fbUser.email.split('@')[0], rol:'operador' };
       }
       showApp();
     } else {
-      showLogin();
+      showLoginScreen();
     }
   });
 });
@@ -1392,58 +729,70 @@ async function doLogin() {
   const pass  = document.getElementById('loginPass').value;
   const err   = document.getElementById('loginError');
   const btn   = document.getElementById('loginBtn');
-  if (!email || !pass) { err.textContent = 'Ingresa correo y contraseña.'; err.classList.add('show'); return; }
-  btn.disabled = true; btn.textContent = 'Ingresando...'; err.classList.remove('show');
-  try {
-    await window._signIn(window._auth, email, pass);
-  } catch (e) {
-    err.classList.add('show');
-    err.textContent = traducirErrorAuth(e.code);
-    btn.disabled = false; btn.textContent = 'Ingresar';
-  }
+  if (!email||!pass) { err.textContent='Ingresa correo y contraseña.'; err.classList.add('show'); return; }
+  btn.disabled=true; btn.textContent='Ingresando...'; err.classList.remove('show');
+  try { await window._signIn(window._auth, email, pass); }
+  catch(e) { err.classList.add('show'); err.textContent=traducirErrorAuth(e.code); btn.disabled=false; btn.textContent='Ingresar'; }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('loginPass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('loginPass')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 });
 
-async function doLogout() {
-  await window._signOut(window._auth);
-  currentUser = null;
-}
+async function doLogout() { await window._signOut(window._auth); currentUser=null; }
 
 function traducirErrorAuth(code) {
-  const map = {
-    'auth/user-not-found': 'Usuario no encontrado.',
-    'auth/wrong-password': 'Contraseña incorrecta.',
-    'auth/invalid-email': 'Correo inválido.',
-    'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.',
-    'auth/invalid-credential': 'Credenciales incorrectas.',
-  };
-  return map[code] || 'Error al iniciar sesión. Verifica tus datos.';
+  const map = { 'auth/user-not-found':'Usuario no encontrado.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-email':'Correo inválido.','auth/too-many-requests':'Demasiados intentos.','auth/invalid-credential':'Credenciales incorrectas.' };
+  return map[code]||'Error al iniciar sesión.';
 }
 
-/* ══════════════════════════════════════
-   NAVEGACIÓN
-══════════════════════════════════════ */
-function showLogin() {
+async function doRegister() {
+  const nombre=document.getElementById('regNombre').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const pass2=document.getElementById('regPass2').value;
+  const err=document.getElementById('regError');
+  const btn=document.getElementById('regBtn');
+  const ok=document.getElementById('regSuccess');
+  err.classList.remove('show'); ok.style.display='none';
+  if(!nombre){err.textContent='Ingresa tu nombre.';err.classList.add('show');return;}
+  if(!email){err.textContent='Ingresa tu correo.';err.classList.add('show');return;}
+  if(pass.length<6){err.textContent='Contraseña mínimo 6 caracteres.';err.classList.add('show');return;}
+  if(pass!==pass2){err.textContent='Las contraseñas no coinciden.';err.classList.add('show');return;}
+  btn.disabled=true; btn.textContent='Creando cuenta...';
+  try {
+    const cred=await window._createUser(window._auth,email,pass);
+    await window._fsSetDoc(window._fsDoc(window._db,'usuarios',cred.user.uid),{nombre,email,rol:'pendiente',creadoEn:new Date().toISOString()});
+    await window._signOut(window._auth);
+    ok.style.display='block';
+    ['regNombre','regEmail','regPass','regPass2'].forEach(id=>document.getElementById(id).value='');
+  } catch(e) { err.classList.add('show'); err.textContent=traducirErrorAuth(e.code); }
+  btn.disabled=false; btn.textContent='Solicitar acceso';
+}
+
+/* ══ NAVEGACIÓN ══ */
+function showLoginScreen() {
   document.getElementById('loadingScreen').classList.add('hidden');
   document.getElementById('screen-login').classList.remove('hidden');
+  document.getElementById('screen-register').classList.add('hidden');
   document.getElementById('app').classList.remove('active');
+}
+function showRegister() {
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-register').classList.remove('hidden');
+  document.getElementById('regError').classList.remove('show');
+  document.getElementById('regSuccess').style.display='none';
 }
 
 function showApp() {
   document.getElementById('loadingScreen').classList.add('hidden');
   document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-register').classList.add('hidden');
   document.getElementById('app').classList.add('active');
-  buildTabs();
-  updateUserHeader();
+  buildTabs(); updateUserHeader();
   document.getElementById('maq-fecha').valueAsDate = new Date();
-  // Agregar primera actividad por defecto
   addActividad();
-  renderRecords();
-  updateStats();
-  updateSyncUI();
+  renderRecords(); updateStats(); updateSyncUI();
   showTab('form-maq');
 }
 
@@ -1457,569 +806,466 @@ function buildTabs() {
 
 function showTab(id) {
   activeTab = id;
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.app-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('screen-' + id)?.classList.add('active');
-  document.getElementById('tab-' + id)?.classList.add('active');
-  if (id === 'records') renderRecords();
-  if (id === 'sync') updateSyncUI();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.app-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+id)?.classList.add('active');
+  document.getElementById('tab-'+id)?.classList.add('active');
+  if(id==='records') renderRecords();
+  if(id==='sync') updateSyncUI();
 }
 
 function updateUserHeader() {
-  const rolCfg  = ROL_CONFIG[currentUser.rol] || ROL_CONFIG.operador;
-  const initials = currentUser.nombre.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  const rolCfg = ROL_CONFIG[currentUser.rol] || ROL_CONFIG.operador;
+  const initials = currentUser.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   const av = document.getElementById('userAvatar');
-  av.textContent = initials;
-  av.style.background = rolCfg.bg;
-  av.style.color = rolCfg.color;
-  av.style.border = `1px solid ${rolCfg.color}33`;
-  document.getElementById('userName').textContent = currentUser.nombre.split(' ')[0];
-  document.getElementById('userRoleLabel').textContent = rolCfg.label;
+  av.textContent=initials; av.style.background=rolCfg.bg; av.style.color=rolCfg.color; av.style.border=`1px solid ${rolCfg.color}33`;
+  document.getElementById('userName').textContent=currentUser.nombre.split(' ')[0];
+  document.getElementById('userRoleLabel').textContent=rolCfg.label;
   updateSyncUI();
 }
 
-/* ══════════════════════════════════════
-   FORMULARIO — CONTROLES GENERALES
-══════════════════════════════════════ */
+/* ══ FORMULARIO ══ */
 function selectTurno(btn, val) {
-  document.querySelectorAll('.turno-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedTurno = val;
+  document.querySelectorAll('.turno-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected'); selectedTurno=val;
 }
 
 function calcHoro() {
-  const ini  = parseFloat(document.getElementById('maq-horoIni').value) || 0;
-  const fin  = parseFloat(document.getElementById('maq-horoFin').value) || 0;
-  const el   = document.getElementById('horoDiff');
-  if (fin > ini) {
-    el.textContent = (fin - ini).toFixed(1) + ' hrs';
-    el.style.color = 'var(--green)';
-  } else if (fin > 0 && fin <= ini) {
-    el.textContent = 'Verificar valores';
-    el.style.color = 'var(--red)';
-  } else {
-    el.textContent = '— hrs';
-    el.style.color = 'var(--green)';
-  }
+  const ini=parseFloat(document.getElementById('maq-horoIni').value)||0;
+  const fin=parseFloat(document.getElementById('maq-horoFin').value)||0;
+  const el=document.getElementById('horoDiff');
+  if(fin>ini){el.textContent=(fin-ini).toFixed(1)+' hrs';el.style.color='var(--green)';}
+  else if(fin>0&&fin<=ini){el.textContent='Verificar valores';el.style.color='var(--red)';}
+  else{el.textContent='— hrs';el.style.color='var(--green)';}
 }
 
 function calcOpTotal() {
-  // Mostrar subtipo mantenimiento si hay horas
-  const hrsMant = parseFloat(document.getElementById('maq-hrsMant').value) || 0;
-  document.getElementById('mantSubtipo').style.display = hrsMant > 0 ? 'block' : 'none';
-  if (hrsMant === 0) selectedMant = null;
-
-  const vals  = ['maq-hrsOp','maq-hrsMant','maq-hrsStandby','maq-hrsSinFrente']
-    .map(id => parseFloat(document.getElementById(id).value) || 0);
-  document.getElementById('opTotal').textContent = vals.reduce((a,b) => a+b, 0).toFixed(1) + ' hrs';
+  const ids=['maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador'];
+  const vals = ids.slice(1).map(id=>parseFloat(document.getElementById(id).value)||0);
+  document.getElementById('opTotal').textContent = vals.reduce((a,b)=>a+b,0).toFixed(1)+' hrs';
 }
 
-function selectMant(btn, val) {
-  document.getElementById('mant-prog').classList.remove('selected');
-  document.getElementById('mant-correc').classList.remove('selected');
-  btn.classList.add('selected');
-  selectedMant = val;
-}
-
-/* ── TIPO DE EQUIPO → secciones dinámicas ── */
 function onTipoEquipoChange() {
-  const val = document.getElementById('maq-tipoEquipo').value;
-  document.getElementById('section-tolva').classList.toggle('hidden', val !== 'Camión Tolva');
-  document.getElementById('section-aljibe').classList.toggle('hidden', val !== 'Camión Aljibe');
-  selectedTipoMaterial = null;
-  // Reset tolva/aljibe fields
-  ['tolva-relleno','tolva-excavacion'].forEach(id => document.getElementById(id).style.display = 'none');
+  const val=document.getElementById('maq-tipoEquipo').value;
+  document.getElementById('section-tolva').classList.toggle('hidden', val!=='Camión Tolva');
+  document.getElementById('section-aljibe').classList.toggle('hidden', val!=='Camión Aljibe');
+  selectedTipoMaterial=null;
+  ['tolva-relleno','tolva-excavacion'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('tolva-relleno-btn').classList.remove('selected');
   document.getElementById('tolva-excav-btn').classList.remove('selected');
 }
 
 function selectTipoMaterial(tipo) {
-  selectedTipoMaterial = tipo;
-  document.getElementById('tolva-relleno').style.display    = tipo === 'relleno'    ? 'block' : 'none';
-  document.getElementById('tolva-excavacion').style.display = tipo === 'excavacion' ? 'block' : 'none';
-  document.getElementById('tolva-relleno-btn').classList.toggle('selected', tipo === 'relleno');
-  document.getElementById('tolva-excav-btn').classList.toggle('selected',   tipo === 'excavacion');
+  selectedTipoMaterial=tipo;
+  document.getElementById('tolva-relleno').style.display=tipo==='relleno'?'block':'none';
+  document.getElementById('tolva-excavacion').style.display=tipo==='excavacion'?'block':'none';
+  document.getElementById('tolva-relleno-btn').classList.toggle('selected',tipo==='relleno');
+  document.getElementById('tolva-excav-btn').classList.toggle('selected',tipo==='excavacion');
 }
 
-/* ══════════════════════════════════════
-   ACTIVIDADES DINÁMICAS
-   Cada actividad tiene: descripción + frente + capataz
-══════════════════════════════════════ */
 function addActividad() {
   actividadCount++;
-  const idx = actividadCount;
-  const container = document.getElementById('actividadesContainer');
-  const div = document.createElement('div');
-  div.className = 'actividad-card';
-  div.id = `act-card-${idx}`;
-  div.innerHTML = `
+  const idx=actividadCount;
+  const c=document.getElementById('actividadesContainer');
+  const div=document.createElement('div');
+  div.className='actividad-card'; div.id=`act-card-${idx}`;
+  div.innerHTML=`
     <div class="actividad-card-head">
       <span class="actividad-card-num">Actividad ${idx}</span>
-      ${idx > 1 ? `<button class="actividad-del" onclick="removeActividad(${idx})">✕</button>` : ''}
+      ${idx>1?`<button class="actividad-del" onclick="removeActividad(${idx})">✕</button>`:''}
     </div>
-    <div class="field">
-      <label>Descripción de la actividad</label>
-      <input type="text" id="act-desc-${idx}" placeholder="Describe la actividad realizada...">
-    </div>
-    <div class="field">
-      <label>Frente de Trabajo</label>
+    <div class="field"><label>Descripción</label><input type="text" id="act-desc-${idx}" placeholder="Describe la actividad realizada..."></div>
+    <div class="field"><label>Frente de Trabajo</label>
       <select id="act-frente-${idx}">
         <option value="">Seleccionar frente...</option>
-        ${FRENTES.map(f => `<option value="${f}">${f}</option>`).join('')}
+        ${FRENTES.map(f=>`<option value="${f}">${f}</option>`).join('')}
       </select>
     </div>
-    <div class="field" style="margin:0">
-      <label>Nombre Capataz</label>
-      <input type="text" id="act-capataz-${idx}" placeholder="Nombre del capataz responsable">
-    </div>
-  `;
-  container.appendChild(div);
+    <div class="field" style="margin:0"><label>Nombre Capataz</label><input type="text" id="act-capataz-${idx}" placeholder="Nombre del capataz responsable"></div>`;
+  c.appendChild(div);
 }
+function removeActividad(idx) { document.getElementById(`act-card-${idx}`)?.remove(); }
 
-function removeActividad(idx) {
-  document.getElementById(`act-card-${idx}`)?.remove();
-}
-
-/* ══════════════════════════════════════
-   GUARDAR REPORT
-══════════════════════════════════════ */
+/* ══ GUARDAR ══ */
 function guardarMaquinaria() {
-  const operador = document.getElementById('maq-operador').value.trim();
-  const equipo   = document.getElementById('maq-tipoEquipo').value;
+  const operador=document.getElementById('maq-operador').value.trim();
+  const equipo=document.getElementById('maq-tipoEquipo').value;
+  if(!operador){showToast('⚠️ Nombre del operador obligatorio','warn');return;}
+  if(!equipo){showToast('⚠️ Selecciona el tipo de equipo','warn');return;}
 
-  if (!operador) { showToast('⚠️ Nombre del operador obligatorio', 'warn'); return; }
-  if (!equipo)   { showToast('⚠️ Selecciona el tipo de equipo', 'warn'); return; }
-
-  // Recolectar actividades
-  const actividades = [];
-  document.querySelectorAll('[id^="act-card-"]').forEach(card => {
-    const idx  = card.id.split('-')[2];
-    const desc = document.getElementById(`act-desc-${idx}`)?.value.trim();
-    if (desc) {
-      actividades.push({
-        descripcion: desc,
-        frente:      document.getElementById(`act-frente-${idx}`)?.value  || '',
-        capataz:     document.getElementById(`act-capataz-${idx}`)?.value.trim() || '',
-      });
-    }
+  // Actividades
+  const actividades=[];
+  document.querySelectorAll('[id^="act-card-"]').forEach(card=>{
+    const idx=card.id.split('-')[2];
+    const desc=document.getElementById(`act-desc-${idx}`)?.value.trim();
+    if(desc) actividades.push({ descripcion:desc, frente:document.getElementById(`act-frente-${idx}`)?.value||'', capataz:document.getElementById(`act-capataz-${idx}`)?.value.trim()||'' });
   });
+  if(!actividades.length){showToast('⚠️ Agrega al menos una actividad','warn');return;}
 
-  if (!actividades.length) { showToast('⚠️ Agrega al menos una actividad', 'warn'); return; }
+  // Tiempos
+  const tiempos={};
+  TIEMPO_FIELDS.forEach(f=>{tiempos[f.id]=parseFloat(document.getElementById(f.id)?.value)||0;});
 
-  // Datos específicos según tipo de equipo
-  let datosEspecificos = null;
-  if (equipo === 'Camión Tolva') {
-    if (!selectedTipoMaterial) { showToast('⚠️ Selecciona el tipo de material (Tolva)', 'warn'); return; }
-    if (selectedTipoMaterial === 'relleno') {
-      datosEspecificos = {
-        tipo: 'Camión Tolva',
-        material: 'Relleno',
-        pozo:    document.getElementById('tolva-pozo').value.trim(),
-        vueltas: parseFloat(document.getElementById('tolva-vueltas-rell').value) || 0,
-        m3:      parseFloat(document.getElementById('tolva-m3-rell').value)      || 0,
-      };
-    } else {
-      datosEspecificos = {
-        tipo: 'Camión Tolva',
-        material: 'Excavación',
-        vueltas: parseFloat(document.getElementById('tolva-vueltas-excav').value) || 0,
-        m3:      parseFloat(document.getElementById('tolva-m3-excav').value)      || 0,
-      };
-    }
-  } else if (equipo === 'Camión Aljibe') {
-    datosEspecificos = {
-      tipo:     'Camión Aljibe',
-      cachimba: document.getElementById('aljibe-cachimba').value.trim(),
-      vueltas:  parseFloat(document.getElementById('aljibe-vueltas').value) || 0,
-      m3:       parseFloat(document.getElementById('aljibe-m3').value)      || 0,
-    };
+  // Datos especiales
+  let datosEspecificos=null;
+  if(equipo==='Camión Tolva'){
+    if(!selectedTipoMaterial){showToast('⚠️ Selecciona tipo de material (Tolva)','warn');return;}
+    datosEspecificos = selectedTipoMaterial==='relleno'
+      ? { tipo:'Camión Tolva', material:'Relleno', pozo:document.getElementById('tolva-pozo').value.trim(), vueltas:parseFloat(document.getElementById('tolva-vueltas-rell').value)||0, m3:parseFloat(document.getElementById('tolva-m3-rell').value)||0 }
+      : { tipo:'Camión Tolva', material:'Excavación', vueltas:parseFloat(document.getElementById('tolva-vueltas-excav').value)||0, m3:parseFloat(document.getElementById('tolva-m3-excav').value)||0 };
+  } else if(equipo==='Camión Aljibe'){
+    datosEspecificos={ tipo:'Camión Aljibe', cachimba:document.getElementById('aljibe-cachimba').value.trim(), vueltas:parseFloat(document.getElementById('aljibe-vueltas').value)||0, m3:parseFloat(document.getElementById('aljibe-m3').value)||0 };
   }
 
-  const record = {
-    id:        Date.now(),
-    tipo:      'maquinaria',
-    timestamp: new Date().toISOString(),
-    fecha:     document.getElementById('maq-fecha').value,
-    turno:     selectedTurno,
-    creadoPor: { uid: currentUser.uid, nombre: currentUser.nombre, rol: currentUser.rol },
-
-    operador:  { nombre: operador },
-    equipo: {
-      tipo:    equipo,
-      numero:  document.getElementById('maq-nEquipo').value.trim(),
-      patente: document.getElementById('maq-patente').value.toUpperCase().trim(),
-    },
-    horometro: {
-      inicial: parseFloat(document.getElementById('maq-horoIni').value) || 0,
-      final:   parseFloat(document.getElementById('maq-horoFin').value) || 0,
-    },
-    kilometraje: {
-      inicial: parseFloat(document.getElementById('maq-kmIni').value) || 0,
-      final:   parseFloat(document.getElementById('maq-kmFin').value) || 0,
-    },
+  const record={
+    id:Date.now(), tipo:'maquinaria', timestamp:new Date().toISOString(),
+    fecha:document.getElementById('maq-fecha').value, turno:selectedTurno,
+    nDailyReport: records.filter(r=>r.fecha===document.getElementById('maq-fecha').value).length+1,
+    creadoPor:{ uid:currentUser.uid, nombre:currentUser.nombre, rol:currentUser.rol },
+    operador:{ nombre:operador },
+    equipo:{ tipo:equipo, numero:document.getElementById('maq-nEquipo').value.trim(), patente:document.getElementById('maq-patente').value.toUpperCase().trim() },
+    horometro:{ inicial:parseFloat(document.getElementById('maq-horoIni').value)||0, final:parseFloat(document.getElementById('maq-horoFin').value)||0 },
+    kilometraje:{ inicial:parseFloat(document.getElementById('maq-kmIni').value)||0, final:parseFloat(document.getElementById('maq-kmFin').value)||0 },
     actividades,
-    operatividad: {
-      hrsOperativas: parseFloat(document.getElementById('maq-hrsOp').value)       || 0,
-      hrsMantencion: parseFloat(document.getElementById('maq-hrsMant').value)      || 0,
-      tipoMantencion: selectedMant || '',
-      hrsStandby:    parseFloat(document.getElementById('maq-hrsStandby').value)   || 0,
-      hrsSinFrente:  parseFloat(document.getElementById('maq-hrsSinFrente').value) || 0,
+    operatividad:{
+      hmJornada:        parseFloat(document.getElementById('maq-hmJornada').value)||0,
+      hrsOperativas:    parseFloat(document.getElementById('maq-hrsOp').value)||0,
+      mantCorrectiva:   parseFloat(document.getElementById('maq-mantCorrectiva').value)||0,
+      mantPreventiva:   parseFloat(document.getElementById('maq-mantPreventiva').value)||0,
+      fueraServicio:    parseFloat(document.getElementById('maq-fueraServicio').value)||0,
+      enEspera:         parseFloat(document.getElementById('maq-enEspera').value)||0,
+      sinOperador:      parseFloat(document.getElementById('maq-sinOperador').value)||0,
     },
+    tiempos,
     datosEspecificos,
-    observaciones: document.getElementById('maq-observaciones').value.trim(),
-    estado: { synced: false, syncedAt: null },
+    observaciones:document.getElementById('maq-observaciones').value.trim(),
+    estado:{ synced:false, syncedAt:null },
   };
 
   records.unshift(record);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  renderRecords();
-  updateStats();
-  updateSyncUI();
+  renderRecords(); updateStats(); updateSyncUI();
   showToast('✔ Report guardado correctamente');
-  resetMaqForm();
-  showTab('records');
+  resetMaqForm(); showTab('records');
 }
 
 function resetMaqForm() {
   ['maq-operador','maq-tipoEquipo','maq-nEquipo','maq-patente',
    'maq-horoIni','maq-horoFin','maq-kmIni','maq-kmFin',
-   'maq-hrsOp','maq-hrsMant','maq-hrsStandby','maq-hrsSinFrente',
-   'maq-observaciones','tolva-pozo','tolva-vueltas-rell','tolva-m3-rell',
-   'tolva-vueltas-excav','tolva-m3-excav','aljibe-cachimba','aljibe-vueltas','aljibe-m3'
-  ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-
-  document.getElementById('actividadesContainer').innerHTML = '';
-  document.getElementById('horoDiff').textContent = '— hrs';
-  document.getElementById('opTotal').textContent  = '0.0 hrs';
-  document.getElementById('mantSubtipo').style.display   = 'none';
+   'maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva',
+   'maq-fueraServicio','maq-enEspera','maq-sinOperador','maq-observaciones',
+   'tolva-pozo','tolva-vueltas-rell','tolva-m3-rell','tolva-vueltas-excav',
+   'tolva-m3-excav','aljibe-cachimba','aljibe-vueltas','aljibe-m3'
+  ].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  TIEMPO_FIELDS.forEach(f=>{const el=document.getElementById(f.id);if(el)el.value='';});
+  document.getElementById('actividadesContainer').innerHTML='';
+  document.getElementById('horoDiff').textContent='— hrs';
+  document.getElementById('opTotal').textContent='0.0 hrs';
   document.getElementById('section-tolva').classList.add('hidden');
   document.getElementById('section-aljibe').classList.add('hidden');
-  document.getElementById('tolva-relleno').style.display    = 'none';
-  document.getElementById('tolva-excavacion').style.display = 'none';
-
-  // Reset turno buttons
-  document.querySelectorAll('.turno-btn').forEach((b,i) => b.classList.toggle('selected', i === 0));
-  selectedTurno = 'A'; selectedMant = null; selectedTipoMaterial = null; actividadCount = 0;
-  document.getElementById('maq-fecha').valueAsDate = new Date();
-  addActividad(); // Agregar primera actividad por defecto
+  document.getElementById('tolva-relleno').style.display='none';
+  document.getElementById('tolva-excavacion').style.display='none';
+  document.querySelectorAll('.turno-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
+  selectedTurno='A'; selectedTipoMaterial=null; actividadCount=0;
+  document.getElementById('maq-fecha').valueAsDate=new Date();
+  addActividad();
 }
 
-/* ══════════════════════════════════════
-   RENDER REGISTROS
-══════════════════════════════════════ */
+/* ══ RENDER REGISTROS ══ */
 function setFilter(f) {
-  activeFilter = f;
-  ['filterAll','filterPending','filterSynced'].forEach(id => {
-    document.getElementById(id)?.classList.remove('active');
-  });
-  document.getElementById(f === 'all' ? 'filterAll' : f === 'pending' ? 'filterPending' : 'filterSynced')
-    ?.classList.add('active');
+  activeFilter=f;
+  ['filterAll','filterPending','filterSynced'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  document.getElementById(f==='all'?'filterAll':f==='pending'?'filterPending':'filterSynced')?.classList.add('active');
   renderRecords();
 }
 
 function renderRecords() {
-  const list     = document.getElementById('recordsList');
-  const fechaFil = document.getElementById('filterFecha')?.value;
-  if (!list) return;
-
-  let filtered = records;
-  if (fechaFil) filtered = filtered.filter(r => r.fecha === fechaFil);
-  if (activeFilter === 'pending') filtered = filtered.filter(r => !r.estado?.synced);
-  if (activeFilter === 'synced')  filtered = filtered.filter(r =>  r.estado?.synced);
-
-  if (!filtered.length) {
-    list.innerHTML = `
-      <div class="no-records">
-        <div class="no-records-ico">📋</div>
-        <div class="no-records-txt">Sin registros${fechaFil ? ' para esta fecha' : ''}.<br>Completa el formulario para comenzar.</div>
-      </div>`;
+  const list=document.getElementById('recordsList');
+  const fechaFil=document.getElementById('filterFecha')?.value;
+  if(!list) return;
+  let filtered=records;
+  if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
+  if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
+  if(activeFilter==='synced')  filtered=filtered.filter(r=> r.estado?.synced);
+  if(!filtered.length){
+    list.innerHTML=`<div class="no-records"><div class="no-records-ico">📋</div><div class="no-records-txt">Sin registros${fechaFil?' para esta fecha':''}.<br>Completa el formulario para comenzar.</div></div>`;
     return;
   }
-
-  list.innerHTML = filtered.map(r => {
-    const synced   = r.estado?.synced ?? false;
-    const hrsOp    = r.operatividad?.hrsOperativas ?? 0;
-    // frente: tomar del primer actividad o de ubicacion (compatibilidad)
-    const primeraAct = r.actividades?.[0];
-    const frente   = (typeof primeraAct === 'object' ? primeraAct?.frente : null) ?? r.ubicacion?.frente ?? '—';
-    const nEquipo  = r.equipo?.numero  ?? '';
-    const tipoEq   = r.equipo?.tipo    ?? 'Equipo';
-    const operador = r.operador?.nombre ?? '—';
-    const acts     = (r.actividades || []).map(a => typeof a === 'string' ? a : a?.descripcion).filter(Boolean);
-
+  list.innerHTML=filtered.map(r=>{
+    const synced=r.estado?.synced??false;
+    const hrsOp=r.operatividad?.hrsOperativas??0;
+    const tipoEq=r.equipo?.tipo??'Equipo';
+    const nEquipo=r.equipo?.numero??'';
+    const operador=r.operador?.nombre??'—';
+    const acts=(r.actividades||[]).map(a=>typeof a==='string'?a:a?.descripcion).filter(Boolean);
+    const primeraAct=r.actividades?.[0];
+    const frente=(typeof primeraAct==='object'?primeraAct?.frente:null)??r.ubicacion?.frente??'—';
     return `
-    <div class="record-card ${synced ? 'synced' : 'pending'}" onclick="openModal('${r.id}')">
+    <div class="record-card ${synced?'synced':'pending'}" onclick="openModal('${r.id}')">
       <div class="rc-top">
-        <div>
-          <div class="rc-equipo">${tipoEq}${nEquipo ? ' · ' + nEquipo : ''}</div>
-          <div class="rc-operador">👷 ${operador}</div>
-        </div>
-        <span class="status-pill ${synced ? 'pill-synced' : 'pill-pending'}">
-          ${synced ? '✓ sync' : '⏳ pendiente'}
-        </span>
+        <div><div class="rc-equipo">${tipoEq}${nEquipo?' · '+nEquipo:''}</div><div class="rc-operador">👷 ${operador}</div></div>
+        <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓ sync':'⏳ pendiente'}</span>
       </div>
       <div class="rc-meta">
-        <span class="rc-meta-item">📅 ${r.fecha || '—'}</span>
-        <span class="rc-meta-item">🔄 Turno ${r.turno || '—'}</span>
-        <span class="rc-meta-item">📍 ${frente.length > 22 ? frente.slice(0,22)+'…' : frente}</span>
+        <span class="rc-meta-item">📅 ${r.fecha||'—'}</span>
+        <span class="rc-meta-item">🔄 Turno ${r.turno||'—'}</span>
+        <span class="rc-meta-item">📍 ${frente.length>22?frente.slice(0,22)+'…':frente}</span>
         <span class="rc-meta-item">⏱ ${Number(hrsOp).toFixed(1)} HM op.</span>
       </div>
-      ${acts.length ? `
-        <div class="rc-acts">
-          ${acts.slice(0,2).map(a => `· ${a}`).join('<br>')}
-          ${acts.length > 2 ? `<br>· +${acts.length-2} más...` : ''}
-        </div>` : ''}
+      ${acts.length?`<div class="rc-acts">${acts.slice(0,2).map(a=>`· ${a}`).join('<br>')}${acts.length>2?`<br>· +${acts.length-2} más...`:''}</div>`:''}
     </div>`;
   }).join('');
 }
 
-/* ══════════════════════════════════════
-   MODAL DETALLE
-══════════════════════════════════════ */
+/* ══ MODAL ══ */
 function openModal(id) {
-  const r = records.find(rec => String(rec.id) === String(id));
-  if (!r) return;
-
-  const synced    = r.estado?.synced ?? false;
-  const horoTot   = ((r.horometro?.final || 0) - (r.horometro?.inicial || 0)).toFixed(1);
-  const opTot     = (
-    (r.operatividad?.hrsOperativas || 0) +
-    (r.operatividad?.hrsMantencion || 0) +
-    (r.operatividad?.hrsStandby    || 0) +
-    (r.operatividad?.hrsSinFrente  || 0)
-  ).toFixed(1);
-
-  const content = document.getElementById('modalContent');
-  content.innerHTML = `
-    <div class="modal-title">${r.equipo?.tipo || 'Equipo'} ${r.equipo?.numero ? '· ' + r.equipo.numero : ''}</div>
-    <div class="modal-subtitle">
-      📅 ${r.fecha} · Turno ${r.turno} ·
-      <span class="status-pill ${synced ? 'pill-synced' : 'pill-pending'}">${synced ? '✓ sync' : '⏳ pendiente'}</span>
-    </div>
-
+  const r=records.find(rec=>String(rec.id)===String(id)); if(!r) return;
+  const synced=r.estado?.synced??false;
+  const horoTot=((r.horometro?.final||0)-(r.horometro?.inicial||0)).toFixed(1);
+  const op=r.operatividad||{};
+  const opTot=(Object.values(op).reduce((a,b)=>a+Number(b),0)-Number(op.hmJornada||0)).toFixed(1);
+  const content=document.getElementById('modalContent');
+  content.innerHTML=`
+    <div class="modal-title">${r.equipo?.tipo||'Equipo'}${r.equipo?.numero?' · '+r.equipo.numero:''}</div>
+    <div class="modal-subtitle">📅 ${r.fecha} · Turno ${r.turno} · <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓ sync':'⏳ pendiente'}</span></div>
     <div class="modal-section-title">Operador / Equipo</div>
-    ${dr('Operador',  r.operador?.nombre)}
-    ${dr('Tipo',      r.equipo?.tipo)}
-    ${dr('N° Interno', r.equipo?.numero || '—')}
-    ${dr('Patente',   r.equipo?.patente || '—')}
-
-    <div class="modal-section-title">Horómetro / Kilometraje</div>
-    ${dr('Horómetro ini', r.horometro?.inicial + ' hrs')}
-    ${dr('Horómetro fin', r.horometro?.final   + ' hrs')}
-    ${dr('Total horómetro', horoTot + ' hrs')}
-    ${dr('Km inicial', r.kilometraje?.inicial || '—')}
-    ${dr('Km final',   r.kilometraje?.final   || '—')}
-
-    <div class="modal-section-title">Actividades</div>
-    ${(r.actividades || []).map((a, i) => {
-      if (typeof a === 'string') return dr(i+1, a);
-      return `
-        <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:7px">
-          <div style="font-size:11px;color:var(--blue);margin-bottom:5px;font-family:'DM Mono',monospace">Actividad ${i+1}</div>
-          ${dr('Descripción', a.descripcion || '—')}
-          ${dr('Frente', a.frente || '—')}
-          ${dr('Capataz', a.capataz || '—')}
-        </div>`;
-    }).join('')}
-
+    ${dr('Operador',r.operador?.nombre)}${dr('N° Interno',r.equipo?.numero||'—')}${dr('Patente',r.equipo?.patente||'—')}
+    <div class="modal-section-title">Horómetro</div>
+    ${dr('Inicial',r.horometro?.inicial+' hrs')}${dr('Final',r.horometro?.final+' hrs')}${dr('Total',horoTot+' hrs')}
     <div class="modal-section-title">Operatividad (HM)</div>
-    ${dr('Operativas',    (r.operatividad?.hrsOperativas || 0) + ' hrs')}
-    ${dr('Mantenimiento', (r.operatividad?.hrsMantencion || 0) + ' hrs')}
-    ${r.operatividad?.tipoMantencion ? dr('Tipo Mantención', r.operatividad.tipoMantencion) : ''}
-    ${dr('Stand By',      (r.operatividad?.hrsStandby    || 0) + ' hrs')}
-    ${dr('Sin Frente',    (r.operatividad?.hrsSinFrente  || 0) + ' hrs')}
-    ${dr('TOTAL TURNO',   opTot + ' hrs')}
-
-    ${r.datosEspecificos ? `
-      <div class="modal-section-title">${r.datosEspecificos.tipo === 'Camión Aljibe' ? 'Datos Camión Aljibe' : 'Datos Camión Tolva'}</div>
-      ${r.datosEspecificos.material ? dr('Material', r.datosEspecificos.material) : ''}
-      ${r.datosEspecificos.pozo     ? dr('Pozo/Extracción', r.datosEspecificos.pozo) : ''}
-      ${r.datosEspecificos.cachimba ? dr('Cachimba', r.datosEspecificos.cachimba) : ''}
-      ${dr('Vueltas', r.datosEspecificos.vueltas || 0)}
-      ${dr('M³', r.datosEspecificos.m3 || 0)}
-    ` : ''}
-
-    ${r.pannes?.length ? `
-      <div class="modal-section-title">Pannes / Interferencias</div>
-      ${r.pannes.map(p => dr(`${p.inicio}–${p.fin}`, p.descripcion)).join('')}
-    ` : ''}
-
+    ${dr('HM Jornada',(op.hmJornada||0)+' hrs')}
+    ${dr('Operativas',(op.hrsOperativas||0)+' hrs')}
+    ${dr('Mant. Correctiva',(op.mantCorrectiva||0)+' hrs')}
+    ${dr('Mant. Preventiva',(op.mantPreventiva||0)+' hrs')}
+    ${dr('Fuera de Servicio',(op.fueraServicio||0)+' hrs')}
+    ${dr('En Espera',(op.enEspera||0)+' hrs')}
+    ${dr('Sin Operador',(op.sinOperador||0)+' hrs')}
+    <div class="modal-section-title">Actividades</div>
+    ${(r.actividades||[]).map((a,i)=>`
+      <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:7px">
+        <div style="font-size:11px;color:var(--blue);margin-bottom:5px;font-family:'DM Mono',monospace">Actividad ${i+1}</div>
+        ${dr('Descripción',a.descripcion||a||'—')}${dr('Frente',a.frente||'—')}${dr('Capataz',a.capataz||'—')}
+      </div>`).join('')}
+    ${r.datosEspecificos?`
+      <div class="modal-section-title">${r.datosEspecificos.tipo==='Camión Aljibe'?'Datos Aljibe':'Datos Tolva'}</div>
+      ${r.datosEspecificos.material?dr('Material',r.datosEspecificos.material):''}
+      ${r.datosEspecificos.pozo?dr('Pozo',r.datosEspecificos.pozo):''}
+      ${r.datosEspecificos.cachimba?dr('Cachimba',r.datosEspecificos.cachimba):''}
+      ${dr('Vueltas',r.datosEspecificos.vueltas||0)}${dr('M³',r.datosEspecificos.m3||0)}
+    `:''}
+    ${r.observaciones?`<div class="modal-section-title">Observaciones</div><div style="font-size:13px;color:var(--text2);padding:8px 0;line-height:1.6">${r.observaciones}</div>`:''}
     <div class="modal-section-title">Metadata</div>
-    ${dr('Creado por', r.creadoPor?.nombre || '—')}
-    ${dr('Timestamp',  new Date(r.timestamp).toLocaleString('es-CL'))}
-    ${synced ? dr('Sincronizado', new Date(r.estado.syncedAt).toLocaleString('es-CL')) : ''}
-    ${r.observaciones ? `
-      <div class="modal-section-title">Observaciones</div>
-      <div style="font-size:13px; color:var(--text2); padding:8px 0; line-height:1.6">${r.observaciones}</div>
-    ` : ''}
+    ${dr('Creado por',r.creadoPor?.nombre||'—')}${dr('Timestamp',new Date(r.timestamp).toLocaleString('es-CL'))}
+    ${synced?dr('Sincronizado',new Date(r.estado.syncedAt).toLocaleString('es-CL')):''}
   `;
-
   document.getElementById('modalOverlay').classList.add('show');
 }
+function dr(label,val){return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-val">${val??'—'}</span></div>`;}
+function closeModal(e){if(e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.remove('show');}
 
-// Helper fila detalle
-function dr(label, val) {
-  return `<div class="detail-row">
-    <span class="detail-label">${label}</span>
-    <span class="detail-val">${val ?? '—'}</span>
-  </div>`;
-}
-
-function closeModal(e) {
-  if (e.target === document.getElementById('modalOverlay')) {
-    document.getElementById('modalOverlay').classList.remove('show');
-  }
-}
-
-/* ══════════════════════════════════════
-   STATS
-══════════════════════════════════════ */
+/* ══ STATS ══ */
 function updateStats() {
-  const pending = records.filter(r => !r.estado?.synced).length;
-  const synced  = records.filter(r =>  r.estado?.synced).length;
-  document.getElementById('stat-total').textContent   = records.length;
-  document.getElementById('stat-pending').textContent = pending;
-  document.getElementById('stat-synced').textContent  = synced;
-  document.getElementById('sync-pending').textContent = pending;
-  document.getElementById('sync-synced').textContent  = synced;
+  const pending=records.filter(r=>!r.estado?.synced).length;
+  const synced=records.filter(r=>r.estado?.synced).length;
+  document.getElementById('stat-total').textContent=records.length;
+  document.getElementById('stat-pending').textContent=pending;
+  document.getElementById('stat-synced').textContent=synced;
+  document.getElementById('sync-pending').textContent=pending;
+  document.getElementById('sync-synced').textContent=synced;
 }
 
-/* ══════════════════════════════════════
-   SYNC CON FIREBASE
-══════════════════════════════════════ */
+/* ══ SYNC ══ */
 async function syncNow() {
-  if (!isOnline || !window._firebaseReady) return;
-  const pending = records.filter(r => !r.estado?.synced);
-  if (!pending.length) return;
-
-  const btn = document.getElementById('syncBtn');
-  btn.textContent = '⏳ Sincronizando...';
-  btn.disabled = true;
-
-  let ok = 0, err = 0;
-
-  for (const record of pending) {
-    try {
-      const ref = window._fsDoc(window._db, 'reportes_maquinaria', String(record.id));
-      await window._fsSetDoc(ref, {
-        ...record,
-        estado: { synced: true, syncedAt: new Date().toISOString() },
-      });
-      record.estado = { synced: true, syncedAt: new Date().toISOString() };
-      ok++;
-    } catch (e) {
-      console.error('Sync error:', e);
-      err++;
-    }
+  if(!isOnline||!window._firebaseReady) return;
+  const pending=records.filter(r=>!r.estado?.synced);
+  if(!pending.length) return;
+  const btn=document.getElementById('syncBtn');
+  btn.textContent='⏳ Sincronizando...'; btn.disabled=true;
+  let ok=0,err=0;
+  for(const record of pending){
+    try{
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(record.id)),{...record,estado:{synced:true,syncedAt:new Date().toISOString()}});
+      record.estado={synced:true,syncedAt:new Date().toISOString()}; ok++;
+    } catch(e){console.error(e);err++;}
   }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  renderRecords();
-  updateStats();
-
-  btn.textContent = '🔄 Sincronizar ahora';
-  btn.disabled    = records.filter(r => !r.estado?.synced).length === 0;
-
-  if (err === 0) {
-    showToast(`✔ ${ok} report(s) sincronizados`);
-    updateSyncUI();
-  } else {
-    showToast(`⚠️ ${ok} ok, ${err} con error`, 'warn');
-  }
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
+  renderRecords(); updateStats();
+  btn.textContent='🔄 Sincronizar ahora'; btn.disabled=records.filter(r=>!r.estado?.synced).length===0;
+  if(err===0){showToast(`✔ ${ok} report(s) sincronizados`);updateSyncUI();}
+  else showToast(`⚠️ ${ok} ok, ${err} con error`,'warn');
 }
 
 function updateSyncUI() {
-  const dot     = document.getElementById('syncDot');
-  const ico     = document.getElementById('syncBigIco');
-  const title   = document.getElementById('syncStatusTitle');
-  const desc    = document.getElementById('syncStatusDesc');
-  const btn     = document.getElementById('syncBtn');
-  const pending = records.filter(r => !r.estado?.synced).length;
-
-  if (dot) dot.className = 'sync-dot' + (isOnline ? ' online' : '');
-
-  if (!ico) return;
-  if (isOnline) {
-    ico.textContent   = pending === 0 ? '✅' : '🔄';
-    title.textContent = pending === 0 ? 'Todo sincronizado' : `${pending} report(s) pendiente(s)`;
-    desc.textContent  = 'Conectado. Presiona Sincronizar para subir los registros pendientes.';
-    if (btn) btn.disabled = pending === 0;
+  const dot=document.getElementById('syncDot');
+  const ico=document.getElementById('syncBigIco');
+  const title=document.getElementById('syncStatusTitle');
+  const desc=document.getElementById('syncStatusDesc');
+  const btn=document.getElementById('syncBtn');
+  const pending=records.filter(r=>!r.estado?.synced).length;
+  if(dot) dot.className='sync-dot'+(isOnline?' online':'');
+  if(!ico) return;
+  if(isOnline){
+    ico.textContent=pending===0?'✅':'🔄';
+    title.textContent=pending===0?'Todo sincronizado':`${pending} report(s) pendiente(s)`;
+    desc.textContent='Conectado. Presiona Sincronizar para subir los registros pendientes.';
+    if(btn) btn.disabled=pending===0;
   } else {
-    ico.textContent   = '📡';
-    title.textContent = 'Sin conexión a internet';
-    desc.textContent  = 'Los reports se guardan en este dispositivo y se subirán automáticamente al recuperar señal.';
-    if (btn) btn.disabled = true;
+    ico.textContent='📡'; title.textContent='Sin conexión a internet';
+    desc.textContent='Los reports se guardan en este dispositivo y se subirán al recuperar señal.';
+    if(btn) btn.disabled=true;
   }
 }
-
-function checkOnline() {
-  isOnline = navigator.onLine;
-  updateSyncUI();
-  showToast(isOnline ? '📶 En línea' : '📡 Sin señal', isOnline ? '' : 'warn');
-}
+function checkOnline(){isOnline=navigator.onLine;updateSyncUI();showToast(isOnline?'📶 En línea':'📡 Sin señal',isOnline?'':'warn');}
 
 /* ══════════════════════════════════════
-   EXPORT CSV
+   EXPORTAR EXCEL — 4 HOJAS
 ══════════════════════════════════════ */
-function exportCSV() {
-  if (!records.length) { showToast('⚠️ No hay registros para exportar', 'warn'); return; }
+function exportExcel() {
+  if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
+  if(typeof XLSX==='undefined'){showToast('⚠️ Error cargando librería Excel','err');return;}
 
-  const headers = [
-    'ID','Fecha','Turno','Timestamp','Creado Por','Rol',
-    'Operador','Tipo Equipo','N° Equipo','Patente',
-    'Horómetro Ini','Horómetro Fin','Total Horómetro',
-    'Km Inicial','Km Final',
-    'Frente','Detalle Frente',
-    'HM Operativas','HM Mantenimiento','HM Stand By','HM Sin Frente','Total HM',
-    'Actividades','Pannes',
-    'Capataz','Supervisor','Observaciones',
-    'Sincronizado','Fecha Sync'
-  ];
+  const wb = XLSX.utils.book_new();
 
-  const rows = records.map(r => {
-    const hTot  = ((r.horometro?.final||0)-(r.horometro?.inicial||0)).toFixed(1);
-    const opTot = ((r.operatividad?.hrsOperativas||0)+(r.operatividad?.hrsMantencion||0)+
-                   (r.operatividad?.hrsStandby||0)+(r.operatividad?.hrsSinFrente||0)).toFixed(1);
-    return [
-      r.id, r.fecha, r.turno, r.timestamp,
-      r.creadoPor?.nombre||'', r.creadoPor?.rol||'',
-      r.operador?.nombre||'',
-      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'',
-      r.horometro?.inicial||0, r.horometro?.final||0, hTot,
-      r.kilometraje?.inicial||0, r.kilometraje?.final||0,
-      r.ubicacion?.frente||'', r.ubicacion?.detalle||'',
-      r.operatividad?.hrsOperativas||0, r.operatividad?.hrsMantencion||0,
-      r.operatividad?.hrsStandby||0, r.operatividad?.hrsSinFrente||0, opTot,
-      (r.actividades||[]).join(' | '),
-      (r.pannes||[]).map(p=>`${p.inicio}-${p.fin}: ${p.descripcion}`).join(' | '),
-      r.responsables?.capataz||'', r.responsables?.supervisor||'',
-      r.observaciones||'',
-      r.estado?.synced ? 'Sí' : 'No',
-      r.estado?.syncedAt || ''
-    ].map(v => `"${String(v).replace(/"/g,'""')}"`);
+  // ── Calcular acumulados por equipo ──────────────
+  // Ordenar por fecha ASC para calcular acumulados
+  const sorted = [...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const hmAcum = {};    // acumulado HM por equipo
+  const m3AcumRell={};  // acumulado M3 relleno por pozo
+  const m3AcumAlj={};   // acumulado M3 aljibe por cachimba
+
+  sorted.forEach(r => {
+    const key = (r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
+    if(!hmAcum[key]) hmAcum[key]=0;
+    hmAcum[key] += Number(r.operatividad?.hrsOperativas||0);
   });
 
-  const BOM = '\uFEFF';
-  const csv = BOM + [headers, ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `conpax_maquinaria_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(`📊 Exportando ${records.length} registro(s)`);
+  // ── HOJA 1: Control de Maquinaria ──────────────
+  const hoja1Headers = [
+    'Correlativo Planilla','N° Daily Report','Fecha','Turno','Descripción (Equipo)',
+    'N° Interno','Patente','Operador',
+    'HM Jornada','HM Operativos (Hrs)',
+    'Mantención Correctiva (Hrs)','Mantención Preventiva (Hrs)',
+    'Fuera de Servicio (Hrs)','En Espera (Hrs)','Sin Operador (Hrs)',
+    'Km Horómetro Inicial','Km Horómetro Final',
+    'HM Parcial','HM Acum',
+    'Frente (Act. 1)','Capataz (Act. 1)',
+    'Actividades','Observaciones'
+  ];
+
+  const acumPorEquipo={};
+  const hoja1Rows = sorted.map((r,idx)=>{
+    const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
+    if(!acumPorEquipo[key]) acumPorEquipo[key]=0;
+    const hmParcial=Number(r.operatividad?.hrsOperativas||0);
+    acumPorEquipo[key]+=hmParcial;
+    const primeraAct=r.actividades?.[0];
+    const frente1=typeof primeraAct==='object'?primeraAct?.frente||'':primeraAct||'';
+    const capataz1=typeof primeraAct==='object'?primeraAct?.capataz||'':'';
+    const actsStr=(r.actividades||[]).map((a,i)=>`${i+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
+    return [
+      idx+1,
+      r.nDailyReport||idx+1,
+      r.fecha||'',
+      'Turno '+(r.turno||''),
+      r.equipo?.tipo||'',
+      r.equipo?.numero||'',
+      r.equipo?.patente||'',
+      r.operador?.nombre||'',
+      Number(r.operatividad?.hmJornada||0),
+      Number(r.operatividad?.hrsOperativas||0),
+      Number(r.operatividad?.mantCorrectiva||0),
+      Number(r.operatividad?.mantPreventiva||0),
+      Number(r.operatividad?.fueraServicio||0),
+      Number(r.operatividad?.enEspera||0),
+      Number(r.operatividad?.sinOperador||0),
+      Number(r.horometro?.inicial||0),
+      Number(r.horometro?.final||0),
+      hmParcial,
+      acumPorEquipo[key],
+      frente1, capataz1,
+      actsStr,
+      r.observaciones||''
+    ];
+  });
+
+  const ws1 = XLSX.utils.aoa_to_sheet([hoja1Headers, ...hoja1Rows]);
+  // Estilos de ancho de columna
+  ws1['!cols'] = [
+    {wch:12},{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:10},{wch:20},
+    {wch:10},{wch:12},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},
+    {wch:14},{wch:14},{wch:10},{wch:10},
+    {wch:30},{wch:20},{wch:40},{wch:30}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Control Maquinaria');
+
+  // ── HOJA 2: Control Rellenos (Camión Tolva - Relleno) ──
+  const rellenos = sorted.filter(r => r.datosEspecificos?.tipo==='Camión Tolva' && r.datosEspecificos?.material==='Relleno');
+  const hoja2Headers = ['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
+  const acumRell={};
+  const hoja2Rows = rellenos.map((r,idx)=>{
+    const pozo=r.datosEspecificos?.pozo||'Sin nombre';
+    if(!acumRell[pozo]) acumRell[pozo]=0;
+    const m3=Number(r.datosEspecificos?.m3||0);
+    acumRell[pozo]+=m3;
+    return [idx+1, r.fecha||'', 'Turno '+(r.turno||''), r.operador?.nombre||'', r.equipo?.numero||'', pozo, Number(r.datosEspecificos?.vueltas||0), m3, m3, acumRell[pozo]];
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet([hoja2Headers,...hoja2Rows]);
+  ws2['!cols']=[{wch:10},{wch:12},{wch:8},{wch:20},{wch:10},{wch:28},{wch:14},{wch:12},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Control Rellenos');
+
+  // ── HOJA 3: Control Agua Industrial (Camión Aljibe) ──
+  const aljibes = sorted.filter(r => r.datosEspecificos?.tipo==='Camión Aljibe');
+  const hoja3Headers = ['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
+  const acumAlj={};
+  const hoja3Rows = aljibes.map((r,idx)=>{
+    const cachimba=r.datosEspecificos?.cachimba||'Sin nombre';
+    if(!acumAlj[cachimba]) acumAlj[cachimba]=0;
+    const m3=Number(r.datosEspecificos?.m3||0);
+    acumAlj[cachimba]+=m3;
+    return [idx+1, r.fecha||'', 'Turno '+(r.turno||''), r.operador?.nombre||'', r.equipo?.numero||'', cachimba, Number(r.datosEspecificos?.vueltas||0), m3, m3, acumAlj[cachimba]];
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet([hoja3Headers,...hoja3Rows]);
+  ws3['!cols']=[{wch:10},{wch:12},{wch:8},{wch:20},{wch:10},{wch:28},{wch:14},{wch:12},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Control Agua Industrial');
+
+  // ── HOJA 4: Detalle de Tiempos ──────────────────
+  const hoja4Headers = ['N° Report','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción','Horas'];
+  const hoja4Rows=[];
+  sorted.forEach((r,idx)=>{
+    TIEMPO_FIELDS.forEach(f=>{
+      const hrs=Number(r.tiempos?.[f.id]||0);
+      if(hrs>0){
+        hoja4Rows.push([
+          idx+1, r.fecha||'', 'Turno '+(r.turno||''),
+          r.equipo?.tipo||'', r.equipo?.numero||'', r.operador?.nombre||'',
+          f.grupo, f.label, hrs
+        ]);
+      }
+    });
+  });
+  // Si no hay datos de tiempos, igual mostramos las categorías vacías del primer reporte
+  if(hoja4Rows.length===0 && sorted.length>0){
+    TIEMPO_FIELDS.forEach(f=>{
+      hoja4Rows.push([1,sorted[0].fecha||'','',sorted[0].equipo?.tipo||'','','',f.grupo,f.label,0]);
+    });
+  }
+  const ws4 = XLSX.utils.aoa_to_sheet([hoja4Headers,...hoja4Rows]);
+  ws4['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:20},{wch:25},{wch:45},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Detalle de Tiempos');
+
+  // ── Descargar ───────────────────────────────────
+  const fecha=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `CONPAX_Report_${fecha}.xlsx`);
+  showToast(`📊 Excel generado con ${records.length} reporte(s)`);
 }
 
-/* ══════════════════════════════════════
-   TOAST
-══════════════════════════════════════ */
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (type === 'warn' ? ' warn' : type === 'err' ? ' err' : '');
+/* ══ TOAST ══ */
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(type==='warn'?' warn':type==='err'?' err':'');
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
 </script>
 </body>
