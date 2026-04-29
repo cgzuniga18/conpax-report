@@ -491,6 +491,30 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
   background: var(--blue-dim);
 }
 
+/* Actividad card dinámica */
+.actividad-card {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--rr);
+  padding: 13px;
+  margin-bottom: 10px;
+}
+.actividad-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.actividad-card-num {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--blue); background: var(--blue-dim);
+  border: 1px solid var(--blue-glow);
+  border-radius: 5px; padding: 2px 7px;
+}
+.actividad-del {
+  background: none; border: none;
+  color: var(--red); font-size: 16px;
+  cursor: pointer; padding: 2px 6px; line-height: 1;
+}
+
 /* Horómetro diff */
 .horo-diff {
   background: var(--input-bg);
@@ -976,51 +1000,65 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
         <div class="field" style="margin:0">
           <label>Turno</label>
           <div class="turno-options">
-            <button class="turno-btn selected" onclick="selectTurno(this,'A')">☀️ Turno A</button>
-            <button class="turno-btn" onclick="selectTurno(this,'B')">🌙 Turno B</button>
+            <button class="turno-btn selected" onclick="selectTurno(this,'A')">Turno A</button>
+            <button class="turno-btn" onclick="selectTurno(this,'B')">Turno B</button>
           </div>
         </div>
       </div>
 
-      <!-- 01. Datos Operador -->
+      <!-- 01. Información General -->
       <div class="section-card">
         <div class="section-head">
           <span class="section-num">01</span>
-          <span class="section-title">Datos Operador / Maquinaria</span>
+          <span class="section-title">Información General</span>
         </div>
         <div class="section-body">
           <div class="field">
             <label>Nombre Operador</label>
             <input type="text" id="maq-operador" placeholder="Nombre completo del operador">
           </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Tipo de Equipo</label>
-              <select id="maq-tipoEquipo">
-                <option value="">Seleccionar...</option>
-                <option>Excavadora</option>
-                <option>Cargador Frontal</option>
-                <option>Camión Articulado</option>
-                <option>Motoniveladora</option>
-                <option>Compactador</option>
-                <option>Retroexcavadora</option>
-                <option>Grúa</option>
-                <option>Bulldozer</option>
-                <option>Camión Aljibe</option>
-                <option>Rodillo</option>
-                <option>Otro</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>N° Interno Equipo</label>
-              <input type="text" id="maq-nEquipo" placeholder="Ej: EQ-021">
-            </div>
-          </div>
+        </div>
+      </div>
+
+      <!-- 02. Tipo de Máquina -->
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-num">02</span>
+          <span class="section-title">Tipo de Máquina</span>
+        </div>
+        <div class="section-body">
           <div class="field">
-            <label>Patente Equipo</label>
-            <input type="text" id="maq-patente" placeholder="Ej: BCDK-45" style="text-transform:uppercase">
+            <label>Seleccionar equipo</label>
+            <select id="maq-tipoEquipo" onchange="onTipoEquipoChange()">
+              <option value="">Seleccionar...</option>
+              <option>Camión Pluma</option>
+              <option>Cargador Frontal</option>
+              <option>Excavadora PC30</option>
+              <option>Excavadora PC45</option>
+              <option value="Camión Tolva">Camión Tolva</option>
+              <option value="Camión Aljibe">Camión Aljibe</option>
+              <option>Bulldozer D8</option>
+              <option>Bulldozer CAT D9</option>
+              <option>Motoniveladora</option>
+              <option>Planta Seleccionadora Móvil</option>
+              <option>Retroexcavadora</option>
+              <option>Rodillo Compactador 12t</option>
+            </select>
           </div>
-          <hr class="divider">
+        </div>
+      </div>
+
+      <!-- 03. Información de Maquinaria -->
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-num">03</span>
+          <span class="section-title">Información de Maquinaria</span>
+        </div>
+        <div class="section-body">
+          <div class="field">
+            <label>N° Interno Equipo</label>
+            <input type="text" id="maq-nEquipo" placeholder="Ej: EQ-021">
+          </div>
           <div class="field-row">
             <div class="field">
               <label>Horómetro Inicial (hrs)</label>
@@ -1046,46 +1084,30 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
               <input type="number" id="maq-kmFin" placeholder="0">
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- 02. Frente -->
-      <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">02</span>
-          <span class="section-title">Frente de Trabajo</span>
-        </div>
-        <div class="section-body">
-          <div class="frente-grid" id="frenteGridMaq"></div>
-          <div class="field" style="margin-top:10px; display:none" id="maq-otroField">
-            <label>Especificar Otro</label>
-            <input type="text" id="maq-otroFrente" placeholder="Descripción del frente">
+          <div class="field">
+            <label>Patente Equipo</label>
+            <input type="text" id="maq-patente" placeholder="Ej: BCDK-45" style="text-transform:uppercase">
           </div>
         </div>
       </div>
 
-      <!-- 03. Actividades -->
-      <div class="section-card">
-        <div class="section-head">
-          <span class="section-num">03</span>
-          <span class="section-title">Detalle de Actividades</span>
-        </div>
-        <div class="section-body">
-          <div id="maq-actividadesContainer">
-            <div class="actividad-row"><span class="act-num">1</span><input type="text" placeholder="Actividad realizada..."></div>
-            <div class="actividad-row"><span class="act-num">2</span><input type="text" placeholder="Actividad realizada..."></div>
-            <div class="actividad-row"><span class="act-num">3</span><input type="text" placeholder="Actividad realizada..."></div>
-            <div class="actividad-row"><span class="act-num">4</span><input type="text" placeholder="Actividad realizada..."></div>
-            <div class="actividad-row"><span class="act-num">5</span><input type="text" placeholder="Actividad realizada..."></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 04. Operatividad -->
+      <!-- 04. Detalle de Actividades (dinámico) -->
       <div class="section-card">
         <div class="section-head">
           <span class="section-num">04</span>
-          <span class="section-title">Operatividad Maquinaria</span>
+          <span class="section-title">Detalle de Actividades</span>
+        </div>
+        <div class="section-body">
+          <div id="actividadesContainer"></div>
+          <button class="add-btn" onclick="addActividad()">+ Agregar actividad</button>
+        </div>
+      </div>
+
+      <!-- 05. Operatividad -->
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-num">05</span>
+          <span class="section-title">Operatividad de Máquina</span>
         </div>
         <div class="section-body">
           <div class="op-grid">
@@ -1094,11 +1116,7 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
               <input type="number" id="maq-hrsOp" placeholder="0" step="0.5" oninput="calcOpTotal()">
             </div>
             <div class="op-item">
-              <label>HM Mantenimiento</label>
-              <input type="number" id="maq-hrsMant" placeholder="0" step="0.5" oninput="calcOpTotal()">
-            </div>
-            <div class="op-item">
-              <label>HM Stand By / Disp.</label>
+              <label>HM Stand By / Disponible</label>
               <input type="number" id="maq-hrsStandby" placeholder="0" step="0.5" oninput="calcOpTotal()">
             </div>
             <div class="op-item">
@@ -1106,40 +1124,106 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 13px 0; 
               <input type="number" id="maq-hrsSinFrente" placeholder="0" step="0.5" oninput="calcOpTotal()">
             </div>
           </div>
-          <div class="op-total">
+
+          <!-- Mantenimiento con subtipo -->
+          <div style="margin-top:10px;">
+            <label style="margin-bottom:6px">HM Mantenimiento</label>
+            <input type="number" id="maq-hrsMant" placeholder="0" step="0.5" oninput="calcOpTotal()" style="margin-bottom:8px">
+            <div id="mantSubtipo" style="display:none">
+              <label style="margin-bottom:6px; color:var(--text3)">Tipo de mantenimiento</label>
+              <div style="display:flex; gap:8px;">
+                <button class="turno-btn" id="mant-prog" onclick="selectMant(this,'Programada')">Programada</button>
+                <button class="turno-btn" id="mant-correc" onclick="selectMant(this,'No programada / Correctiva')">No programada / Correctiva</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="op-total" style="margin-top:12px">
             <span class="ot-label">Total horas turno</span>
             <span class="ot-val" id="opTotal">0.0 hrs</span>
           </div>
         </div>
       </div>
 
-      <!-- 05. Pannes -->
-      <div class="section-card">
+      <!-- 06. Campos dinámicos según tipo equipo -->
+      <!-- Camión Tolva -->
+      <div class="section-card hidden" id="section-tolva">
         <div class="section-head">
-          <span class="section-num">05</span>
-          <span class="section-title">Pannes / Interferencias</span>
+          <span class="section-num">06</span>
+          <span class="section-title">Datos Camión Tolva</span>
         </div>
         <div class="section-body">
-          <div id="pannesContainer"></div>
-          <button class="add-btn" onclick="addPanne()">+ Agregar panne o interferencia</button>
+          <div style="margin-bottom:10px; font-size:12px; color:var(--text2)">Selecciona el tipo de material transportado:</div>
+          <div style="display:flex; gap:8px; margin-bottom:14px">
+            <button class="turno-btn" id="tolva-relleno-btn" onclick="selectTipoMaterial('relleno')">Material de Relleno</button>
+            <button class="turno-btn" id="tolva-excav-btn" onclick="selectTipoMaterial('excavacion')">Material de Excavación</button>
+          </div>
+
+          <!-- Relleno -->
+          <div id="tolva-relleno" style="display:none">
+            <div class="field">
+              <label>Nombre o Pozo de Extracción</label>
+              <input type="text" id="tolva-pozo" placeholder="Nombre del pozo o lugar de extracción">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Cantidad de Vueltas</label>
+                <input type="number" id="tolva-vueltas-rell" placeholder="0">
+              </div>
+              <div class="field">
+                <label>M³ de Relleno</label>
+                <input type="number" id="tolva-m3-rell" placeholder="0.0" step="0.1">
+              </div>
+            </div>
+          </div>
+
+          <!-- Excavación -->
+          <div id="tolva-excavacion" style="display:none">
+            <div class="field-row">
+              <div class="field">
+                <label>Cantidad de Vueltas</label>
+                <input type="number" id="tolva-vueltas-excav" placeholder="0">
+              </div>
+              <div class="field">
+                <label>M³ de Material</label>
+                <input type="number" id="tolva-m3-excav" placeholder="0.0" step="0.1">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Responsables -->
-      <div class="section-card">
+      <!-- Camión Aljibe -->
+      <div class="section-card hidden" id="section-aljibe">
         <div class="section-head">
-          <span class="section-num">✎</span>
-          <span class="section-title">Responsables</span>
+          <span class="section-num">06</span>
+          <span class="section-title">Datos Camión Aljibe</span>
         </div>
         <div class="section-body">
           <div class="field">
-            <label>Nombre Capataz</label>
-            <input type="text" id="maq-capataz" placeholder="Nombre del capataz">
+            <label>Nombre Cachimba</label>
+            <input type="text" id="aljibe-cachimba" placeholder="Nombre de la cachimba abastecida">
           </div>
-          <div class="field">
-            <label>Nombre Supervisor</label>
-            <input type="text" id="maq-supervisor" placeholder="Nombre del supervisor">
+          <div class="field-row">
+            <div class="field">
+              <label>Cantidad de Vueltas</label>
+              <input type="number" id="aljibe-vueltas" placeholder="0">
+            </div>
+            <div class="field">
+              <label>M³</label>
+              <input type="number" id="aljibe-m3" placeholder="0.0" step="0.1">
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="section-card">
+        <div class="section-head">
+          <span class="section-num">✎</span>
+          <span class="section-title">Observaciones</span>
+        </div>
+        <div class="section-body">
           <div class="field">
             <label>Observaciones Generales</label>
             <textarea id="maq-observaciones" placeholder="Indicar observaciones relevantes del turno..."></textarea>
@@ -1265,14 +1349,15 @@ const TAB_DEF = [
 ];
 
 /* ── ESTADO GLOBAL ── */
-let currentUser   = null; // { uid, email, nombre, rol }
-let records       = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-let isOnline      = navigator.onLine;
-let selectedTurno = 'A';
-let selectedFrente = null;
-let panneCount    = 0;
-let activeFilter  = 'all';
-let activeTab     = 'form-maq';
+let currentUser      = null;
+let records          = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let isOnline         = navigator.onLine;
+let selectedTurno    = 'A';
+let selectedMant     = null;
+let selectedTipoMaterial = null;
+let actividadCount   = 0;
+let activeFilter     = 'all';
+let activeTab        = 'form-maq';
 
 /* ── CONECTIVIDAD ── */
 window.addEventListener('online',  () => { isOnline = true;  updateSyncUI(); showToast('📶 Conexión recuperada'); syncNow(); });
@@ -1284,35 +1369,16 @@ window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); sho
 document.addEventListener('firebaseReady', () => {
   window._onAuthStateChanged(window._auth, async (fbUser) => {
     if (fbUser) {
-      // Obtener datos de perfil desde Firestore
       try {
-        const snap = await window._fsGetDoc(
-          window._fsDoc(window._db, 'usuarios', fbUser.uid)
-        );
+        const snap = await window._fsGetDoc(window._fsDoc(window._db, 'usuarios', fbUser.uid));
         if (snap.exists()) {
           const data = snap.data();
-          currentUser = {
-            uid:    fbUser.uid,
-            email:  fbUser.email,
-            nombre: data.nombre || fbUser.email,
-            rol:    data.rol    || 'operador',
-          };
+          currentUser = { uid: fbUser.uid, email: fbUser.email, nombre: data.nombre || fbUser.email, rol: data.rol || 'operador' };
         } else {
-          // Si no hay perfil, crear uno por defecto
-          currentUser = {
-            uid:    fbUser.uid,
-            email:  fbUser.email,
-            nombre: fbUser.email.split('@')[0],
-            rol:    'operador',
-          };
+          currentUser = { uid: fbUser.uid, email: fbUser.email, nombre: fbUser.email.split('@')[0], rol: 'operador' };
         }
       } catch (e) {
-        currentUser = {
-          uid:    fbUser.uid,
-          email:  fbUser.email,
-          nombre: fbUser.email.split('@')[0],
-          rol:    'operador',
-        };
+        currentUser = { uid: fbUser.uid, email: fbUser.email, nombre: fbUser.email.split('@')[0], rol: 'operador' };
       }
       showApp();
     } else {
@@ -1326,45 +1392,31 @@ async function doLogin() {
   const pass  = document.getElementById('loginPass').value;
   const err   = document.getElementById('loginError');
   const btn   = document.getElementById('loginBtn');
-
-  if (!email || !pass) {
-    err.textContent = 'Ingresa correo y contraseña.';
-    err.classList.add('show'); return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Ingresando...';
-  err.classList.remove('show');
-
+  if (!email || !pass) { err.textContent = 'Ingresa correo y contraseña.'; err.classList.add('show'); return; }
+  btn.disabled = true; btn.textContent = 'Ingresando...'; err.classList.remove('show');
   try {
     await window._signIn(window._auth, email, pass);
-    // onAuthStateChanged maneja el resto
   } catch (e) {
     err.classList.add('show');
     err.textContent = traducirErrorAuth(e.code);
-    btn.disabled = false;
-    btn.textContent = 'Ingresar';
+    btn.disabled = false; btn.textContent = 'Ingresar';
   }
 }
 
-// Enter para login
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('loginPass')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
+  document.getElementById('loginPass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 });
 
 async function doLogout() {
   await window._signOut(window._auth);
   currentUser = null;
-  records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 }
 
 function traducirErrorAuth(code) {
   const map = {
-    'auth/user-not-found':  'Usuario no encontrado.',
-    'auth/wrong-password':  'Contraseña incorrecta.',
-    'auth/invalid-email':   'Correo inválido.',
+    'auth/user-not-found': 'Usuario no encontrado.',
+    'auth/wrong-password': 'Contraseña incorrecta.',
+    'auth/invalid-email': 'Correo inválido.',
     'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.',
     'auth/invalid-credential': 'Credenciales incorrectas.',
   };
@@ -1372,7 +1424,7 @@ function traducirErrorAuth(code) {
 }
 
 /* ══════════════════════════════════════
-   NAVEGACIÓN ENTRE PANTALLAS
+   NAVEGACIÓN
 ══════════════════════════════════════ */
 function showLogin() {
   document.getElementById('loadingScreen').classList.add('hidden');
@@ -1383,13 +1435,12 @@ function showLogin() {
 function showApp() {
   document.getElementById('loadingScreen').classList.add('hidden');
   document.getElementById('screen-login').classList.add('hidden');
-  const app = document.getElementById('app');
-  app.classList.add('active');
-
+  document.getElementById('app').classList.add('active');
   buildTabs();
   updateUserHeader();
-  buildFrentes('frenteGridMaq', 'maq');
   document.getElementById('maq-fecha').valueAsDate = new Date();
+  // Agregar primera actividad por defecto
+  addActividad();
   renderRecords();
   updateStats();
   updateSyncUI();
@@ -1398,30 +1449,24 @@ function showApp() {
 
 function buildTabs() {
   const rolCfg = ROL_CONFIG[currentUser.rol] || ROL_CONFIG.operador;
-  const nav = document.getElementById('appTabs');
-  nav.innerHTML = TAB_DEF
+  document.getElementById('appTabs').innerHTML = TAB_DEF
     .filter(t => rolCfg.tabs.includes(t.id))
-    .map(t => `
-      <button class="app-tab" id="tab-${t.id}" onclick="showTab('${t.id}')">
-        <span class="tab-ico">${t.ico}</span>${t.label}
-      </button>
-    `).join('');
+    .map(t => `<button class="app-tab" id="tab-${t.id}" onclick="showTab('${t.id}')"><span class="tab-ico">${t.ico}</span>${t.label}</button>`)
+    .join('');
 }
 
 function showTab(id) {
   activeTab = id;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.app-tab').forEach(t => t.classList.remove('active'));
-  const scr = document.getElementById('screen-' + id);
-  if (scr) scr.classList.add('active');
-  const tab = document.getElementById('tab-' + id);
-  if (tab) tab.classList.add('active');
+  document.getElementById('screen-' + id)?.classList.add('active');
+  document.getElementById('tab-' + id)?.classList.add('active');
   if (id === 'records') renderRecords();
   if (id === 'sync') updateSyncUI();
 }
 
 function updateUserHeader() {
-  const rolCfg = ROL_CONFIG[currentUser.rol] || ROL_CONFIG.operador;
+  const rolCfg  = ROL_CONFIG[currentUser.rol] || ROL_CONFIG.operador;
   const initials = currentUser.nombre.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
   const av = document.getElementById('userAvatar');
   av.textContent = initials;
@@ -1434,29 +1479,8 @@ function updateUserHeader() {
 }
 
 /* ══════════════════════════════════════
-   FORMULARIO MAQUINARIA
+   FORMULARIO — CONTROLES GENERALES
 ══════════════════════════════════════ */
-function buildFrentes(containerId, prefix) {
-  const grid = document.getElementById(containerId);
-  if (!grid) return;
-  grid.innerHTML = FRENTES.map((f, i) => `
-    <div class="frente-item" id="${prefix}-frente-${i}" onclick="selectFrente(${i},'${prefix}')">
-      <div class="frente-check" id="${prefix}-check-${i}"></div>
-      <div class="frente-label">${f}</div>
-    </div>
-  `).join('');
-}
-
-function selectFrente(idx, prefix) {
-  document.querySelectorAll(`[id^="${prefix}-frente-"]`).forEach(el => el.classList.remove('selected'));
-  document.querySelectorAll(`[id^="${prefix}-check-"]`).forEach(el => el.classList.remove('selected'));
-  document.getElementById(`${prefix}-frente-${idx}`).classList.add('selected');
-  document.getElementById(`${prefix}-check-${idx}`).classList.add('selected');
-  selectedFrente = FRENTES[idx];
-  const otroField = document.getElementById(`${prefix}-otroField`);
-  if (otroField) otroField.style.display = FRENTES[idx] === 'Otro' ? 'block' : 'none';
-}
-
 function selectTurno(btn, val) {
   document.querySelectorAll('.turno-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
@@ -1466,10 +1490,9 @@ function selectTurno(btn, val) {
 function calcHoro() {
   const ini  = parseFloat(document.getElementById('maq-horoIni').value) || 0;
   const fin  = parseFloat(document.getElementById('maq-horoFin').value) || 0;
-  const diff = fin - ini;
   const el   = document.getElementById('horoDiff');
   if (fin > ini) {
-    el.textContent = diff.toFixed(1) + ' hrs';
+    el.textContent = (fin - ini).toFixed(1) + ' hrs';
     el.style.color = 'var(--green)';
   } else if (fin > 0 && fin <= ini) {
     el.textContent = 'Verificar valores';
@@ -1481,47 +1504,136 @@ function calcHoro() {
 }
 
 function calcOpTotal() {
+  // Mostrar subtipo mantenimiento si hay horas
+  const hrsMant = parseFloat(document.getElementById('maq-hrsMant').value) || 0;
+  document.getElementById('mantSubtipo').style.display = hrsMant > 0 ? 'block' : 'none';
+  if (hrsMant === 0) selectedMant = null;
+
   const vals  = ['maq-hrsOp','maq-hrsMant','maq-hrsStandby','maq-hrsSinFrente']
     .map(id => parseFloat(document.getElementById(id).value) || 0);
-  const total = vals.reduce((a, b) => a + b, 0);
-  document.getElementById('opTotal').textContent = total.toFixed(1) + ' hrs';
+  document.getElementById('opTotal').textContent = vals.reduce((a,b) => a+b, 0).toFixed(1) + ' hrs';
 }
 
-let panneIdx = 0;
-function addPanne() {
-  panneIdx++;
-  const c = document.getElementById('pannesContainer');
-  const d = document.createElement('div');
-  d.className = 'panne-row'; d.id = `panne-${panneIdx}`;
-  d.innerHTML = `
-    <button class="del-btn" onclick="removePanne(${panneIdx})">✕</button>
-    <div class="field-row" style="margin-bottom:8px">
-      <div class="field" style="margin:0"><label>Hora inicio</label><input type="time"></div>
-      <div class="field" style="margin:0"><label>Hora fin</label><input type="time"></div>
+function selectMant(btn, val) {
+  document.getElementById('mant-prog').classList.remove('selected');
+  document.getElementById('mant-correc').classList.remove('selected');
+  btn.classList.add('selected');
+  selectedMant = val;
+}
+
+/* ── TIPO DE EQUIPO → secciones dinámicas ── */
+function onTipoEquipoChange() {
+  const val = document.getElementById('maq-tipoEquipo').value;
+  document.getElementById('section-tolva').classList.toggle('hidden', val !== 'Camión Tolva');
+  document.getElementById('section-aljibe').classList.toggle('hidden', val !== 'Camión Aljibe');
+  selectedTipoMaterial = null;
+  // Reset tolva/aljibe fields
+  ['tolva-relleno','tolva-excavacion'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('tolva-relleno-btn').classList.remove('selected');
+  document.getElementById('tolva-excav-btn').classList.remove('selected');
+}
+
+function selectTipoMaterial(tipo) {
+  selectedTipoMaterial = tipo;
+  document.getElementById('tolva-relleno').style.display    = tipo === 'relleno'    ? 'block' : 'none';
+  document.getElementById('tolva-excavacion').style.display = tipo === 'excavacion' ? 'block' : 'none';
+  document.getElementById('tolva-relleno-btn').classList.toggle('selected', tipo === 'relleno');
+  document.getElementById('tolva-excav-btn').classList.toggle('selected',   tipo === 'excavacion');
+}
+
+/* ══════════════════════════════════════
+   ACTIVIDADES DINÁMICAS
+   Cada actividad tiene: descripción + frente + capataz
+══════════════════════════════════════ */
+function addActividad() {
+  actividadCount++;
+  const idx = actividadCount;
+  const container = document.getElementById('actividadesContainer');
+  const div = document.createElement('div');
+  div.className = 'actividad-card';
+  div.id = `act-card-${idx}`;
+  div.innerHTML = `
+    <div class="actividad-card-head">
+      <span class="actividad-card-num">Actividad ${idx}</span>
+      ${idx > 1 ? `<button class="actividad-del" onclick="removeActividad(${idx})">✕</button>` : ''}
+    </div>
+    <div class="field">
+      <label>Descripción de la actividad</label>
+      <input type="text" id="act-desc-${idx}" placeholder="Describe la actividad realizada...">
+    </div>
+    <div class="field">
+      <label>Frente de Trabajo</label>
+      <select id="act-frente-${idx}">
+        <option value="">Seleccionar frente...</option>
+        ${FRENTES.map(f => `<option value="${f}">${f}</option>`).join('')}
+      </select>
     </div>
     <div class="field" style="margin:0">
-      <label>Descripción</label>
-      <input type="text" placeholder="Describir panne o interferencia...">
-    </div>`;
-  c.appendChild(d);
+      <label>Nombre Capataz</label>
+      <input type="text" id="act-capataz-${idx}" placeholder="Nombre del capataz responsable">
+    </div>
+  `;
+  container.appendChild(div);
 }
-function removePanne(id) { document.getElementById(`panne-${id}`).remove(); }
 
+function removeActividad(idx) {
+  document.getElementById(`act-card-${idx}`)?.remove();
+}
+
+/* ══════════════════════════════════════
+   GUARDAR REPORT
+══════════════════════════════════════ */
 function guardarMaquinaria() {
-  // Validaciones
   const operador = document.getElementById('maq-operador').value.trim();
   const equipo   = document.getElementById('maq-tipoEquipo').value;
+
   if (!operador) { showToast('⚠️ Nombre del operador obligatorio', 'warn'); return; }
   if (!equipo)   { showToast('⚠️ Selecciona el tipo de equipo', 'warn'); return; }
-  if (!selectedFrente) { showToast('⚠️ Selecciona el frente de trabajo', 'warn'); return; }
 
-  const actividades = Array.from(document.querySelectorAll('#maq-actividadesContainer input'))
-    .map(i => i.value.trim()).filter(Boolean);
-
-  const pannes = Array.from(document.querySelectorAll('.panne-row')).map(row => {
-    const inp = row.querySelectorAll('input');
-    return { inicio: inp[0]?.value||'', fin: inp[1]?.value||'', descripcion: inp[2]?.value||'' };
+  // Recolectar actividades
+  const actividades = [];
+  document.querySelectorAll('[id^="act-card-"]').forEach(card => {
+    const idx  = card.id.split('-')[2];
+    const desc = document.getElementById(`act-desc-${idx}`)?.value.trim();
+    if (desc) {
+      actividades.push({
+        descripcion: desc,
+        frente:      document.getElementById(`act-frente-${idx}`)?.value  || '',
+        capataz:     document.getElementById(`act-capataz-${idx}`)?.value.trim() || '',
+      });
+    }
   });
+
+  if (!actividades.length) { showToast('⚠️ Agrega al menos una actividad', 'warn'); return; }
+
+  // Datos específicos según tipo de equipo
+  let datosEspecificos = null;
+  if (equipo === 'Camión Tolva') {
+    if (!selectedTipoMaterial) { showToast('⚠️ Selecciona el tipo de material (Tolva)', 'warn'); return; }
+    if (selectedTipoMaterial === 'relleno') {
+      datosEspecificos = {
+        tipo: 'Camión Tolva',
+        material: 'Relleno',
+        pozo:    document.getElementById('tolva-pozo').value.trim(),
+        vueltas: parseFloat(document.getElementById('tolva-vueltas-rell').value) || 0,
+        m3:      parseFloat(document.getElementById('tolva-m3-rell').value)      || 0,
+      };
+    } else {
+      datosEspecificos = {
+        tipo: 'Camión Tolva',
+        material: 'Excavación',
+        vueltas: parseFloat(document.getElementById('tolva-vueltas-excav').value) || 0,
+        m3:      parseFloat(document.getElementById('tolva-m3-excav').value)      || 0,
+      };
+    }
+  } else if (equipo === 'Camión Aljibe') {
+    datosEspecificos = {
+      tipo:     'Camión Aljibe',
+      cachimba: document.getElementById('aljibe-cachimba').value.trim(),
+      vueltas:  parseFloat(document.getElementById('aljibe-vueltas').value) || 0,
+      m3:       parseFloat(document.getElementById('aljibe-m3').value)      || 0,
+    };
+  }
 
   const record = {
     id:        Date.now(),
@@ -1529,25 +1641,13 @@ function guardarMaquinaria() {
     timestamp: new Date().toISOString(),
     fecha:     document.getElementById('maq-fecha').value,
     turno:     selectedTurno,
+    creadoPor: { uid: currentUser.uid, nombre: currentUser.nombre, rol: currentUser.rol },
 
-    // Usuario que creó el registro
-    creadoPor: {
-      uid:    currentUser.uid,
-      nombre: currentUser.nombre,
-      rol:    currentUser.rol,
-    },
-
-    operador: {
-      nombre: operador,
-    },
+    operador:  { nombre: operador },
     equipo: {
       tipo:    equipo,
-      numero:  document.getElementById('maq-nEquipo').value,
-      patente: document.getElementById('maq-patente').value.toUpperCase(),
-    },
-    ubicacion: {
-      frente:  selectedFrente,
-      detalle: document.getElementById('maq-otroFrente').value,
+      numero:  document.getElementById('maq-nEquipo').value.trim(),
+      patente: document.getElementById('maq-patente').value.toUpperCase().trim(),
     },
     horometro: {
       inicial: parseFloat(document.getElementById('maq-horoIni').value) || 0,
@@ -1557,20 +1657,16 @@ function guardarMaquinaria() {
       inicial: parseFloat(document.getElementById('maq-kmIni').value) || 0,
       final:   parseFloat(document.getElementById('maq-kmFin').value) || 0,
     },
+    actividades,
     operatividad: {
       hrsOperativas: parseFloat(document.getElementById('maq-hrsOp').value)       || 0,
       hrsMantencion: parseFloat(document.getElementById('maq-hrsMant').value)      || 0,
+      tipoMantencion: selectedMant || '',
       hrsStandby:    parseFloat(document.getElementById('maq-hrsStandby').value)   || 0,
       hrsSinFrente:  parseFloat(document.getElementById('maq-hrsSinFrente').value) || 0,
     },
-    actividades,
-    pannes,
-    responsables: {
-      capataz:    document.getElementById('maq-capataz').value.trim(),
-      supervisor: document.getElementById('maq-supervisor').value.trim(),
-    },
+    datosEspecificos,
     observaciones: document.getElementById('maq-observaciones').value.trim(),
-
     estado: { synced: false, syncedAt: null },
   };
 
@@ -1579,7 +1675,7 @@ function guardarMaquinaria() {
   renderRecords();
   updateStats();
   updateSyncUI();
-  showToast('✔ Report guardado en el dispositivo');
+  showToast('✔ Report guardado correctamente');
   resetMaqForm();
   showTab('records');
 }
@@ -1587,27 +1683,25 @@ function guardarMaquinaria() {
 function resetMaqForm() {
   ['maq-operador','maq-tipoEquipo','maq-nEquipo','maq-patente',
    'maq-horoIni','maq-horoFin','maq-kmIni','maq-kmFin',
-   'maq-otroFrente','maq-hrsOp','maq-hrsMant','maq-hrsStandby','maq-hrsSinFrente',
-   'maq-capataz','maq-supervisor','maq-observaciones'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.querySelectorAll('#maq-actividadesContainer input').forEach(i => i.value = '');
-  document.getElementById('pannesContainer').innerHTML = '';
-  document.getElementById('horoDiff').textContent  = '— hrs';
-  document.getElementById('opTotal').textContent   = '0.0 hrs';
-  document.getElementById('maq-otroField').style.display = 'none';
-  document.querySelectorAll('[id^="maq-frente-"]').forEach(el => el.classList.remove('selected'));
-  document.querySelectorAll('[id^="maq-check-"]').forEach(el => el.classList.remove('selected'));
+   'maq-hrsOp','maq-hrsMant','maq-hrsStandby','maq-hrsSinFrente',
+   'maq-observaciones','tolva-pozo','tolva-vueltas-rell','tolva-m3-rell',
+   'tolva-vueltas-excav','tolva-m3-excav','aljibe-cachimba','aljibe-vueltas','aljibe-m3'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
-  // Reset turno
-  document.querySelectorAll('.turno-btn').forEach((b,i) => {
-    b.classList.toggle('selected', i === 0);
-  });
-  selectedTurno  = 'A';
-  selectedFrente = null;
-  panneIdx = 0;
+  document.getElementById('actividadesContainer').innerHTML = '';
+  document.getElementById('horoDiff').textContent = '— hrs';
+  document.getElementById('opTotal').textContent  = '0.0 hrs';
+  document.getElementById('mantSubtipo').style.display   = 'none';
+  document.getElementById('section-tolva').classList.add('hidden');
+  document.getElementById('section-aljibe').classList.add('hidden');
+  document.getElementById('tolva-relleno').style.display    = 'none';
+  document.getElementById('tolva-excavacion').style.display = 'none';
+
+  // Reset turno buttons
+  document.querySelectorAll('.turno-btn').forEach((b,i) => b.classList.toggle('selected', i === 0));
+  selectedTurno = 'A'; selectedMant = null; selectedTipoMaterial = null; actividadCount = 0;
   document.getElementById('maq-fecha').valueAsDate = new Date();
+  addActividad(); // Agregar primera actividad por defecto
 }
 
 /* ══════════════════════════════════════
@@ -1645,11 +1739,13 @@ function renderRecords() {
   list.innerHTML = filtered.map(r => {
     const synced   = r.estado?.synced ?? false;
     const hrsOp    = r.operatividad?.hrsOperativas ?? 0;
-    const frente   = r.ubicacion?.frente ?? '—';
+    // frente: tomar del primer actividad o de ubicacion (compatibilidad)
+    const primeraAct = r.actividades?.[0];
+    const frente   = (typeof primeraAct === 'object' ? primeraAct?.frente : null) ?? r.ubicacion?.frente ?? '—';
     const nEquipo  = r.equipo?.numero  ?? '';
     const tipoEq   = r.equipo?.tipo    ?? 'Equipo';
     const operador = r.operador?.nombre ?? '—';
-    const acts     = r.actividades || [];
+    const acts     = (r.actividades || []).map(a => typeof a === 'string' ? a : a?.descripcion).filter(Boolean);
 
     return `
     <div class="record-card ${synced ? 'synced' : 'pending'}" onclick="openModal('${r.id}')">
@@ -1707,10 +1803,6 @@ function openModal(id) {
     ${dr('N° Interno', r.equipo?.numero || '—')}
     ${dr('Patente',   r.equipo?.patente || '—')}
 
-    <div class="modal-section-title">Frente de Trabajo</div>
-    ${dr('Frente', r.ubicacion?.frente)}
-    ${r.ubicacion?.detalle ? dr('Detalle', r.ubicacion.detalle) : ''}
-
     <div class="modal-section-title">Horómetro / Kilometraje</div>
     ${dr('Horómetro ini', r.horometro?.inicial + ' hrs')}
     ${dr('Horómetro fin', r.horometro?.final   + ' hrs')}
@@ -1718,16 +1810,33 @@ function openModal(id) {
     ${dr('Km inicial', r.kilometraje?.inicial || '—')}
     ${dr('Km final',   r.kilometraje?.final   || '—')}
 
+    <div class="modal-section-title">Actividades</div>
+    ${(r.actividades || []).map((a, i) => {
+      if (typeof a === 'string') return dr(i+1, a);
+      return `
+        <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:7px">
+          <div style="font-size:11px;color:var(--blue);margin-bottom:5px;font-family:'DM Mono',monospace">Actividad ${i+1}</div>
+          ${dr('Descripción', a.descripcion || '—')}
+          ${dr('Frente', a.frente || '—')}
+          ${dr('Capataz', a.capataz || '—')}
+        </div>`;
+    }).join('')}
+
     <div class="modal-section-title">Operatividad (HM)</div>
     ${dr('Operativas',    (r.operatividad?.hrsOperativas || 0) + ' hrs')}
     ${dr('Mantenimiento', (r.operatividad?.hrsMantencion || 0) + ' hrs')}
+    ${r.operatividad?.tipoMantencion ? dr('Tipo Mantención', r.operatividad.tipoMantencion) : ''}
     ${dr('Stand By',      (r.operatividad?.hrsStandby    || 0) + ' hrs')}
     ${dr('Sin Frente',    (r.operatividad?.hrsSinFrente  || 0) + ' hrs')}
     ${dr('TOTAL TURNO',   opTot + ' hrs')}
 
-    ${r.actividades?.length ? `
-      <div class="modal-section-title">Actividades</div>
-      ${r.actividades.map((a,i) => dr(i+1, a)).join('')}
+    ${r.datosEspecificos ? `
+      <div class="modal-section-title">${r.datosEspecificos.tipo === 'Camión Aljibe' ? 'Datos Camión Aljibe' : 'Datos Camión Tolva'}</div>
+      ${r.datosEspecificos.material ? dr('Material', r.datosEspecificos.material) : ''}
+      ${r.datosEspecificos.pozo     ? dr('Pozo/Extracción', r.datosEspecificos.pozo) : ''}
+      ${r.datosEspecificos.cachimba ? dr('Cachimba', r.datosEspecificos.cachimba) : ''}
+      ${dr('Vueltas', r.datosEspecificos.vueltas || 0)}
+      ${dr('M³', r.datosEspecificos.m3 || 0)}
     ` : ''}
 
     ${r.pannes?.length ? `
@@ -1735,19 +1844,14 @@ function openModal(id) {
       ${r.pannes.map(p => dr(`${p.inicio}–${p.fin}`, p.descripcion)).join('')}
     ` : ''}
 
-    <div class="modal-section-title">Responsables</div>
-    ${dr('Capataz',    r.responsables?.capataz    || '—')}
-    ${dr('Supervisor', r.responsables?.supervisor || '—')}
-
-    ${r.observaciones ? `
-      <div class="modal-section-title">Observaciones</div>
-      <div style="font-size:13px; color:var(--text2); padding:8px 0; line-height:1.6">${r.observaciones}</div>
-    ` : ''}
-
     <div class="modal-section-title">Metadata</div>
     ${dr('Creado por', r.creadoPor?.nombre || '—')}
     ${dr('Timestamp',  new Date(r.timestamp).toLocaleString('es-CL'))}
     ${synced ? dr('Sincronizado', new Date(r.estado.syncedAt).toLocaleString('es-CL')) : ''}
+    ${r.observaciones ? `
+      <div class="modal-section-title">Observaciones</div>
+      <div style="font-size:13px; color:var(--text2); padding:8px 0; line-height:1.6">${r.observaciones}</div>
+    ` : ''}
   `;
 
   document.getElementById('modalOverlay').classList.add('show');
