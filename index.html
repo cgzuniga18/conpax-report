@@ -248,7 +248,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
 <!-- Auto-actualización: fuerza nueva versión en cada carga -->
 <script>
   // Cada vez que carga la página, verifica si hay una versión nueva
-  const VERSION = 'v3.1-20260429';
+  const VERSION = 'v3.2-20260429';
   const storedVersion = localStorage.getItem('app_version');
   if (storedVersion && storedVersion !== VERSION) {
     // Hay versión nueva — limpiar caché y recargar
@@ -709,7 +709,7 @@ let activeFilter     = 'all';
 let activeTab        = 'form-maq';
 
 /* ── CONECTIVIDAD ── */
-window.addEventListener('online',  () => { isOnline = true;  updateSyncUI(); showToast('📶 Conexión recuperada'); syncNow(); });
+window.addEventListener('online',  () => { isOnline = true;  updateSyncUI(); showToast('📶 Conexión recuperada'); syncNow(); cargarDesdeFirebase(); });
 window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); showToast('📡 Sin conexión', 'warn'); });
 
 /* ══ AUTENTICACIÓN ══ */
@@ -811,6 +811,8 @@ function showApp() {
   addActividad();
   renderRecords(); updateStats(); updateSyncUI();
   showTab('form-maq');
+  // Cargar registros desde Firebase al iniciar
+  setTimeout(() => cargarDesdeFirebase(), 1500);
 }
 
 function buildTabs() {
@@ -1095,21 +1097,87 @@ function updateStats() {
 async function syncNow() {
   if(!isOnline||!window._firebaseReady) return;
   const pending=records.filter(r=>!r.estado?.synced);
-  if(!pending.length) return;
+
   const btn=document.getElementById('syncBtn');
   btn.textContent='⏳ Sincronizando...'; btn.disabled=true;
-  let ok=0,err=0;
+
+  // 1. SUBIR registros pendientes
+  let ok=0, err=0;
   for(const record of pending){
     try{
       await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(record.id)),{...record,estado:{synced:true,syncedAt:new Date().toISOString()}});
       record.estado={synced:true,syncedAt:new Date().toISOString()}; ok++;
     } catch(e){console.error(e);err++;}
   }
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
+
+  // 2. BAJAR todos los registros desde Firebase y combinar
+  try {
+    const snap = await window._fsGetDocs(window._fsCollection(window._db,'reportes_maquinaria'));
+    const remoteRecords = [];
+    snap.forEach(doc => remoteRecords.push(doc.data()));
+
+    // Combinar: agregar remotos que no existen localmente
+    const localIds = new Set(records.map(r=>String(r.id)));
+    let added = 0;
+    remoteRecords.forEach(r => {
+      if(!localIds.has(String(r.id))) {
+        records.push(r);
+        added++;
+      }
+    });
+
+    // Ordenar por fecha descendente
+    records.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
+    if(added > 0) showToast(`✔ ${ok} subidos · ${added} descargados desde Firebase`);
+    else if(ok > 0) showToast(`✔ ${ok} report(s) sincronizados`);
+    else showToast('✔ Todo al día');
+
+  } catch(e) {
+    console.error('Error descargando desde Firebase:', e);
+    if(ok>0) showToast(`✔ ${ok} subidos · Error al descargar`,'warn');
+  }
+
   renderRecords(); updateStats();
-  btn.textContent='🔄 Sincronizar ahora'; btn.disabled=records.filter(r=>!r.estado?.synced).length===0;
-  if(err===0){showToast(`✔ ${ok} report(s) sincronizados`);updateSyncUI();}
-  else showToast(`⚠️ ${ok} ok, ${err} con error`,'warn');
+  btn.textContent='🔄 Sincronizar ahora';
+  btn.disabled=records.filter(r=>!r.estado?.synced).length===0;
+  updateSyncUI();
+}
+
+// Descargar desde Firebase al iniciar (si hay conexión)
+async function cargarDesdeFirebase() {
+  if(!isOnline || !window._firebaseReady) return;
+  try {
+    const snap = await window._fsGetDocs(window._fsCollection(window._db,'reportes_maquinaria'));
+    const remoteRecords = [];
+    snap.forEach(doc => remoteRecords.push(doc.data()));
+
+    const localIds = new Set(records.map(r=>String(r.id)));
+    let added = 0;
+    remoteRecords.forEach(r => {
+      if(!localIds.has(String(r.id))) {
+        records.push(r);
+        added++;
+      } else {
+        // Actualizar estado de sync si el remoto está sincronizado
+        const local = records.find(lr=>String(lr.id)===String(r.id));
+        if(local && !local.estado?.synced && r.estado?.synced) {
+          local.estado = r.estado;
+        }
+      }
+    });
+
+    records.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
+    if(added > 0) {
+      renderRecords(); updateStats(); updateSyncUI();
+      showToast(`📥 ${added} registro(s) descargados desde Firebase`);
+    }
+  } catch(e) {
+    console.error('Error cargando desde Firebase:', e);
+  }
 }
 
 function updateSyncUI() {
