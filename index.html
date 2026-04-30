@@ -248,7 +248,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
 <!-- Auto-actualización: fuerza nueva versión en cada carga -->
 <script>
   // Cada vez que carga la página, verifica si hay una versión nueva
-  const VERSION = 'v3.2-20260429';
+  const VERSION = 'v3.4-20260430';
   const storedVersion = localStorage.getItem('app_version');
   if (storedVersion && storedVersion !== VERSION) {
     // Hay versión nueva — limpiar caché y recargar
@@ -608,6 +608,17 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
       <button class="export-btn" onclick="exportExcel()">📊 Exportar a Excel (.xlsx)</button>
     </div>
   </div>
+
+  <!-- PANEL ADMIN -->
+  <div class="screen" id="screen-admin">
+    <div class="screen-inner">
+      <div style="text-align:center;padding:40px 20px;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:12px">⚙️</div>
+        <div style="font-size:14px">Cargando panel de administración...</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Modal -->
@@ -643,17 +654,18 @@ const FRENTES = [
 ];
 
 const ROL_CONFIG = {
-  operador: { label:'Operador', color:'var(--blue)', bg:'var(--blue-dim)', tabs:['form-maq','records','sync'] },
-  capataz:  { label:'Capataz', color:'var(--amber)', bg:'var(--amber-dim)', tabs:['records','sync'] },
-  jefe:     { label:'Jefe de Terreno', color:'var(--green)', bg:'var(--green-dim)', tabs:['records','sync'] },
-  supervisor:{ label:'Supervisor', color:'var(--purple)', bg:'rgba(139,92,246,.1)', tabs:['records','sync'] },
-  admin:    { label:'Control Producción', color:'var(--red)', bg:'rgba(239,68,68,.1)', tabs:['form-maq','records','sync'] },
+  operador:   { label:'Operador',           color:'var(--blue)',   bg:'var(--blue-dim)',          tabs:['form-maq','records','sync'] },
+  capataz:    { label:'Capataz',            color:'var(--amber)',  bg:'var(--amber-dim)',          tabs:['records','sync'] },
+  jefe:       { label:'Jefe de Terreno',    color:'var(--green)',  bg:'var(--green-dim)',          tabs:['records','sync'] },
+  supervisor: { label:'Supervisor',         color:'var(--purple)', bg:'rgba(139,92,246,.1)',       tabs:['records','sync'] },
+  admin:      { label:'Control Producción', color:'var(--red)',    bg:'rgba(239,68,68,.1)',        tabs:['form-maq','records','sync','admin'] },
 };
 
 const TAB_DEF = [
-  { id:'form-maq', label:'Formulario', ico:'📋' },
-  { id:'records',  label:'Registros',  ico:'📁' },
+  { id:'form-maq', label:'Formulario',  ico:'📋' },
+  { id:'records',  label:'Registros',   ico:'📁' },
   { id:'sync',     label:'Sincronizar', ico:'🔄' },
+  { id:'admin',    label:'Admin',       ico:'⚙️' },
 ];
 
 // IDs de todos los campos de tiempos
@@ -707,6 +719,8 @@ let selectedTipoMaterial = null;
 let actividadCount   = 0;
 let activeFilter     = 'all';
 let activeTab        = 'form-maq';
+let listaCapataces   = []; // Lista global de capataces desde Firestore
+let listaUsuarios    = []; // Lista global de usuarios desde Firestore
 
 /* ── CONECTIVIDAD ── */
 window.addEventListener('online',  () => { isOnline = true;  updateSyncUI(); showToast('📶 Conexión recuperada'); syncNow(); cargarDesdeFirebase(); });
@@ -717,7 +731,7 @@ document.addEventListener('firebaseReady', () => {
   window._onAuthStateChanged(window._auth, async (fbUser) => {
     if (fbUser) {
       try {
-        const snap = await window._fsGetDoc(window._fsDoc(window._db, 'usuarios', fbUser.uid));
+        const snap = await window._fsGetDoc(window._fsDoc(window._db, 'Usuarios', fbUser.uid));
         if (snap.exists()) {
           const data = snap.data();
           if (data.rol === 'pendiente') {
@@ -727,7 +741,7 @@ document.addEventListener('firebaseReady', () => {
             err.classList.add('show');
             showLoginScreen(); return;
           }
-          currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:data.nombre||fbUser.email, rol:data.rol||'operador' };
+          currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:data.nombre||fbUser.email, rol:data.rol||'operador', capataces:data.capataces||[] };
         } else {
           currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:fbUser.email.split('@')[0], rol:'operador' };
         }
@@ -779,7 +793,7 @@ async function doRegister() {
   btn.disabled=true; btn.textContent='Creando cuenta...';
   try {
     const cred=await window._createUser(window._auth,email,pass);
-    await window._fsSetDoc(window._fsDoc(window._db,'usuarios',cred.user.uid),{nombre,email,rol:'pendiente',creadoEn:new Date().toISOString()});
+    await window._fsSetDoc(window._fsDoc(window._db,'Usuarios',cred.user.uid),{nombre,email,rol:'pendiente',creadoEn:new Date().toISOString()});
     await window._signOut(window._auth);
     ok.style.display='block';
     ['regNombre','regEmail','regPass','regPass2'].forEach(id=>document.getElementById(id).value='');
@@ -811,8 +825,12 @@ function showApp() {
   addActividad();
   renderRecords(); updateStats(); updateSyncUI();
   showTab('form-maq');
-  // Cargar registros desde Firebase al iniciar
-  setTimeout(() => cargarDesdeFirebase(), 1500);
+  // Cargar datos desde Firebase al iniciar
+  setTimeout(async () => {
+    await cargarCapataces();
+    await cargarDesdeFirebase();
+    if(currentUser.rol === 'admin') await cargarUsuarios();
+  }, 1500);
 }
 
 function buildTabs() {
@@ -831,6 +849,7 @@ function showTab(id) {
   document.getElementById('tab-'+id)?.classList.add('active');
   if(id==='records') renderRecords();
   if(id==='sync') updateSyncUI();
+  if(id==='admin') renderAdminPanel();
 }
 
 function updateUserHeader() {
@@ -888,6 +907,10 @@ function addActividad() {
   const c=document.getElementById('actividadesContainer');
   const div=document.createElement('div');
   div.className='actividad-card'; div.id=`act-card-${idx}`;
+  // Construir opciones de capataces
+  const capOpts = listaCapataces.length
+    ? listaCapataces.map(c=>`<option value="${c}">${c}</option>`).join('')
+    : '<option value="">Sin capataces registrados</option>';
   div.innerHTML=`
     <div class="actividad-card-head">
       <span class="actividad-card-num">Actividad ${idx}</span>
@@ -900,7 +923,12 @@ function addActividad() {
         ${FRENTES.map(f=>`<option value="${f}">${f}</option>`).join('')}
       </select>
     </div>
-    <div class="field" style="margin:0"><label>Nombre Capataz</label><input type="text" id="act-capataz-${idx}" placeholder="Nombre del capataz responsable"></div>`;
+    <div class="field" style="margin:0"><label>Capataz Responsable</label>
+      <select id="act-capataz-${idx}">
+        <option value="">Seleccionar capataz...</option>
+        ${capOpts}
+      </select>
+    </div>`;
   c.appendChild(div);
 }
 function removeActividad(idx) { document.getElementById(`act-card-${idx}`)?.remove(); }
@@ -917,7 +945,7 @@ function guardarMaquinaria() {
   document.querySelectorAll('[id^="act-card-"]').forEach(card=>{
     const idx=card.id.split('-')[2];
     const desc=document.getElementById(`act-desc-${idx}`)?.value.trim();
-    if(desc) actividades.push({ descripcion:desc, frente:document.getElementById(`act-frente-${idx}`)?.value||'', capataz:document.getElementById(`act-capataz-${idx}`)?.value.trim()||'' });
+    if(desc) actividades.push({ descripcion:desc, frente:document.getElementById(`act-frente-${idx}`)?.value||'', capataz:document.getElementById(`act-capataz-${idx}`)?.value||'' });
   });
   if(!actividades.length){showToast('⚠️ Agrega al menos una actividad','warn');return;}
 
@@ -1145,7 +1173,7 @@ async function syncNow() {
   updateSyncUI();
 }
 
-// Descargar desde Firebase al iniciar (si hay conexión)
+// Descargar desde Firebase con filtro por rol
 async function cargarDesdeFirebase() {
   if(!isOnline || !window._firebaseReady) return;
   try {
@@ -1153,31 +1181,235 @@ async function cargarDesdeFirebase() {
     const remoteRecords = [];
     snap.forEach(doc => remoteRecords.push(doc.data()));
 
+    // Filtrar según rol
+    let filtrados = remoteRecords;
+    if(currentUser.rol === 'operador') {
+      // Solo sus propios reportes
+      filtrados = remoteRecords.filter(r => r.creadoPor?.uid === currentUser.uid);
+    } else if(currentUser.rol === 'capataz') {
+      // Solo sus propios reportes
+      filtrados = remoteRecords.filter(r => r.creadoPor?.uid === currentUser.uid);
+    } else if(currentUser.rol === 'supervisor') {
+      // Solo reportes donde aparece alguno de sus capataces
+      const misCapataces = currentUser.capataces || [];
+      filtrados = remoteRecords.filter(r =>
+        (r.actividades||[]).some(a => misCapataces.includes(typeof a==='object' ? a?.capataz : ''))
+      );
+    }
+    // jefe y admin ven todo
+
     const localIds = new Set(records.map(r=>String(r.id)));
     let added = 0;
-    remoteRecords.forEach(r => {
+    filtrados.forEach(r => {
       if(!localIds.has(String(r.id))) {
-        records.push(r);
-        added++;
+        records.push(r); added++;
       } else {
-        // Actualizar estado de sync si el remoto está sincronizado
         const local = records.find(lr=>String(lr.id)===String(r.id));
-        if(local && !local.estado?.synced && r.estado?.synced) {
-          local.estado = r.estado;
-        }
+        if(local && !local.estado?.synced && r.estado?.synced) local.estado = r.estado;
       }
     });
 
     records.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    if(added > 0) { renderRecords(); updateStats(); updateSyncUI(); showToast(`📥 ${added} registro(s) descargados`); }
+  } catch(e) { console.error('Error cargando desde Firebase:', e); }
+}
 
-    if(added > 0) {
-      renderRecords(); updateStats(); updateSyncUI();
-      showToast(`📥 ${added} registro(s) descargados desde Firebase`);
+// ── Cargar lista de capataces desde Firestore ──
+async function cargarCapataces() {
+  if(!isOnline || !window._firebaseReady) return;
+  try {
+    const snap = await window._fsGetDoc(window._fsDoc(window._db,'configuracion','capataces'));
+    if(snap.exists()) {
+      listaCapataces = snap.data().lista || [];
     }
-  } catch(e) {
-    console.error('Error cargando desde Firebase:', e);
-  }
+  } catch(e) { console.error('Error cargando capataces:', e); }
+}
+
+// ── Cargar usuarios desde Firestore (solo admin) ──
+async function cargarUsuarios() {
+  if(!isOnline || !window._firebaseReady) return;
+  try {
+    const snap = await window._fsGetDocs(window._fsCollection(window._db,'Usuarios'));
+    listaUsuarios = [];
+    snap.forEach(doc => listaUsuarios.push({ uid:doc.id, ...doc.data() }));
+  } catch(e) { console.error('Error cargando usuarios:', e); }
+}
+
+/* ══════════════════════════════════════
+   PANEL ADMINISTRADOR
+══════════════════════════════════════ */
+function renderAdminPanel() {
+  const screen = document.getElementById('screen-admin');
+  if(!screen) return;
+  const supervisores = listaUsuarios.filter(u => u.rol === 'supervisor');
+
+  screen.innerHTML = `<div class="screen-inner">
+
+    <!-- Gestión de Capataces -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-num">👷</span>
+        <span class="section-title">Gestión de Capataces</span>
+      </div>
+      <div class="section-body">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+          Lista de capataces disponibles para asignar a actividades y supervisores.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input type="text" id="nuevoCapataz" placeholder="Nombre completo del capataz" style="flex:1;margin:0">
+          <button onclick="agregarCapataz()" style="background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px 16px;cursor:pointer;font-weight:600;white-space:nowrap;font-family:'DM Sans',sans-serif;">+ Agregar</button>
+        </div>
+        <div id="listaCapatacesAdmin">
+          ${listaCapataces.length === 0
+            ? `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin capataces registrados</div>`
+            : listaCapataces.map((c,i) => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px">
+                <span style="font-size:13px">👷 ${c}</span>
+                <button onclick="eliminarCapataz(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+              </div>`).join('')
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Asignación Supervisor → Capataces -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-num">🔗</span>
+        <span class="section-title">Supervisores → Capataces</span>
+      </div>
+      <div class="section-body">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+          Asigna capataces a cada supervisor. El supervisor solo verá los reportes de sus capataces.
+        </p>
+        ${supervisores.length === 0
+          ? `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">No hay supervisores registrados aún</div>`
+          : supervisores.map(sup => `
+            <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--rr);padding:13px;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <div style="width:28px;height:28px;border-radius:50%;background:rgba(139,92,246,.2);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">
+                  ${sup.nombre?.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:600">${sup.nombre}</div>
+                  <div style="font-size:10px;color:var(--text3)">${sup.email||''}</div>
+                </div>
+              </div>
+              <label style="margin-bottom:6px">Capataces asignados</label>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="caps-${sup.uid}">
+                ${(sup.capataces||[]).map(c=>`
+                  <div style="display:flex;align-items:center;gap:4px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--purple)">
+                    ${c}
+                    <button onclick="quitarCapatazSup('${sup.uid}','${c}')" style="background:none;border:none;color:var(--purple);cursor:pointer;font-size:13px;padding:0;margin-left:2px">×</button>
+                  </div>`).join('') || '<span style="font-size:11px;color:var(--text3)">Sin capataces asignados</span>'}
+              </div>
+              <div style="display:flex;gap:8px">
+                <select id="sel-cap-${sup.uid}" style="flex:1;margin:0;font-size:13px;padding:8px 10px">
+                  <option value="">Agregar capataz...</option>
+                  ${listaCapataces.filter(c=>!(sup.capataces||[]).includes(c)).map(c=>`<option value="${c}">${c}</option>`).join('')}
+                </select>
+                <button onclick="asignarCapatazSup('${sup.uid}')" style="background:var(--purple);color:#fff;border:none;border-radius:var(--r);padding:8px 14px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;">Asignar</button>
+              </div>
+            </div>`).join('')
+        }
+      </div>
+    </div>
+
+    <!-- Usuarios registrados -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-num">👥</span>
+        <span class="section-title">Usuarios del Sistema</span>
+      </div>
+      <div class="section-body">
+        ${listaUsuarios.length === 0
+          ? `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin usuarios registrados</div>`
+          : listaUsuarios.map(u => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px">
+              <div>
+                <div style="font-size:13px;font-weight:600">${u.nombre||'Sin nombre'}</div>
+                <div style="font-size:10px;color:var(--text3)">${u.email||''}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="margin:0;font-size:11px;padding:4px 8px;border-radius:6px">
+                  ${['operador','capataz','jefe','supervisor','admin','pendiente'].map(r=>`<option value="${r}" ${u.rol===r?'selected':''}>${r}</option>`).join('')}
+                </select>
+              </div>
+            </div>`).join('')
+        }
+      </div>
+    </div>
+
+  </div>`;
+}
+
+// ── Agregar capataz ──
+async function agregarCapataz() {
+  const input = document.getElementById('nuevoCapataz');
+  const nombre = input.value.trim();
+  if(!nombre) { showToast('⚠️ Ingresa el nombre del capataz','warn'); return; }
+  if(listaCapataces.includes(nombre)) { showToast('⚠️ Ese capataz ya existe','warn'); return; }
+  listaCapataces.push(nombre);
+  listaCapataces.sort();
+  try {
+    await window._fsSetDoc(window._fsDoc(window._db,'configuracion','capataces'),{ lista:listaCapataces });
+    input.value='';
+    showToast(`✔ Capataz "${nombre}" agregado`);
+    renderAdminPanel();
+  } catch(e) { showToast('⚠️ Error guardando capataz','err'); listaCapataces.pop(); }
+}
+
+// ── Eliminar capataz ──
+async function eliminarCapataz(idx) {
+  const nombre = listaCapataces[idx];
+  if(!confirm(`¿Eliminar a "${nombre}" de la lista?`)) return;
+  listaCapataces.splice(idx,1);
+  try {
+    await window._fsSetDoc(window._fsDoc(window._db,'configuracion','capataces'),{ lista:listaCapataces });
+    showToast(`✔ Capataz eliminado`);
+    renderAdminPanel();
+  } catch(e) { showToast('⚠️ Error eliminando capataz','err'); }
+}
+
+// ── Asignar capataz a supervisor ──
+async function asignarCapatazSup(uid) {
+  const sel = document.getElementById(`sel-cap-${uid}`);
+  const cap = sel?.value;
+  if(!cap) { showToast('⚠️ Selecciona un capataz','warn'); return; }
+  const sup = listaUsuarios.find(u=>u.uid===uid);
+  if(!sup) return;
+  if(!sup.capataces) sup.capataces=[];
+  if(sup.capataces.includes(cap)) { showToast('⚠️ Ya está asignado','warn'); return; }
+  sup.capataces.push(cap);
+  try {
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{ capataces:sup.capataces });
+    showToast(`✔ Capataz asignado a ${sup.nombre}`);
+    renderAdminPanel();
+  } catch(e) { showToast('⚠️ Error asignando capataz','err'); sup.capataces.pop(); }
+}
+
+// ── Quitar capataz de supervisor ──
+async function quitarCapatazSup(uid, cap) {
+  const sup = listaUsuarios.find(u=>u.uid===uid);
+  if(!sup) return;
+  sup.capataces = (sup.capataces||[]).filter(c=>c!==cap);
+  try {
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{ capataces:sup.capataces });
+    showToast(`✔ Capataz quitado`);
+    renderAdminPanel();
+  } catch(e) { showToast('⚠️ Error quitando capataz','err'); }
+}
+
+// ── Cambiar rol de usuario ──
+async function cambiarRolUsuario(uid, nuevoRol) {
+  try {
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{ rol:nuevoRol });
+    const u = listaUsuarios.find(u=>u.uid===uid);
+    if(u) u.rol=nuevoRol;
+    showToast(`✔ Rol actualizado a "${nuevoRol}"`);
+    renderAdminPanel();
+  } catch(e) { showToast('⚠️ Error cambiando rol','err'); }
 }
 
 function updateSyncUI() {
