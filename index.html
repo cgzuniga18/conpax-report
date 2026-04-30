@@ -248,7 +248,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
 <!-- Auto-actualización: fuerza nueva versión en cada carga -->
 <script>
   // Cada vez que carga la página, verifica si hay una versión nueva
-  const VERSION = 'v3.4-20260430';
+  const VERSION = 'v3.9-20260430';
   const storedVersion = localStorage.getItem('app_version');
   if (storedVersion && storedVersion !== VERSION) {
     // Hay versión nueva — limpiar caché y recargar
@@ -278,8 +278,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
     </div>
     <div class="login-divider"></div>
     <div class="field">
-      <label class="login-label">Correo electrónico</label>
-      <input class="login-input" type="email" id="loginEmail" placeholder="usuario@conpax.cl" autocomplete="email">
+      <label class="login-label">RUT o Correo</label>
+      <input class="login-input" type="text" id="loginRut" placeholder="12.345.678-9 o usuario@correo.cl" autocomplete="username">
     </div>
     <div class="field">
       <label class="login-label">Contraseña</label>
@@ -290,6 +290,11 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
     <div style="text-align:center;margin-top:14px;">
       <span style="font-size:12px;color:var(--text3)">¿Primera vez? </span>
       <button onclick="showRegister()" style="background:none;border:none;color:var(--blue);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">Solicitar acceso</button>
+    </div>
+    <div style="text-align:center;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+      <button onclick="forzarActualizacion()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:5px;">
+        ↺ Actualizar app
+      </button>
     </div>
   </div>
 </div>
@@ -302,8 +307,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
       <div class="login-project">Solicitar acceso al sistema</div>
     </div>
     <div class="login-divider"></div>
-    <div class="field"><label class="login-label">Nombre completo</label><input class="login-input" type="text" id="regNombre" placeholder="Tu nombre completo"></div>
-    <div class="field"><label class="login-label">Correo electrónico</label><input class="login-input" type="email" id="regEmail" placeholder="tu@correo.cl"></div>
+    <div class="field"><label class="login-label">Nombre completo</label><input class="login-input" type="text" id="regNombre" placeholder="Juan Pérez González"></div>
+    <div class="field"><label class="login-label">RUT</label><input class="login-input" type="text" id="regRut" placeholder="12.345.678-9" oninput="formatRutInput(this)"></div>
     <div class="field"><label class="login-label">Contraseña</label><input class="login-input" type="password" id="regPass" placeholder="Mínimo 6 caracteres"></div>
     <div class="field"><label class="login-label">Confirmar contraseña</label><input class="login-input" type="password" id="regPass2" placeholder="Repite la contraseña"></div>
     <button class="login-btn" id="regBtn" onclick="doRegister()"><span>Solicitar acceso</span></button>
@@ -332,6 +337,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:13px 0;}
           <div class="user-role" id="userRoleLabel">—</div>
         </div>
       </div>
+      <button class="logout-btn" onclick="forzarActualizacion()" title="Actualizar app" style="font-size:16px;">↺</button>
       <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión">⏏</button>
     </div>
   </header>
@@ -726,6 +732,32 @@ let listaUsuarios    = []; // Lista global de usuarios desde Firestore
 window.addEventListener('online',  () => { isOnline = true;  updateSyncUI(); showToast('📶 Conexión recuperada'); syncNow(); cargarDesdeFirebase(); });
 window.addEventListener('offline', () => { isOnline = false; updateSyncUI(); showToast('📡 Sin conexión', 'warn'); });
 
+/* ══ UTILIDADES RUT ══ */
+function rutToEmail(rut) {
+  return rut.replace(/\./g,'').replace(/-/g,'').replace(/\s/g,'').toLowerCase() + '@conpax.cl';
+}
+function formatRutInput(input) {
+  // No formatear si es un correo electrónico
+  if(input.value.includes('@')) return;
+  let val = input.value.replace(/[^0-9kK]/g,'');
+  if(val.length > 1) {
+    const dv = val.slice(-1);
+    let body = val.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    input.value = body + '-' + dv.toUpperCase();
+  } else { input.value = val; }
+}
+function validarRut(rut) {
+  const clean = rut.replace(/\./g,'').replace(/-/g,'');
+  if(clean.length < 2) return false;
+  const dv = clean.slice(-1).toUpperCase();
+  const body = clean.slice(0,-1);
+  if(!/^\d+$/.test(body)) return false;
+  let sum=0, mul=2;
+  for(let i=body.length-1;i>=0;i--){sum+=parseInt(body[i])*mul;mul=mul===7?2:mul+1;}
+  const exp=11-(sum%11);
+  return dv===(exp===11?'0':exp===10?'K':String(exp));
+}
+
 /* ══ AUTENTICACIÓN ══ */
 document.addEventListener('firebaseReady', () => {
   window._onAuthStateChanged(window._auth, async (fbUser) => {
@@ -741,12 +773,12 @@ document.addEventListener('firebaseReady', () => {
             err.classList.add('show');
             showLoginScreen(); return;
           }
-          currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:data.nombre||fbUser.email, rol:data.rol||'operador', capataces:data.capataces||[] };
+          currentUser = { uid:fbUser.uid, rut:data.rut||'', nombre:data.nombre||'', rol:data.rol||'operador', capataces:data.capataces||[] };
         } else {
-          currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:fbUser.email.split('@')[0], rol:'operador' };
+          currentUser = { uid:fbUser.uid, rut:'', nombre:fbUser.email.split('@')[0], rol:'operador', capataces:[] };
         }
       } catch(e) {
-        currentUser = { uid:fbUser.uid, email:fbUser.email, nombre:fbUser.email.split('@')[0], rol:'operador' };
+        currentUser = { uid:fbUser.uid, rut:'', nombre:fbUser.email.split('@')[0], rol:'operador', capataces:[] };
       }
       showApp();
     } else {
@@ -756,48 +788,75 @@ document.addEventListener('firebaseReady', () => {
 });
 
 async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
+  const input = document.getElementById('loginRut').value.trim();
   const pass  = document.getElementById('loginPass').value;
   const err   = document.getElementById('loginError');
   const btn   = document.getElementById('loginBtn');
-  if (!email||!pass) { err.textContent='Ingresa correo y contraseña.'; err.classList.add('show'); return; }
-  btn.disabled=true; btn.textContent='Ingresando...'; err.classList.remove('show');
+  err.classList.remove('show');
+  if(!input||!pass){err.textContent='Ingresa tu RUT y contraseña.';err.classList.add('show');return;}
+
+  // Detectar si es email o RUT
+  let email;
+  if(input.includes('@')) {
+    // Es un correo directo (cuentas antiguas)
+    email = input;
+  } else {
+    // Es RUT — validar y convertir
+    if(!validarRut(input)){err.textContent='RUT inválido. Formato: 12.345.678-9';err.classList.add('show');return;}
+    email = rutToEmail(input);
+  }
+
+  btn.disabled=true; btn.textContent='Ingresando...';
   try { await window._signIn(window._auth, email, pass); }
   catch(e) { err.classList.add('show'); err.textContent=traducirErrorAuth(e.code); btn.disabled=false; btn.textContent='Ingresar'; }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('loginPass')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginPass')?.addEventListener('keydown', e=>{if(e.key==='Enter')doLogin();});
 });
 
 async function doLogout() { await window._signOut(window._auth); currentUser=null; }
 
 function traducirErrorAuth(code) {
-  const map = { 'auth/user-not-found':'Usuario no encontrado.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-email':'Correo inválido.','auth/too-many-requests':'Demasiados intentos.','auth/invalid-credential':'Credenciales incorrectas.' };
-  return map[code]||'Error al iniciar sesión.';
+  const map = {
+    'auth/user-not-found':    'RUT no registrado en el sistema.',
+    'auth/wrong-password':    'Contraseña incorrecta.',
+    'auth/invalid-email':     'RUT inválido.',
+    'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.',
+    'auth/invalid-credential':'RUT o contraseña incorrectos.',
+    'auth/email-already-in-use':'Este RUT ya está registrado.',
+  };
+  return map[code]||'Error al iniciar sesión. Verifica tus datos.';
 }
 
 async function doRegister() {
-  const nombre=document.getElementById('regNombre').value.trim();
-  const email=document.getElementById('regEmail').value.trim();
-  const pass=document.getElementById('regPass').value;
-  const pass2=document.getElementById('regPass2').value;
-  const err=document.getElementById('regError');
-  const btn=document.getElementById('regBtn');
-  const ok=document.getElementById('regSuccess');
+  const nombre = document.getElementById('regNombre').value.trim();
+  const rut    = document.getElementById('regRut').value.trim();
+  const pass   = document.getElementById('regPass').value;
+  const pass2  = document.getElementById('regPass2').value;
+  const err    = document.getElementById('regError');
+  const btn    = document.getElementById('regBtn');
+  const ok     = document.getElementById('regSuccess');
   err.classList.remove('show'); ok.style.display='none';
-  if(!nombre){err.textContent='Ingresa tu nombre.';err.classList.add('show');return;}
-  if(!email){err.textContent='Ingresa tu correo.';err.classList.add('show');return;}
+  if(!nombre){err.textContent='Ingresa tu nombre completo.';err.classList.add('show');return;}
+  if(!rut){err.textContent='Ingresa tu RUT.';err.classList.add('show');return;}
+  if(!validarRut(rut)){err.textContent='RUT inválido. Formato: 12.345.678-9';err.classList.add('show');return;}
   if(pass.length<6){err.textContent='Contraseña mínimo 6 caracteres.';err.classList.add('show');return;}
   if(pass!==pass2){err.textContent='Las contraseñas no coinciden.';err.classList.add('show');return;}
   btn.disabled=true; btn.textContent='Creando cuenta...';
   try {
-    const cred=await window._createUser(window._auth,email,pass);
-    await window._fsSetDoc(window._fsDoc(window._db,'Usuarios',cred.user.uid),{nombre,email,rol:'pendiente',creadoEn:new Date().toISOString()});
+    const email = rutToEmail(rut);
+    const cred  = await window._createUser(window._auth, email, pass);
+    await window._fsSetDoc(window._fsDoc(window._db,'Usuarios',cred.user.uid),{
+      nombre, rut, email, rol:'pendiente', creadoEn:new Date().toISOString()
+    });
     await window._signOut(window._auth);
     ok.style.display='block';
-    ['regNombre','regEmail','regPass','regPass2'].forEach(id=>document.getElementById(id).value='');
-  } catch(e) { err.classList.add('show'); err.textContent=traducirErrorAuth(e.code); }
+    ['regNombre','regRut','regPass','regPass2'].forEach(id=>document.getElementById(id).value='');
+  } catch(e) {
+    err.classList.add('show');
+    err.textContent = traducirErrorAuth(e.code);
+  }
   btn.disabled=false; btn.textContent='Solicitar acceso';
 }
 
@@ -1316,6 +1375,36 @@ function renderAdminPanel() {
       </div>
     </div>
 
+    <!-- Crear nuevo usuario -->
+    <div class="section-card">
+      <div class="section-head">
+        <span class="section-num">➕</span>
+        <span class="section-title">Crear Nuevo Usuario</span>
+      </div>
+      <div class="section-body">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+          Crea cuentas para los trabajadores directamente sin que tengan que solicitarlo.
+        </p>
+        <div class="field"><label>Nombre Completo</label><input type="text" id="newUserNombre" placeholder="Juan Pérez González"></div>
+        <div class="field"><label>RUT</label><input type="text" id="newUserRut" placeholder="12.345.678-9" oninput="formatRutInput(this)"></div>
+        <div class="field"><label>Rol</label>
+          <select id="newUserRol">
+            <option value="operador">Operador</option>
+            <option value="capataz">Capataz</option>
+            <option value="jefe">Jefe de Terreno</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="field"><label>Contraseña Temporal</label><input type="text" id="newUserPass" placeholder="Mínimo 6 caracteres"></div>
+        <div id="newUserError" style="display:none;background:var(--red-dim);border:1px solid rgba(239,68,68,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+        <div id="newUserOk" style="display:none;background:var(--green-dim);border:1px solid rgba(16,185,129,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:10px"></div>
+        <button onclick="crearUsuario()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+          Crear Usuario
+        </button>
+      </div>
+    </div>
+
     <!-- Usuarios registrados -->
     <div class="section-card">
       <div class="section-head">
@@ -1329,7 +1418,7 @@ function renderAdminPanel() {
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px">
               <div>
                 <div style="font-size:13px;font-weight:600">${u.nombre||'Sin nombre'}</div>
-                <div style="font-size:10px;color:var(--text3)">${u.email||''}</div>
+                <div style="font-size:10px;color:var(--text3)">RUT: ${u.rut||'—'}</div>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="margin:0;font-size:11px;padding:4px 8px;border-radius:6px">
@@ -1410,6 +1499,52 @@ async function cambiarRolUsuario(uid, nuevoRol) {
     showToast(`✔ Rol actualizado a "${nuevoRol}"`);
     renderAdminPanel();
   } catch(e) { showToast('⚠️ Error cambiando rol','err'); }
+}
+
+// ── Crear usuario desde panel admin ──
+async function crearUsuario() {
+  const nombre = document.getElementById('newUserNombre')?.value.trim();
+  const rut    = document.getElementById('newUserRut')?.value.trim();
+  const rol    = document.getElementById('newUserRol')?.value;
+  const pass   = document.getElementById('newUserPass')?.value;
+  const errEl  = document.getElementById('newUserError');
+  const okEl   = document.getElementById('newUserOk');
+
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if(!nombre){errEl.textContent='Ingresa el nombre completo.';errEl.style.display='block';return;}
+  if(!rut){errEl.textContent='Ingresa el RUT.';errEl.style.display='block';return;}
+  if(!validarRut(rut)){errEl.textContent='RUT inválido. Formato: 12.345.678-9';errEl.style.display='block';return;}
+  if(!pass||pass.length<6){errEl.textContent='La contraseña debe tener al menos 6 caracteres.';errEl.style.display='block';return;}
+
+  try {
+    const email = rutToEmail(rut);
+    // Guardar admin actual para restaurar sesión
+    const adminUid = currentUser.uid;
+
+    const cred = await window._createUser(window._auth, email, pass);
+    await window._fsSetDoc(window._fsDoc(window._db,'Usuarios',cred.user.uid),{
+      nombre, rut, email, rol, creadoEn:new Date().toISOString()
+    });
+
+    // Cerrar sesión del nuevo usuario y volver a loguear al admin
+    await window._signOut(window._auth);
+
+    okEl.textContent = `✅ Usuario "${nombre}" creado con RUT ${rut} y rol "${rol}". Debe entrar con su RUT y la contraseña temporal.`;
+    okEl.style.display='block';
+
+    // Limpiar campos
+    ['newUserNombre','newUserRut','newUserPass'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+
+    // Recargar lista de usuarios
+    await cargarUsuarios();
+    renderAdminPanel();
+    showToast(`✔ Usuario ${nombre} creado`);
+
+  } catch(e) {
+    errEl.textContent = traducirErrorAuth(e.code);
+    errEl.style.display='block';
+  }
 }
 
 function updateSyncUI() {
@@ -1574,6 +1709,11 @@ function exportExcel() {
   const fecha=new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `CONPAX_Report_${fecha}.xlsx`);
   showToast(`📊 Excel generado con ${records.length} reporte(s)`);
+}
+
+function forzarActualizacion() {
+  localStorage.removeItem('app_version');
+  window.location.reload(true);
 }
 
 /* ══ TOAST ══ */
