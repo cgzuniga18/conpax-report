@@ -877,7 +877,7 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v4.2-20260504';
+const VERSION = 'v4.3-20260504';
 try {
   const sv = localStorage.getItem('app_version');
   if(sv && sv !== VERSION) { localStorage.setItem('app_version',VERSION); window.location.reload(true); }
@@ -1884,52 +1884,267 @@ function updateSyncUI(){
 
 function checkOnline(){isOnline=navigator.onLine;updateOnlineUI();showToast(isOnline?'📶 En línea':'📡 Sin señal',isOnline?'':'warn');}
 
-/* ── EXPORT EXCEL ── */
+/* ── EXPORT EXCEL CON FORMATO PROFESIONAL ── */
 function exportExcel(){
   if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Error cargando librería Excel','err');return;}
-  const wb=XLSX.utils.book_new();
-  const sorted=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  // Hoja 1: Control Maquinaria
-  const h1=['Correlativo','N° Daily Report','Fecha','Turno','Descripción (Equipo)','N° Interno','Patente','Operador','HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva','Fuera de Servicio','En Espera','Sin Operador','Horómetro Ini','Horómetro Fin','Total Horómetro','HM Parcial','HM Acum','Frente Ppal','Capataz Ppal','Actividades','Observaciones'];
+
+  const wb = XLSX.utils.book_new();
+  const sorted = [...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const fecha  = new Date().toISOString().slice(0,10);
+
+  // ── COLORES CONPAX ──────────────────────────
+  const C = {
+    azul:       '2563EB',  // Azul CONPAX
+    azul_claro: 'DBEAFE',  // Azul muy claro (fila par)
+    blanco:     'FFFFFF',
+    gris_claro: 'F1F5F9',  // Fila impar
+    gris_osc:   '475569',  // Texto secundario
+    verde:      '10B981',  // Total / acum positivo
+    verde_claro:'D1FAE5',
+    amber:      'F59E0B',
+    amber_claro:'FEF3C7',
+    negro:      '1E293B',
+  };
+
+  // ── HELPERS DE ESTILO ───────────────────────
+  const styleHeader = (bold=true, color=C.blanco, bg=C.azul, size=10, wrap=true) => ({
+    font:      { bold, color:{ rgb: color }, sz: size, name:'Calibri' },
+    fill:      { fgColor:{ rgb: bg }, patternType:'solid' },
+    alignment: { horizontal:'center', vertical:'center', wrapText: wrap },
+    border: {
+      top:   {style:'thin', color:{rgb:'FFFFFF'}},
+      bottom:{style:'thin', color:{rgb:'FFFFFF'}},
+      left:  {style:'thin', color:{rgb:'FFFFFF'}},
+      right: {style:'thin', color:{rgb:'FFFFFF'}},
+    }
+  });
+
+  const styleRow = (isEven, isNum=false, bold=false) => ({
+    font:      { bold, sz: 9, name:'Calibri', color:{rgb: C.negro} },
+    fill:      { fgColor:{ rgb: isEven ? C.azul_claro : C.blanco }, patternType:'solid' },
+    alignment: { horizontal: isNum ? 'right' : 'left', vertical:'center', wrapText:false },
+    border: {
+      top:   {style:'thin', color:{rgb:'CBD5E1'}},
+      bottom:{style:'thin', color:{rgb:'CBD5E1'}},
+      left:  {style:'thin', color:{rgb:'CBD5E1'}},
+      right: {style:'thin', color:{rgb:'CBD5E1'}},
+    }
+  });
+
+  const styleTotal = (bg=C.verde_claro) => ({
+    font:      { bold:true, sz:10, name:'Calibri', color:{rgb: C.negro} },
+    fill:      { fgColor:{ rgb: bg }, patternType:'solid' },
+    alignment: { horizontal:'right', vertical:'center' },
+    border: {
+      top:   {style:'medium', color:{rgb: C.verde}},
+      bottom:{style:'medium', color:{rgb: C.verde}},
+      left:  {style:'thin',   color:{rgb:'CBD5E1'}},
+      right: {style:'thin',   color:{rgb:'CBD5E1'}},
+    }
+  });
+
+  const styleTitleSheet = () => ({
+    font:      { bold:true, sz:13, name:'Calibri', color:{rgb: C.blanco} },
+    fill:      { fgColor:{ rgb: C.azul }, patternType:'solid' },
+    alignment: { horizontal:'left', vertical:'center' },
+  });
+
+  // Función para aplicar estilos a una hoja
+  function applyStyles(ws, headers, dataRows, numCols, numericCols=[], totalRow=null){
+    const range = XLSX.utils.decode_range(ws['!ref']);
+
+    // Fila 0 = título de hoja (si existe)
+    // Fila 1 = encabezados
+    // Fila 2+ = datos
+
+    for(let R=range.s.r; R<=range.e.r; R++){
+      for(let C2=range.s.c; C2<=range.e.c; C2++){
+        const addr = XLSX.utils.encode_cell({r:R, c:C2});
+        if(!ws[addr]) ws[addr]={v:'', t:'s'};
+        if(!ws[addr].s) ws[addr].s={};
+
+        if(R===0) {
+          // Título de proyecto
+          ws[addr].s = styleTitleSheet();
+        } else if(R===1){
+          // Encabezados
+          ws[addr].s = styleHeader();
+        } else {
+          // Filas de datos
+          const isEven = (R-2) % 2 === 0;
+          const isNum  = numericCols.includes(C2);
+          if(totalRow && R===range.e.r){
+            ws[addr].s = styleTotal();
+          } else {
+            ws[addr].s = styleRow(isEven, isNum);
+          }
+        }
+      }
+    }
+    // Altura de filas
+    ws['!rows'] = [];
+    for(let i=0; i<=range.e.r; i++){
+      ws['!rows'][i] = {hpt: i===0 ? 24 : i===1 ? 32 : 18};
+    }
+  }
+
+  // ══════════════════════════════════════════
+  // HOJA 1 — Control Maquinaria
+  // ══════════════════════════════════════════
+  const h1 = [
+    'Correlativo','N° Daily Report','Fecha','Turno',
+    'Descripción (Equipo)','N° Interno','Patente','Operador',
+    'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva',
+    'Fuera de Servicio','En Espera','Sin Operador',
+    'Horómetro Ini','Horómetro Fin','Total Horómetro',
+    'HM Parcial','HM Acum',
+    'Frente Principal','Capataz Principal',
+    'Actividades','Observaciones'
+  ];
+
+  // Fila título
+  const titulo1 = [`CONPAX-Report — Control de Maquinaria | Proyecto: Obras Complementarias Habilitación Polo Sur | Fecha exportación: ${fecha}`];
+  while(titulo1.length < h1.length) titulo1.push('');
+
   const acumEq={};
   const r1=sorted.map((r,i)=>{
     const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
-    if(!acumEq[key])acumEq[key]=0;
-    const hm=Number(r.operatividad?.hrsOperativas||0);acumEq[key]+=hm;
-    const pa=r.actividades?.[0];const frente=typeof pa==='object'?pa?.frente||'':pa||'';const capataz=typeof pa==='object'?pa?.capataz||'':'';
-    const acts=(r.actividades||[]).map((a,i)=>`${i+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
-    return [i+1,r.nDailyReport||i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.equipo?.patente||'',r.operador?.nombre||'',
-      Number(r.operatividad?.hmJornada||0),Number(r.operatividad?.hrsOperativas||0),Number(r.operatividad?.mantCorrectiva||0),Number(r.operatividad?.mantPreventiva||0),
-      Number(r.operatividad?.fueraServicio||0),Number(r.operatividad?.enEspera||0),Number(r.operatividad?.sinOperador||0),
-      Number(r.horometro?.inicial||0),Number(r.horometro?.final||0),(r.horometro?.final||0)-(r.horometro?.inicial||0),hm,acumEq[key],
-      frente,capataz,acts,r.observaciones||''];
+    if(!acumEq[key]) acumEq[key]=0;
+    const hm=Number(r.operatividad?.hrsOperativas||0);
+    acumEq[key]+=hm;
+    const pa=r.actividades?.[0];
+    const frente=typeof pa==='object'?pa?.frente||'':pa||'';
+    const capataz=typeof pa==='object'?pa?.capataz||'':'';
+    const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
+    return [
+      i+1, r.nDailyReport||i+1, r.fecha||'', 'Turno '+(r.turno||''),
+      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
+      Number(r.operatividad?.hmJornada||0),
+      Number(r.operatividad?.hrsOperativas||0),
+      Number(r.operatividad?.mantCorrectiva||0),
+      Number(r.operatividad?.mantPreventiva||0),
+      Number(r.operatividad?.fueraServicio||0),
+      Number(r.operatividad?.enEspera||0),
+      Number(r.operatividad?.sinOperador||0),
+      Number(r.horometro?.inicial||0),
+      Number(r.horometro?.final||0),
+      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),
+      hm,
+      acumEq[key],
+      frente, capataz, acts, r.observaciones||''
+    ];
   });
-  const ws1=XLSX.utils.aoa_to_sheet([h1,...r1]);
-  ws1['!cols']=[{wch:10},{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:10},{wch:20},{wch:10},{wch:12},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:10},{wch:10},{wch:30},{wch:20},{wch:40},{wch:30}];
-  XLSX.utils.book_append_sheet(wb,ws1,'Control Maquinaria');
-  // Hoja 2: Rellenos
-  const rellenos=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
-  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. Vueltas','M3 Relleno','M3 Parcial','M3 Acum'];
+
+  // Fila totales hoja 1
+  const tot1 = ['','','','TOTALES','','','','',
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hmJornada||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantCorrectiva||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantPreventiva||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.fueraServicio||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.enEspera||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.sinOperador||0),0),
+    '','','',
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
+    '','','','',''
+  ];
+
+  const ws1 = XLSX.utils.aoa_to_sheet([titulo1, h1, ...r1, tot1]);
+  ws1['!cols'] = [
+    {wch:10},{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:10},{wch:22},
+    {wch:10},{wch:12},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},
+    {wch:14},{wch:14},{wch:14},{wch:10},{wch:10},
+    {wch:32},{wch:22},{wch:45},{wch:30}
+  ];
+  // Merge título
+  ws1['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:h1.length-1}}];
+  // Freeze primera fila de encabezado
+  ws1['!freeze'] = {xSplit:0, ySplit:2};
+  applyStyles(ws1, h1, r1, h1.length, [8,9,10,11,12,13,14,15,16,17,18,19], true);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Control Maquinaria');
+
+  // ══════════════════════════════════════════
+  // HOJA 2 — Control de Rellenos
+  // ══════════════════════════════════════════
+  const rellenos = sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
+  const h2 = ['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
+  const titulo2 = [`CONPAX-Report — Control de Rellenos desde Empréstito | Fecha exportación: ${fecha}`];
+  while(titulo2.length < h2.length) titulo2.push('');
   const ar={};
-  const r2=rellenos.map((r,i)=>{const p=r.datosEspecificos?.pozo||'Sin nombre';if(!ar[p])ar[p]=0;const m=Number(r.datosEspecificos?.m3||0);ar[p]+=m;return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];});
-  const ws2=XLSX.utils.aoa_to_sheet([h2,...r2]);ws2['!cols']=[{wch:10},{wch:12},{wch:8},{wch:20},{wch:10},{wch:28},{wch:14},{wch:12},{wch:12},{wch:12}];
+  const r2=rellenos.map((r,i)=>{
+    const p=r.datosEspecificos?.pozo||'Sin nombre';
+    if(!ar[p])ar[p]=0;
+    const m=Number(r.datosEspecificos?.m3||0);
+    ar[p]+=m;
+    return [i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
+  });
+  const tot2=['','','TOTALES','','','',
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    ''
+  ];
+  const ws2=XLSX.utils.aoa_to_sheet([titulo2,h2,...r2,tot2]);
+  ws2['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:14},{wch:14},{wch:14}];
+  ws2['!merges']=[{s:{r:0,c:0},e:{r:0,c:h2.length-1}}];
+  ws2['!freeze']={xSplit:0,ySplit:2};
+  applyStyles(ws2,h2,r2,h2.length,[6,7,8,9],true);
   XLSX.utils.book_append_sheet(wb,ws2,'Control Rellenos');
-  // Hoja 3: Agua Industrial
+
+  // ══════════════════════════════════════════
+  // HOJA 3 — Control Agua Industrial
+  // ══════════════════════════════════════════
   const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
-  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Cachimba','Cant. Vueltas','M3','M3 Parcial','M3 Acum'];
+  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
+  const titulo3=[`CONPAX-Report — Control de M3 de Agua Industrial Utilizada | Fecha exportación: ${fecha}`];
+  while(titulo3.length<h3.length) titulo3.push('');
   const aa={};
-  const r3=aljibes.map((r,i)=>{const c=r.datosEspecificos?.cachimba||'Sin nombre';if(!aa[c])aa[c]=0;const m=Number(r.datosEspecificos?.m3||0);aa[c]+=m;return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];});
-  const ws3=XLSX.utils.aoa_to_sheet([h3,...r3]);ws3['!cols']=[{wch:10},{wch:12},{wch:8},{wch:20},{wch:10},{wch:28},{wch:14},{wch:12},{wch:12},{wch:12}];
+  const r3=aljibes.map((r,i)=>{
+    const c=r.datosEspecificos?.cachimba||'Sin nombre';
+    if(!aa[c])aa[c]=0;
+    const m=Number(r.datosEspecificos?.m3||0);
+    aa[c]+=m;
+    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
+  });
+  const tot3=['','','TOTALES','','','',
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    ''
+  ];
+  const ws3=XLSX.utils.aoa_to_sheet([titulo3,h3,...r3,tot3]);
+  ws3['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:12},{wch:12},{wch:14}];
+  ws3['!merges']=[{s:{r:0,c:0},e:{r:0,c:h3.length-1}}];
+  ws3['!freeze']={xSplit:0,ySplit:2};
+  applyStyles(ws3,h3,r3,h3.length,[6,7,8,9],true);
   XLSX.utils.book_append_sheet(wb,ws3,'Control Agua Industrial');
-  // Hoja 4: Tiempos
-  const h4=['N° Report','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción','Horas'];
+
+  // ══════════════════════════════════════════
+  // HOJA 4 — Detalle de Tiempos
+  // ══════════════════════════════════════════
+  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción Detalle','Horas'];
+  const titulo4=[`CONPAX-Report — Detalle de Tiempos | Fecha exportación: ${fecha}`];
+  while(titulo4.length<h4.length) titulo4.push('');
   const r4=[];
-  sorted.forEach((r,i)=>{TIEMPO_FIELDS.forEach(f=>{const h=Number(r.tiempos?.[f.id]||0);if(h>0)r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);});});
-  const ws4=XLSX.utils.aoa_to_sheet([h4,...r4]);ws4['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:20},{wch:25},{wch:45},{wch:10}];
+  sorted.forEach((r,i)=>{
+    TIEMPO_FIELDS.forEach(f=>{
+      const h=Number(r.tiempos?.[f.id]||0);
+      if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
+    });
+  });
+  if(!r4.length) r4.push(['Sin datos de tiempos registrados','','','','','','','',0]);
+  const tot4=['','','TOTALES','','','','','',r4.reduce((s,row)=>s+Number(row[8]||0),0)];
+  const ws4=XLSX.utils.aoa_to_sheet([titulo4,h4,...r4,tot4]);
+  ws4['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:22},{wch:26},{wch:48},{wch:10}];
+  ws4['!merges']=[{s:{r:0,c:0},e:{r:0,c:h4.length-1}}];
+  ws4['!freeze']={xSplit:0,ySplit:2};
+  applyStyles(ws4,h4,r4,h4.length,[8],true);
   XLSX.utils.book_append_sheet(wb,ws4,'Detalle de Tiempos');
-  XLSX.writeFile(wb,`CONPAX_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast(`📊 Excel generado con ${records.length} reporte(s)`);
+
+  // ── Descargar ───────────────────────────
+  XLSX.writeFile(wb,`CONPAX_Report_${fecha}.xlsx`);
+  showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
 }
 
 /* ── ADMIN PANEL ── */
