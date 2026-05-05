@@ -266,8 +266,58 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
 .especial-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:14px;margin-bottom:12px;display:none;}
 .especial-card.show{display:block;}
 
-/* Wizard nav */
-.wizard-nav{display:flex;gap:10px;margin-top:16px;position:sticky;bottom:16px;}
+/* Wizard nav — sticky bottom */
+.wizard-nav{
+  display:flex; gap:10px;
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:12px 16px;
+  z-index:90;
+  max-width:480px;
+  margin:0 auto;
+}
+/* Offset para que el contenido no quede debajo del nav fijo */
+#screen-form-maq .screen-inner { padding-bottom: 90px; }
+
+/* Campo obligatorio */
+.required-mark { color:var(--red); margin-left:2px; font-size:13px; }
+label .req { color:var(--red); }
+
+/* Modal confirmación */
+.confirm-overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.8);
+  backdrop-filter:blur(6px);
+  z-index:300;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.confirm-overlay.show { display:flex; }
+.confirm-box{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:28px 24px;
+  width:100%;
+  max-width:340px;
+  text-align:center;
+}
+.confirm-icon { font-size:40px; margin-bottom:12px; }
+.confirm-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; margin-bottom:6px; }
+.confirm-desc { font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:20px; }
+.confirm-btns { display:flex; gap:10px; }
+.confirm-cancel { flex:1; padding:12px; background:var(--card2); border:1px solid var(--border); border-radius:var(--r); color:var(--text2); font-size:14px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.confirm-ok { flex:1; padding:12px; background:var(--green); border:none; border-radius:var(--r); color:#000; font-size:14px; font-weight:700; cursor:pointer; font-family:'Syne',sans-serif; }
+
+/* Edit badge en record cards */
+.edit-btn { background:var(--blue-dim); border:1px solid var(--blue-glow); border-radius:6px; color:var(--blue); font-size:11px; padding:4px 10px; cursor:pointer; font-family:'DM Sans',sans-serif; margin-top:8px; display:inline-block; transition:all .2s; }
+.edit-btn:hover { background:var(--blue); color:#fff; }
+
+/* Tiempos avanzado badge — recuerda si estaba abierto */
+.tiempos-open .tiempos-avanzado { display:block; }
 .wiz-prev-btn{flex:0 0 auto;padding:13px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
 .wiz-prev-btn:hover{border-color:var(--blue);color:var(--blue);}
 .wiz-next-btn{flex:1;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
@@ -475,7 +525,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
           <div class="section-head"><span class="section-num">01</span><span class="section-title">Datos Básicos</span></div>
           <div class="section-body">
             <div class="field field-critical">
-              <label>Nombre Operador</label>
+              <label>Nombre Operador <span class="req">*</span></label>
               <input type="text" id="maq-operador" placeholder="Nombre completo">
             </div>
             <div class="field-row" style="margin-bottom:12px">
@@ -492,7 +542,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
               </div>
             </div>
             <div class="field field-critical">
-              <label>Equipo</label>
+              <label>Equipo <span class="req">*</span></label>
               <div class="equipo-search-wrap">
                 <input class="equipo-search-input" type="text" id="equipoSearch" placeholder="Buscar equipo..." oninput="filterEquipos()" autocomplete="off">
                 <div class="equipo-dropdown" id="equipoDropdown"></div>
@@ -563,8 +613,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
           <div class="section-head"><span class="section-num">04</span><span class="section-title">Operatividad HM</span></div>
           <div class="section-body">
             <div style="background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--blue);margin-bottom:12px;">
-              💡 HM Jornada se calcula automáticamente desde el horómetro:
-              <strong id="hmJornadaRef">— hrs</strong>
+              💡 <b>HM Operativos</b> se calculó automáticamente desde el horómetro. <b>HM Jornada</b> es la duración total del turno (ej: 12 hrs).
+              <br>Referencia horómetro: <strong id="hmJornadaRef">—</strong>
             </div>
             <div class="op-grid">
               <div class="op-item"><label>HM Jornada Total</label><input type="number" id="maq-hmJornada" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
@@ -579,33 +629,36 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
               <span class="ot-label">Total HM ingresados</span>
               <span class="ot-val" id="opTotal">0.0 hrs</span>
             </div>
-            <div class="op-mismatch" id="opMismatch">⚠ La suma de HM no coincide con la jornada</div>
+            <div class="op-mismatch" id="opMismatch">⚠ La suma de HM parciales no coincide con HM Jornada — revisa los valores</div>
           </div>
         </div>
       </div>
 
-      <!-- PASO 5: Detalle de tiempos -->
+      <!-- PASO 5: Detalle tiempos + Datos especiales + Resumen + Guardar -->
       <div class="wstep" id="wstep-5">
+
+        <!-- Tiempos -->
         <div class="section-card">
           <div class="section-head"><span class="section-num">05</span><span class="section-title">Detalle de Tiempos</span></div>
           <div class="section-body">
 
             <!-- Modo simple (por defecto) -->
+            <p style="font-size:11px;color:var(--text3);margin-bottom:10px;">Ingresa las horas en cada categoría. La suma debe coincidir con HM Jornada.</p>
             <div class="tiempos-simple-grid">
               <div class="ts-item">
-                <label>✅ Operativo</label>
+                <label>✅ Tiempo Efectivo <span style="color:var(--text3);font-weight:400">(máquina trabajando)</span></label>
                 <input type="number" id="t-te-efectivo" placeholder="0" step="0.1" min="0">
               </div>
               <div class="ts-item">
-                <label>🔧 Mantención</label>
+                <label>🔧 Mantención <span style="color:var(--text3);font-weight:400">(prog. o correctiva)</span></label>
                 <input type="number" id="t-simple-mant" placeholder="0" step="0.1" min="0" oninput="syncSimpleMant()">
               </div>
               <div class="ts-item">
-                <label>⏸ Espera / Reserva</label>
+                <label>⏸ Espera / Reserva <span style="color:var(--text3);font-weight:400">(sin trabajo asignado)</span></label>
                 <input type="number" id="t-simple-espera" placeholder="0" step="0.1" min="0" oninput="syncSimpleEspera()">
               </div>
               <div class="ts-item">
-                <label>🕐 Demoras</label>
+                <label>🕐 Demoras <span style="color:var(--text3);font-weight:400">(colación, traslados, etc.)</span></label>
                 <input type="number" id="t-simple-demoras" placeholder="0" step="0.1" min="0" oninput="syncSimpleDemoras()">
               </div>
             </div>
@@ -674,10 +727,6 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- PASO 6: Observaciones + Datos especiales + Resumen -->
-      <div class="wstep" id="wstep-6">
 
         <!-- Camión Tolva -->
         <div class="especial-card" id="section-tolva">
@@ -729,10 +778,11 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
           <div class="resumen-grid" id="resumenGrid"></div>
         </div>
 
-        <button class="wiz-save-btn" onclick="guardarMaquinaria()">💾 Guardar Report</button>
+        <!-- Botón guardar con confirmación -->
+        <button class="wiz-save-btn" onclick="confirmarGuardado()">💾 Guardar Report</button>
       </div>
 
-      <!-- Wizard nav -->
+      <!-- Wizard nav — sticky en la parte inferior -->
       <div class="wizard-nav" id="wizNav">
         <button class="wiz-prev-btn hidden" id="wizPrevBtn" onclick="wizardPrev()">← Atrás</button>
         <button class="wiz-next-btn" id="wizNextBtn" onclick="wizardNext()">Siguiente →</button>
@@ -797,6 +847,19 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
 
 </div><!-- /app -->
 
+<!-- Modal confirmación guardar -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">💾</div>
+    <div class="confirm-title">¿Guardar report?</div>
+    <div class="confirm-desc" id="confirmDesc">Revisa el resumen antes de confirmar.</div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="cerrarConfirm()">← Revisar</button>
+      <button class="confirm-ok" onclick="guardarMaquinaria()">✔ Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal detalle -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal-sheet">
@@ -814,7 +877,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v4.0-20260504';
+const VERSION = 'v4.2-20260504';
 try {
   const sv = localStorage.getItem('app_version');
   if(sv && sv !== VERSION) { localStorage.setItem('app_version',VERSION); window.location.reload(true); }
@@ -907,8 +970,8 @@ let selectedTipoMaterial = null;
 let actividadCount   = 0;
 let activeFilter     = 'all';
 let wizStep          = 1;
-const WIZ_TOTAL      = 6;
-const WIZ_NAMES      = ['Datos Básicos','Horómetro y Km','Actividades','Operatividad','Detalle Tiempos','Resumen'];
+const WIZ_TOTAL = 5;
+const WIZ_NAMES = ['Datos Básicos','Horómetro y Km','Actividades','Operatividad','Tiempos y Guardar'];
 let listaCapataces   = [];
 let listaUsuarios    = [];
 let autosaveTimer    = null;
@@ -1062,7 +1125,7 @@ function initDashboard(){
   updateStats();
   // Mostrar últimos 3 registros
   const list=document.getElementById('dashRecentList');
-  const recent=records.slice(0,3);
+  const recent=records.slice(0,5);
   if(!recent.length){list.innerHTML=`<div class="no-records"><div class="no-records-ico">📋</div><div class="no-records-txt">Sin reportes aún.<br>Toca "Nuevo Reporte" para comenzar.</div></div>`;return;}
   list.innerHTML=recent.map(r=>{
     const synced=r.estado?.synced??false;
@@ -1141,23 +1204,22 @@ function wizardRender(){
     if(wizStep===WIZ_TOTAL) next.style.display='none';
     else{next.style.display='block';next.textContent='Siguiente →';}
   }
-  // Actualizar resumen en paso 6
-  if(wizStep===6){
+  // Actualizar resumen en paso 5
+  if(wizStep===5){
     actualizarResumen();
-    // Mostrar secciones especiales
     const equipo=selectedEquipo;
     document.getElementById('section-tolva').classList.toggle('show',equipo==='Camión Tolva');
     document.getElementById('section-aljibe').classList.toggle('show',equipo==='Camión Aljibe');
+    // Restaurar estado del detalle de tiempos
+    if(tiemposAvanzado) document.getElementById('tiemposAvanzado')?.classList.add('show');
   }
-  // Mostrar HM jornada ref en paso 4
+  // Mostrar info del horómetro como referencia
   if(wizStep===4){
     const horoIni=parseFloat(document.getElementById('maq-horoIni').value)||0;
     const horoFin=parseFloat(document.getElementById('maq-horoFin').value)||0;
     const diff=horoFin>horoIni?(horoFin-horoIni).toFixed(1):'—';
     const ref=document.getElementById('hmJornadaRef');
-    if(ref) ref.textContent=diff!=='—'?diff+' hrs':'No calculado aún';
-    // Auto-rellenar HM jornada si está vacío
-    if(diff!=='—'){const hj=document.getElementById('maq-hmJornada');if(hj&&!hj.value)hj.value=diff;}
+    if(ref) ref.textContent=diff!=='—'?diff+' hrs (hrs motor encendido)':'No calculado aún';
   }
   // Scroll top
   document.getElementById('screen-form-maq').scrollTo(0,0);
@@ -1218,11 +1280,11 @@ function autoSave(){
   }catch(e){}
 }
 
-/* ── AUTORELLENAR ── */
+/* ── AUTORELLENAR — solo si es el mismo usuario ── */
 function autorellenar(){
   try{
     const last=JSON.parse(localStorage.getItem(LASTUSED_KEY)||'{}');
-    if(last.operador){const el=document.getElementById('maq-operador');if(el&&!el.value)el.value=last.operador;}
+    // Solo autorellenar equipo y N° (no el nombre del operador — puede ser otra persona)
     if(last.equipo&&!selectedEquipo){
       selectedEquipo=last.equipo;
       const el=document.getElementById('equipoSearch');
@@ -1232,7 +1294,16 @@ function autorellenar(){
       if(badge&&txt){badge.style.display='inline-flex';txt.textContent=last.equipo;}
     }
     if(last.nEquipo){const el=document.getElementById('maq-nEquipo');if(el&&!el.value)el.value=last.nEquipo;}
-    if(last.turno) selectedTurno=last.turno;
+    // Solo rellenar operador si el uid coincide con el último
+    if(last.uid && last.uid===currentUser?.uid && last.operador){
+      const el=document.getElementById('maq-operador');if(el&&!el.value)el.value=last.operador;
+    }
+    if(last.turno){
+      selectedTurno=last.turno;
+      document.querySelectorAll('.turno-btn').forEach(b=>{
+        b.classList.toggle('selected', b.textContent.includes('Turno '+last.turno));
+      });
+    }
   }catch(e){}
 }
 
@@ -1296,9 +1367,10 @@ function calcHoro(){
     el.textContent=diff+' hrs';
     el.style.color='var(--green)';
     warn.classList.remove('show');
-    // Auto-rellenar HM jornada
-    const hj=document.getElementById('maq-hmJornada');
-    if(hj&&!hj.value) hj.value=diff;
+    // Auto-rellenar HM Operativos con la diferencia del horómetro
+    const hmOp=document.getElementById('maq-hrsOp');
+    if(hmOp&&!hmOp.value) hmOp.value=diff;
+    calcOpTotal();
   }else if(fin>0&&fin<=ini){
     el.textContent='Verificar valores';
     el.style.color='var(--red)';
@@ -1417,7 +1489,7 @@ function selectTipoMaterial(tipo){
   document.getElementById('tolva-excav-btn').classList.toggle('selected',tipo==='excavacion');
 }
 
-/* ── RESUMEN PASO 6 ── */
+/* ── RESUMEN PASO 5 ── */
 function actualizarResumen(){
   const equipo=selectedEquipo||'—';
   const operador=document.getElementById('maq-operador')?.value||'—';
@@ -1444,7 +1516,103 @@ function actualizarResumen(){
     </div>`).join('');
 }
 
-/* ── GUARDAR ── */
+/* ── CONFIRMACIÓN ANTES DE GUARDAR ── */
+function confirmarGuardado(){
+  const operador=document.getElementById('maq-operador').value.trim();
+  const equipo=selectedEquipo;
+  const fecha=document.getElementById('maq-fecha').value;
+  const acts=document.querySelectorAll('[id^="act-card-"]').length;
+  // Mostrar resumen en el modal de confirmación
+  document.getElementById('confirmDesc').innerHTML=`
+    <strong>${equipo}</strong> · ${operador}<br>
+    📅 ${fecha} · Turno ${selectedTurno}<br>
+    ${acts} actividad(es) registrada(s)
+  `;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function cerrarConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+}
+
+/* ── EDITAR REGISTRO ── */
+let editandoId = null;
+
+function editarRegistro(id){
+  const r=records.find(rec=>String(rec.id)===String(id));
+  if(!r){showToast('⚠️ Registro no encontrado','warn');return;}
+  editandoId=id;
+  // Cerrar modal
+  document.getElementById('modalOverlay').classList.remove('show');
+  // Ir al formulario
+  showTab('form-maq');
+  wizardInit();
+  // Rellenar campos
+  setTimeout(()=>{
+    // Datos básicos
+    const opEl=document.getElementById('maq-operador');if(opEl)opEl.value=r.operador?.nombre||'';
+    const fechaEl=document.getElementById('maq-fecha');if(fechaEl)fechaEl.value=r.fecha||'';
+    selectedTurno=r.turno||'A';
+    document.querySelectorAll('.turno-btn').forEach(b=>b.classList.toggle('selected',b.textContent.includes('Turno '+selectedTurno)));
+    // Equipo
+    if(r.equipo?.tipo) selectEquipo(r.equipo.tipo);
+    const nEqEl=document.getElementById('maq-nEquipo');if(nEqEl)nEqEl.value=r.equipo?.numero||'';
+    const patEl=document.getElementById('maq-patente');if(patEl)patEl.value=r.equipo?.patente||'';
+    // Horómetro
+    const hIni=document.getElementById('maq-horoIni');if(hIni)hIni.value=r.horometro?.inicial||'';
+    const hFin=document.getElementById('maq-horoFin');if(hFin)hFin.value=r.horometro?.final||'';
+    calcHoro();
+    const kmI=document.getElementById('maq-kmIni');if(kmI)kmI.value=r.kilometraje?.inicial||'';
+    const kmF=document.getElementById('maq-kmFin');if(kmF)kmF.value=r.kilometraje?.final||'';
+    // Actividades
+    document.getElementById('actividadesContainer').innerHTML='';
+    actividadCount=0;
+    (r.actividades||[]).forEach(a=>{
+      addActividad(typeof a==='string'?a:a.descripcion||'');
+      const idx=actividadCount;
+      setTimeout(()=>{
+        const fEl=document.getElementById(`act-frente-${idx}`);if(fEl&&a.frente)fEl.value=a.frente;
+        const cEl=document.getElementById(`act-capataz-${idx}`);if(cEl&&a.capataz)cEl.value=a.capataz;
+      },100);
+    });
+    // Operatividad
+    const op=r.operatividad||{};
+    ['hmJornada','hrsOp','mantCorrectiva','mantPreventiva','fueraServicio','enEspera','sinOperador'].forEach(k=>{
+      const el=document.getElementById('maq-'+k.replace('hrsOp','hrsOp').replace('hmJornada','hmJornada'));
+      const map={'hmJornada':'maq-hmJornada','hrsOp':'maq-hrsOp','mantCorrectiva':'maq-mantCorrectiva','mantPreventiva':'maq-mantPreventiva','fueraServicio':'maq-fueraServicio','enEspera':'maq-enEspera','sinOperador':'maq-sinOperador'};
+      const el2=document.getElementById(map[k]);if(el2)el2.value=op[k]||'';
+    });
+    calcOpTotal();
+    // Tiempos
+    TIEMPO_FIELDS.forEach(f=>{const el=document.getElementById(f.id);if(el)el.value=r.tiempos?.[f.id]||'';});
+    // Observaciones
+    const obsEl=document.getElementById('maq-observaciones');if(obsEl)obsEl.value=r.observaciones||'';
+    // Datos especiales
+    if(r.datosEspecificos?.tipo==='Camión Tolva'){
+      selectedTipoMaterial=r.datosEspecificos.material==='Relleno'?'relleno':'excavacion';
+      setTimeout(()=>{
+        document.getElementById('section-tolva')?.classList.add('show');
+        selectTipoMaterial(selectedTipoMaterial);
+        if(selectedTipoMaterial==='relleno'){
+          const el=document.getElementById('tolva-pozo');if(el)el.value=r.datosEspecificos.pozo||'';
+          const v=document.getElementById('tolva-vueltas-rell');if(v)v.value=r.datosEspecificos.vueltas||'';
+          const m=document.getElementById('tolva-m3-rell');if(m)m.value=r.datosEspecificos.m3||'';
+        }else{
+          const v=document.getElementById('tolva-vueltas-excav');if(v)v.value=r.datosEspecificos.vueltas||'';
+          const m=document.getElementById('tolva-m3-excav');if(m)m.value=r.datosEspecificos.m3||'';
+        }
+      },200);
+    }
+    if(r.datosEspecificos?.tipo==='Camión Aljibe'){
+      setTimeout(()=>{
+        document.getElementById('section-aljibe')?.classList.add('show');
+        const c=document.getElementById('aljibe-cachimba');if(c)c.value=r.datosEspecificos.cachimba||'';
+        const v=document.getElementById('aljibe-vueltas');if(v)v.value=r.datosEspecificos.vueltas||'';
+        const m=document.getElementById('aljibe-m3');if(m)m.value=r.datosEspecificos.m3||'';
+      },200);
+    }
+    showToast('✏️ Editando registro — modifica y guarda');
+  },100);
+}
 function guardarMaquinaria(){
   const operador=document.getElementById('maq-operador').value.trim();
   if(!operador||!selectedEquipo){showToast('⚠️ Faltan datos obligatorios','warn');return;}
@@ -1496,16 +1664,29 @@ function guardarMaquinaria(){
     estado:{synced:false,syncedAt:null},
   };
 
-  // Guardar últimos datos usados para autorellenar
-  localStorage.setItem(LASTUSED_KEY,JSON.stringify({operador,equipo:selectedEquipo,nEquipo:record.equipo.numero,turno:selectedTurno}));
+  // Guardar últimos datos (incluye uid para identificar usuario)
+  localStorage.setItem(LASTUSED_KEY,JSON.stringify({uid:currentUser.uid,operador,equipo:selectedEquipo,nEquipo:record.equipo.numero,turno:selectedTurno}));
 
-  records.unshift(record);
+  // Si estamos editando, reemplazar el registro existente
+  if(editandoId){
+    record.id=editandoId;
+    record.editadoEn=new Date().toISOString();
+    const idx=records.findIndex(r=>String(r.id)===String(editandoId));
+    if(idx>-1) records[idx]=record;
+    else records.unshift(record);
+    editandoId=null;
+    showToast('✅ Report actualizado correctamente');
+  }else{
+    records.unshift(record);
+    showToast('✅ Report guardado correctamente');
+  }
+
+  cerrarConfirm();
   localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
   localStorage.removeItem(DRAFT_KEY);
   if(autosaveTimer){clearInterval(autosaveTimer);autosaveTimer=null;}
 
   renderRecords();updateStats();updateSyncUI();initDashboard();
-  showToast('✅ Report guardado correctamente');
   resetForm();
   showTab('dash');
 
@@ -1601,6 +1782,7 @@ function openModal(id){
   content.innerHTML=`
     <div class="modal-title">${r.equipo?.tipo||'Equipo'}${r.equipo?.numero?' · '+r.equipo.numero:''}</div>
     <div class="modal-subtitle">📅 ${r.fecha} · Turno ${r.turno} · <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓ sync':'⏳ pendiente'}</span></div>
+    <button class="edit-btn" onclick="editarRegistro('${r.id}')">✏️ Editar este registro</button>
     <div class="modal-section-title">Operador / Equipo</div>
     ${dr('Operador',r.operador?.nombre)}${dr('Patente',r.equipo?.patente||'—')}
     <div class="modal-section-title">Horómetro</div>
