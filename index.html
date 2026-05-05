@@ -877,7 +877,7 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v4.3-20260504';
+const VERSION = 'v4.5-20260504';
 try {
   const sv = localStorage.getItem('app_version');
   if(sv && sv !== VERSION) { localStorage.setItem('app_version',VERSION); window.location.reload(true); }
@@ -1884,8 +1884,469 @@ function updateSyncUI(){
 
 function checkOnline(){isOnline=navigator.onLine;updateOnlineUI();showToast(isOnline?'📶 En línea':'📡 Sin señal',isOnline?'':'warn');}
 
-/* ── EXPORT EXCEL CON FORMATO PROFESIONAL ── */
+/* ── EXPORT EXCEL CON FORMATO — HTML → XLS ── */
 function exportExcel(){
+  if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
+
+  const sorted=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const fecha=new Date().toISOString().slice(0,10);
+
+  // ── ESTILOS CSS para Excel ──────────────
+  const css = `
+    table { border-collapse: collapse; font-family: Calibri, sans-serif; font-size: 9pt; }
+    .titulo { background:#2563EB; color:#fff; font-size:12pt; font-weight:bold; padding:8px 12px; }
+    .header { background:#2563EB; color:#fff; font-weight:bold; font-size:9pt; text-align:center; padding:6px 8px; border:1px solid #fff; vertical-align:middle; }
+    .par    { background:#DBEAFE; font-size:9pt; padding:4px 8px; border:1px solid #CBD5E1; vertical-align:middle; }
+    .impar  { background:#FFFFFF; font-size:9pt; padding:4px 8px; border:1px solid #CBD5E1; vertical-align:middle; }
+    .num    { text-align:right; }
+    .total  { background:#D1FAE5; font-weight:bold; font-size:10pt; padding:5px 8px; border:2px solid #10B981; }
+    .total-num { background:#D1FAE5; font-weight:bold; font-size:10pt; padding:5px 8px; border:2px solid #10B981; text-align:right; }
+    .label-total { color:#475569; font-weight:bold; }
+  `;
+
+  // ── HELPER: generar tabla HTML ──────────
+  function tabla(titulo, headers, filas, numericCols=[], totales=null){
+    const ncols = headers.length;
+    let html = `<table>`;
+
+    // Fila título
+    html += `<tr><td colspan="${ncols}" class="titulo">
+      CONPAX-Report — ${titulo} | Proyecto: Obras Complementarias Habilitación Polo Sur en Caso Base | Exportado: ${fecha}
+    </td></tr>`;
+
+    // Encabezados
+    html += '<tr>' + headers.map(h=>`<td class="header">${h}</td>`).join('') + '</tr>';
+
+    // Datos
+    filas.forEach((fila, idx)=>{
+      const cls = idx%2===0 ? 'par' : 'impar';
+      html += '<tr>' + fila.map((v,ci)=>{
+        const isNum = numericCols.includes(ci);
+        const val   = isNum && typeof v==='number' ? v.toFixed(1) : (v??'');
+        return `<td class="${cls}${isNum?' num':''}">${val}</td>`;
+      }).join('') + '</tr>';
+    });
+
+    // Totales
+    if(totales){
+      html += '<tr>' + totales.map((v,ci)=>{
+        const isNum = numericCols.includes(ci);
+        const val   = isNum && typeof v==='number' ? v.toFixed(1) : (v??'');
+        const cls2  = isNum ? 'total-num' : 'total';
+        return `<td class="${cls2}">${val}</td>`;
+      }).join('') + '</tr>';
+    }
+
+    html += '</table>';
+    return html;
+  }
+
+  // ══════════════════════════════════════
+  // HOJA 1 — Control Maquinaria
+  // ══════════════════════════════════════
+  const h1=['Correlativo','N° Daily Report','Fecha','Turno',
+    'Equipo','N° Interno','Patente','Operador',
+    'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva',
+    'Fuera de Servicio','En Espera','Sin Operador',
+    'Horómetro Inicial','Horómetro Final','Total Horómetro',
+    'HM Parcial','HM Acum',
+    'Frente Principal','Capataz Principal','Actividades','Observaciones'];
+
+  const acumEq={};
+  const r1=sorted.map((r,i)=>{
+    const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
+    if(!acumEq[key])acumEq[key]=0;
+    const hm=Number(r.operatividad?.hrsOperativas||0);
+    acumEq[key]+=hm;
+    const pa=r.actividades?.[0];
+    const frente  = typeof pa==='object'?pa?.frente||'':pa||'';
+    const capataz = typeof pa==='object'?pa?.capataz||'':'';
+    const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
+    return [
+      i+1, r.nDailyReport||i+1, r.fecha||'', 'Turno '+(r.turno||''),
+      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
+      Number(r.operatividad?.hmJornada||0),
+      Number(r.operatividad?.hrsOperativas||0),
+      Number(r.operatividad?.mantCorrectiva||0),
+      Number(r.operatividad?.mantPreventiva||0),
+      Number(r.operatividad?.fueraServicio||0),
+      Number(r.operatividad?.enEspera||0),
+      Number(r.operatividad?.sinOperador||0),
+      Number(r.horometro?.inicial||0),
+      Number(r.horometro?.final||0),
+      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),
+      hm, acumEq[key],
+      frente, capataz, acts, r.observaciones||''
+    ];
+  });
+  const tot1=['','','','TOTALES','','','','',
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hmJornada||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantCorrectiva||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantPreventiva||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.fueraServicio||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.enEspera||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.sinOperador||0),0),
+    '','',
+    sorted.reduce((s,r)=>s+Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
+    '','','','',''
+  ];
+  const t1=tabla('Control de Maquinaria',h1,r1,[8,9,10,11,12,13,14,15,16,17,18,19],tot1);
+
+  // ══════════════════════════════════════
+  // HOJA 2 — Control Rellenos
+  // ══════════════════════════════════════
+  const rellenos=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
+  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
+  const ar={};
+  const r2=rellenos.map((r,i)=>{
+    const p=r.datosEspecificos?.pozo||'Sin nombre';
+    if(!ar[p])ar[p]=0;
+    const m=Number(r.datosEspecificos?.m3||0);
+    ar[p]+=m;
+    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
+  });
+  const tot2=['','','TOTALES','','','',
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
+  ];
+  const t2=tabla('Control de Rellenos desde Empréstito',h2,r2,[6,7,8,9],r2.length?tot2:null);
+
+  // ══════════════════════════════════════
+  // HOJA 3 — Control Agua Industrial
+  // ══════════════════════════════════════
+  const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
+  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
+  const aa={};
+  const r3=aljibes.map((r,i)=>{
+    const c=r.datosEspecificos?.cachimba||'Sin nombre';
+    if(!aa[c])aa[c]=0;
+    const m=Number(r.datosEspecificos?.m3||0);
+    aa[c]+=m;
+    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
+  });
+  const tot3=['','','TOTALES','','','',
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
+  ];
+  const t3=tabla('Control de M3 de Agua Industrial',h3,r3,[6,7,8,9],r3.length?tot3:null);
+
+  // ══════════════════════════════════════
+  // HOJA 4 — Detalle de Tiempos
+  // ══════════════════════════════════════
+  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción Detalle','Horas'];
+  const r4=[];
+  sorted.forEach((r,i)=>{
+    TIEMPO_FIELDS.forEach(f=>{
+      const h=Number(r.tiempos?.[f.id]||0);
+      if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
+    });
+  });
+  if(!r4.length) r4.push(['Sin datos','','','','','','','',0]);
+  const tot4=['','','TOTALES','','','','','',r4.reduce((s,row)=>s+Number(row[8]||0),0)];
+  const t4=tabla('Detalle de Tiempos',h4,r4,[8],tot4);
+
+  // ── Armar HTML completo con 4 hojas ────
+  // Excel abre el HTML con múltiples tablas en hojas separadas usando mso-sheet-name
+  const htmlCompleto = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="UTF-8">
+      <!--[if gte mso 9]>
+      <xml><x:ExcelWorkbook><x:ExcelWorksheets>
+        <x:ExcelWorksheet><x:Name>Control Maquinaria</x:Name><x:WorksheetOptions><x:Selected/></x:WorksheetOptions></x:ExcelWorksheet>
+        <x:ExcelWorksheet><x:Name>Control Rellenos</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+        <x:ExcelWorksheet><x:Name>Control Agua Industrial</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+        <x:ExcelWorksheet><x:Name>Detalle de Tiempos</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
+      </x:ExcelWorksheets></x:ExcelWorkbook></xml>
+      <![endif]-->
+      <style>${css}</style>
+    </head>
+    <body>
+      <div style="mso-ignore:padding" class="Sheet1">${t1}</div>
+      <br clear="all" style="mso-special-character:line-break;page-break-before:always">
+      <div style="mso-ignore:padding" class="Sheet2">${t2}</div>
+      <br clear="all" style="mso-special-character:line-break;page-break-before:always">
+      <div style="mso-ignore:padding" class="Sheet3">${t3}</div>
+      <br clear="all" style="mso-special-character:line-break;page-break-before:always">
+      <div style="mso-ignore:padding" class="Sheet4">${t4}</div>
+    </body>
+    </html>`;
+
+  // ── Descargar como .xls ─────────────────
+  const BOM  = '\uFEFF';
+  const blob = new Blob([BOM+htmlCompleto], {type:'application/vnd.ms-excel;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `CONPAX_Report_${fecha}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
+}
+  if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
+  if(typeof ExcelJS==='undefined'){showToast('⚠️ Error cargando ExcelJS','err');return;}
+
+  showToast('⏳ Generando Excel...');
+  const sorted=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const fecha=new Date().toISOString().slice(0,10);
+  const wb=new ExcelJS.Workbook();
+  wb.creator='CONPAX-Report';
+  wb.created=new Date();
+
+  // ── ESTILOS BASE ────────────────────────
+  const AZUL   = '2563EB';
+  const BLANCO = 'FFFFFF';
+  const AZ_CL  = 'DBEAFE';  // azul muy claro filas pares
+  const GRIS   = 'F1F5F9';  // filas impares
+  const VERDE  = '10B981';
+  const VE_CL  = 'D1FAE5';
+  const AMBER  = 'FEF3C7';
+  const NEGRO  = '1E293B';
+
+  const fontBase  = {name:'Calibri', size:9,  color:{argb:'FF'+NEGRO}};
+  const fontHead  = {name:'Calibri', size:10, bold:true, color:{argb:'FF'+BLANCO}};
+  const fontTitle = {name:'Calibri', size:12, bold:true, color:{argb:'FF'+BLANCO}};
+  const fontTotal = {name:'Calibri', size:10, bold:true, color:{argb:'FF'+NEGRO}};
+
+  const fillAzul  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+AZUL}};
+  const fillAzCl  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+AZ_CL}};
+  const fillGris  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+GRIS}};
+  const fillVeCl  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+VE_CL}};
+  const fillAmber = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+AMBER}};
+
+  const borderThin = {
+    top:   {style:'thin', color:{argb:'FFCBD5E1'}},
+    bottom:{style:'thin', color:{argb:'FFCBD5E1'}},
+    left:  {style:'thin', color:{argb:'FFCBD5E1'}},
+    right: {style:'thin', color:{argb:'FFCBD5E1'}},
+  };
+  const borderHead = {
+    top:   {style:'thin', color:{argb:'FFFFFFFF'}},
+    bottom:{style:'thin', color:{argb:'FFFFFFFF'}},
+    left:  {style:'thin', color:{argb:'FFFFFFFF'}},
+    right: {style:'thin', color:{argb:'FFFFFFFF'}},
+  };
+  const borderTotal = {
+    top:   {style:'medium', color:{argb:'FF'+VERDE}},
+    bottom:{style:'medium', color:{argb:'FF'+VERDE}},
+    left:  {style:'thin',   color:{argb:'FFCBD5E1'}},
+    right: {style:'thin',   color:{argb:'FFCBD5E1'}},
+  };
+
+  // ── HELPER: crear hoja con formato ─────
+  function crearHoja(nombre, headers, filas, colWidths, numericCols=[], totales=null, subtitulo=''){
+    const ws = wb.addWorksheet(nombre, {
+      views:[{state:'frozen', xSplit:0, ySplit:2}],
+      properties:{tabColor:{argb:'FF'+AZUL}}
+    });
+
+    // Fila 1 — Título del proyecto
+    const tituloRow = ws.addRow([`CONPAX-Report — ${subtitulo} | Proyecto: Obras Complementarias Habilitación Polo Sur | Exportado: ${fecha}`]);
+    tituloRow.height = 24;
+    tituloRow.getCell(1).font   = fontTitle;
+    tituloRow.getCell(1).fill   = fillAzul;
+    tituloRow.getCell(1).alignment = {horizontal:'left', vertical:'middle'};
+    // Merge título
+    ws.mergeCells(1, 1, 1, headers.length);
+
+    // Fila 2 — Encabezados
+    const headRow = ws.addRow(headers);
+    headRow.height = 30;
+    headRow.eachCell(cell=>{
+      cell.font      = fontHead;
+      cell.fill      = fillAzul;
+      cell.border    = borderHead;
+      cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true};
+    });
+
+    // Filas de datos
+    filas.forEach((fila, idx)=>{
+      const row = ws.addRow(fila);
+      row.height = 18;
+      const isEven = idx % 2 === 0;
+      row.eachCell({includeEmpty:true}, (cell, colNum)=>{
+        cell.font      = fontBase;
+        cell.fill      = isEven ? fillAzCl : fillGris;
+        cell.border    = borderThin;
+        cell.alignment = {
+          horizontal: numericCols.includes(colNum) ? 'right' : 'left',
+          vertical:'middle'
+        };
+        // Formato número con 1 decimal para columnas numéricas
+        if(numericCols.includes(colNum) && typeof cell.value === 'number'){
+          cell.numFmt = '0.0';
+        }
+      });
+    });
+
+    // Fila de totales
+    if(totales){
+      const totRow = ws.addRow(totales);
+      totRow.height = 20;
+      totRow.eachCell({includeEmpty:true}, (cell, colNum)=>{
+        cell.font      = fontTotal;
+        cell.fill      = fillVeCl;
+        cell.border    = borderTotal;
+        cell.alignment = {
+          horizontal: numericCols.includes(colNum) ? 'right' : 'left',
+          vertical:'middle'
+        };
+        if(numericCols.includes(colNum) && typeof cell.value === 'number'){
+          cell.numFmt = '0.0';
+        }
+      });
+    }
+
+    // Anchos de columna
+    colWidths.forEach((w, i)=>{
+      ws.getColumn(i+1).width = w;
+    });
+
+    return ws;
+  }
+
+  // ══════════════════════════════════════
+  // HOJA 1 — Control Maquinaria
+  // ══════════════════════════════════════
+  const h1=['Correlativo','N° Daily\nReport','Fecha','Turno',
+    'Equipo','N° Interno','Patente','Operador',
+    'HM Jornada','HM Operativos','Mant.\nCorrectiva','Mant.\nPreventiva',
+    'Fuera de\nServicio','En Espera','Sin Operador',
+    'Horómetro\nInicial','Horómetro\nFinal','Total\nHorómetro',
+    'HM Parcial','HM Acum',
+    'Frente Principal','Capataz Principal','Actividades','Observaciones'];
+
+  const acumEq={};
+  const r1=sorted.map((r,i)=>{
+    const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
+    if(!acumEq[key])acumEq[key]=0;
+    const hm=Number(r.operatividad?.hrsOperativas||0);
+    acumEq[key]+=hm;
+    const pa=r.actividades?.[0];
+    const frente=typeof pa==='object'?pa?.frente||'':pa||'';
+    const capataz=typeof pa==='object'?pa?.capataz||'':'';
+    const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
+    return [
+      i+1, r.nDailyReport||i+1, r.fecha||'', 'Turno '+(r.turno||''),
+      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
+      Number(r.operatividad?.hmJornada||0),
+      Number(r.operatividad?.hrsOperativas||0),
+      Number(r.operatividad?.mantCorrectiva||0),
+      Number(r.operatividad?.mantPreventiva||0),
+      Number(r.operatividad?.fueraServicio||0),
+      Number(r.operatividad?.enEspera||0),
+      Number(r.operatividad?.sinOperador||0),
+      Number(r.horometro?.inicial||0),
+      Number(r.horometro?.final||0),
+      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),
+      hm, acumEq[key],
+      frente, capataz, acts, r.observaciones||''
+    ];
+  });
+
+  const tot1=['','','TOTALES','','','','','',
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hmJornada||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantCorrectiva||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantPreventiva||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.fueraServicio||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.enEspera||0),0),
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.sinOperador||0),0),
+    '','','',
+    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
+    '','','','',''
+  ];
+
+  crearHoja('Control Maquinaria', h1, r1,
+    [8,8,11,8,22,10,10,22,10,12,10,10,10,10,10,12,12,12,10,10,30,22,45,30],
+    [9,10,11,12,13,14,15,16,17,18,19,20], tot1,
+    'Control de Maquinaria'
+  );
+
+  // ══════════════════════════════════════
+  // HOJA 2 — Control Rellenos
+  // ══════════════════════════════════════
+  const rellenos=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
+  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
+  const ar={};
+  const r2=rellenos.map((r,i)=>{
+    const p=r.datosEspecificos?.pozo||'Sin nombre';
+    if(!ar[p])ar[p]=0;
+    const m=Number(r.datosEspecificos?.m3||0);
+    ar[p]+=m;
+    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
+  });
+  const tot2=['','','TOTALES','','','',
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
+  ];
+  crearHoja('Control Rellenos', h2, r2,
+    [10,12,8,22,10,30,14,14,14,14],
+    [7,8,9,10], r2.length?tot2:null,
+    'Control de Rellenos desde Empréstito'
+  );
+
+  // ══════════════════════════════════════
+  // HOJA 3 — Control Agua Industrial
+  // ══════════════════════════════════════
+  const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
+  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
+  const aa={};
+  const r3=aljibes.map((r,i)=>{
+    const c=r.datosEspecificos?.cachimba||'Sin nombre';
+    if(!aa[c])aa[c]=0;
+    const m=Number(r.datosEspecificos?.m3||0);
+    aa[c]+=m;
+    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
+  });
+  const tot3=['','','TOTALES','','','',
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
+    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
+  ];
+  crearHoja('Control Agua Industrial', h3, r3,
+    [10,12,8,22,10,30,14,12,12,14],
+    [7,8,9,10], r3.length?tot3:null,
+    'Control de M3 de Agua Industrial Utilizada'
+  );
+
+  // ══════════════════════════════════════
+  // HOJA 4 — Detalle de Tiempos
+  // ══════════════════════════════════════
+  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción Detalle','Horas'];
+  const r4=[];
+  sorted.forEach((r,i)=>{
+    TIEMPO_FIELDS.forEach(f=>{
+      const h=Number(r.tiempos?.[f.id]||0);
+      if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
+    });
+  });
+  if(!r4.length) r4.push(['Sin datos','','','','','','','',0]);
+  const tot4=['','','TOTALES','','','','','',r4.reduce((s,row)=>s+Number(row[8]||0),0)];
+  crearHoja('Detalle de Tiempos', h4, r4,
+    [10,12,8,22,10,22,26,48,10],
+    [9], tot4,
+    'Detalle de Tiempos'
+  );
+
+  // ── Descargar ───────────────────────
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob   = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a');
+  a.href       = url;
+  a.download   = `CONPAX_Report_${fecha}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
+}
   if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Error cargando librería Excel','err');return;}
 
