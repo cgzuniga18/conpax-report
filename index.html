@@ -383,8 +383,82 @@ label .req { color:var(--red); }
 .admin-section-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);background:rgba(37,99,235,0.04);}
 .admin-section-body{padding:14px;}
 
-/* Loading */
-.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;transition:opacity .3s;}
+/* ══════════════════════════════════════
+   MÓDULO CUADRILLA — Fase 2
+══════════════════════════════════════ */
+
+/* Hero cuadrilla */
+.cq-hero{background:linear-gradient(135deg,#4c1d95 0%,#6d28d9 100%);border-radius:var(--rr);padding:16px;margin-bottom:12px;position:relative;overflow:hidden;}
+.cq-hero::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,0.05);border-radius:50%;}
+.cq-hero-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.75);margin-bottom:2px;letter-spacing:.04em;}
+.cq-hero-sub{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:14px;}
+.cq-filter-row{display:flex;gap:8px;}
+.cq-filter-row input,.cq-filter-row select{flex:1;margin:0;font-size:13px;padding:9px 12px;background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.15);color:#fff;}
+.cq-filter-row select option{background:var(--card2);color:var(--text);}
+
+/* KPI strip */
+.cq-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px;}
+.cq-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:11px 8px;text-align:center;}
+.cq-kpi-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;line-height:1;margin-bottom:3px;}
+.cq-kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;line-height:1.3;}
+
+/* Alerta sin reporte */
+.cq-alert{background:var(--amber-dim);border:1px solid rgba(245,158,11,.3);border-radius:var(--rr);padding:12px 14px;margin-bottom:12px;display:none;}
+.cq-alert.show{display:block;}
+.cq-alert-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px;}
+.cq-alert-item{font-size:12px;color:var(--text2);padding:3px 0;display:flex;align-items:center;gap:6px;}
+.cq-alert-item::before{content:'⚠';font-size:10px;}
+
+/* Sección por capataz */
+.cq-capataz-section{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);margin-bottom:12px;overflow:hidden;}
+.cq-capataz-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:rgba(139,92,246,.06);transition:background .2s;}
+.cq-capataz-head:hover{background:rgba(139,92,246,.12);}
+.cq-capataz-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
+.cq-capataz-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.cq-capataz-badges{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.cq-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:999px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.cq-badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.25);}
+.cq-badge-amber{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.25);}
+.cq-badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-glow);}
+.cq-badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.cq-chevron{color:var(--text3);font-size:12px;transition:transform .25s;margin-left:6px;}
+.cq-chevron.open{transform:rotate(180deg);}
+.cq-capataz-body{display:none;padding:10px 12px 12px;}
+.cq-capataz-body.open{display:block;}
+
+/* Tarjeta equipo en cuadrilla */
+.cq-equipo-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:11px 12px;margin-bottom:7px;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden;}
+.cq-equipo-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.cq-equipo-card.op-alta::before{background:var(--green);}
+.cq-equipo-card.op-media::before{background:var(--amber);}
+.cq-equipo-card.op-baja::before{background:var(--red);}
+.cq-equipo-card:hover{border-color:var(--purple);}
+.cq-eq-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;}
+.cq-eq-nombre{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+.cq-eq-operador{font-size:11px;color:var(--text2);margin-top:2px;}
+.cq-eq-kpis{display:flex;gap:10px;font-size:11px;color:var(--text2);flex-wrap:wrap;}
+.cq-eq-kpis span{display:flex;align-items:center;gap:3px;}
+
+/* Barra de operatividad mini */
+.cq-op-bar-wrap{margin-top:8px;}
+.cq-op-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:3px;}
+.cq-op-bar-bg{background:var(--border);border-radius:999px;height:4px;overflow:hidden;}
+.cq-op-bar-fill{height:100%;border-radius:999px;transition:width .4s;}
+.cq-op-bar-fill.high{background:var(--green);}
+.cq-op-bar-fill.mid{background:var(--amber);}
+.cq-op-bar-fill.low{background:var(--red);}
+
+/* Frentes activos */
+.cq-frente-tag{display:inline-block;background:rgba(37,99,235,.1);border:1px solid var(--blue-glow);color:var(--blue);border-radius:5px;padding:2px 8px;font-size:10px;margin:2px 2px 0 0;}
+
+/* Turno toggle */
+.cq-turno-row{display:flex;gap:6px;margin-bottom:12px;}
+.cq-turno-btn{flex:1;padding:9px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:center;}
+.cq-turno-btn.active{border-color:var(--purple);color:var(--purple);background:rgba(139,92,246,.1);}
+
+/* Sin equipos placeholder */
+.cq-empty{text-align:center;padding:20px 12px;color:var(--text3);font-size:12px;background:var(--input-bg);border:1px dashed var(--border2);border-radius:var(--r);}
+position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;transition:opacity .3s;}
 .loading-screen.hidden{opacity:0;pointer-events:none;}
 .loading-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--blue);letter-spacing:-0.03em;margin-bottom:24px;}
 .loading-logo span{color:var(--text2);font-weight:400;}
@@ -543,17 +617,24 @@ label .req { color:var(--red); }
             </div>
             <div class="field field-critical">
               <label>Equipo <span class="req">*</span></label>
-              <div class="equipo-search-wrap">
-                <input class="equipo-search-input" type="text" id="equipoSearch" placeholder="Buscar equipo..." oninput="filterEquipos()" autocomplete="off">
-                <div class="equipo-dropdown" id="equipoDropdown"></div>
-              </div>
+              <!-- Paso 1: Categoría -->
+              <select id="equipoCategoria" onchange="onCategoriaChange()" style="margin-bottom:8px">
+                <option value="">Seleccionar categoría...</option>
+              </select>
+              <!-- Paso 2: Nomenclatura -->
+              <select id="equipoNomenclatura" onchange="onNomenclaturaChange()" disabled style="margin-bottom:6px">
+                <option value="">Primero selecciona categoría...</option>
+              </select>
+              <!-- Badge seleccionado -->
               <div id="equipoSelectedBadge" style="display:none" class="equipo-selected-badge">
                 <span id="equipoSelectedText">—</span>
                 <button onclick="clearEquipo()">×</button>
               </div>
+              <!-- Info del equipo seleccionado -->
+              <div id="equipoInfoBox" style="display:none;background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:var(--r);padding:9px 12px;margin-top:6px;font-size:12px;color:var(--blue);line-height:1.8"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>N° Interno Equipo</label><input type="text" id="maq-nEquipo" placeholder="EQ-021"></div>
+              <div class="field"><label>N° Interno / Nomenclatura</label><input type="text" id="maq-nEquipo" placeholder="Auto desde equipo" readonly style="opacity:.7"></div>
               <div class="field"><label>Patente</label><input type="text" id="maq-patente" placeholder="BCDK-45" style="text-transform:uppercase"></div>
             </div>
           </div>
@@ -845,6 +926,16 @@ label .req { color:var(--red); }
     </div>
   </div>
 
+  <!-- ══ SCREEN: CUADRILLA ══ -->
+  <div class="screen" id="screen-cuadrilla">
+    <div class="screen-inner" id="cuadrillaInner">
+      <div style="text-align:center;padding:40px 20px;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:12px">👷</div>
+        <div>Cargando cuadrilla...</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <!-- Modal confirmación guardar -->
@@ -877,7 +968,7 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v4.5-20260504';
+const VERSION = 'v4.6-20260505';
 try {
   const sv = localStorage.getItem('app_version');
   if(sv && sv !== VERSION) { localStorage.setItem('app_version',VERSION); window.location.reload(true); }
@@ -889,11 +980,37 @@ const STORAGE_KEY   = 'conpax_v4_records';
 const DRAFT_KEY     = 'conpax_v4_draft';
 const LASTUSED_KEY  = 'conpax_v4_lastused';
 
-const EQUIPOS = [
-  'Camión Pluma','Cargador Frontal','Excavadora PC30','Excavadora PC45',
-  'Camión Tolva','Camión Aljibe','Bulldozer D8','Bulldozer CAT D9',
-  'Motoniveladora','Planta Seleccionadora Móvil','Retroexcavadora','Rodillo Compactador 12t'
+// ── Lista dinámica de equipos (se carga desde Firebase / admin puede editar) ──
+const EQUIPOS_INICIALES = [
+  {categoria:'Excavadora',    tipo:'30 Toneladas', marca:'Volvo',         modelo:'EC360FL5',    equipo:'RH-94'},
+  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450 LC-8', equipo:'RH-73'},
+  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450 LC-8', equipo:'RH-78'},
+  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450 LC-8', equipo:'RH-88'},
+  {categoria:'Excavadora',    tipo:'38 Toneladas', marca:'Volvo',         modelo:'EC380EL',     equipo:'RH-84'},
+  {categoria:'Excavadora',    tipo:'48 Toneladas', marca:'Volvo',         modelo:'EC480DL',     equipo:'RH-85'},
+  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450',      equipo:'RH-72'},
+  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-107'},
+  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-122'},
+  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-118'},
+  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-102'},
+  {categoria:'Camión Tolva',  tipo:'21 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-114'},
+  {categoria:'Camión Aljibe', tipo:'30 m3',        marca:'Mercedes Benz', modelo:'Arocs 4144K', equipo:'CA-12'},
+  {categoria:'Camión Aljibe', tipo:'30 m3',        marca:'Mercedes Benz', modelo:'Arocs 4144K', equipo:'CA-14'},
+  {categoria:'Camión Aljibe', tipo:'30 m3',        marca:'Mercedes Benz', modelo:'Arocs 4144K', equipo:'CA-10'},
+  {categoria:'Camión Pluma',  tipo:'12 Ton',       marca:'',              modelo:'',            equipo:'Arriendo Externo'},
+  {categoria:'Bulldozer',     tipo:'',             marca:'Komatsu',       modelo:'D275AX-5E0',  equipo:'BUL-10'},
+  {categoria:'Bulldozer',     tipo:'',             marca:'Caterpillar',   modelo:'D8T',         equipo:'BUL-9'},
+  {categoria:'Bulldozer',     tipo:'',             marca:'Caterpillar',   modelo:'D8T',         equipo:'BUL-16'},
+  {categoria:'Motoniveladora',tipo:'',             marca:'John Deere',    modelo:'670P',        equipo:'M-20'},
+  {categoria:'Rodillo Vibrador',tipo:'12 Ton',     marca:'HAMM',          modelo:'HC110i',      equipo:'RA-32'},
+  {categoria:'Retroexcavadora',tipo:'',            marca:'John Deere',    modelo:'310P 4x4',    equipo:'REX-02'},
+  {categoria:'Cargador Frontal',tipo:'',           marca:'John Deere',    modelo:'644P',        equipo:'CF-19'},
+  {categoria:'Martillo Excavadora 45',tipo:'',     marca:'',              modelo:'',            equipo:'Arriendo Externo'},
+  {categoria:'Camión Petróleo',tipo:'5000 lts',    marca:'',              modelo:'',            equipo:'Arriendo Externo'},
+  {categoria:'Camión Lubricador',tipo:'',          marca:'',              modelo:'',            equipo:'Arriendo Externo'},
 ];
+
+let listaEquipos = []; // se llena desde Firebase o con los iniciales
 
 const FRENTES = [
   'OA Camino CAEX PS-OXE','Cruce C Min PS-OXE-c contorno sur',
@@ -946,18 +1063,19 @@ const TIEMPO_FIELDS = [
 
 const ROL_CONFIG = {
   operador:  {label:'Operador',          color:'var(--blue)',   bg:'var(--blue-dim)',      tabs:['dash','form-maq','records','sync']},
-  capataz:   {label:'Capataz',           color:'var(--amber)',  bg:'var(--amber-dim)',     tabs:['dash','records','sync']},
-  jefe:      {label:'Jefe de Terreno',   color:'var(--green)',  bg:'var(--green-dim)',     tabs:['dash','records','sync']},
-  supervisor:{label:'Supervisor',        color:'var(--purple)', bg:'rgba(139,92,246,.1)',  tabs:['dash','records','sync']},
-  admin:     {label:'Control Producción',color:'var(--red)',    bg:'rgba(239,68,68,.1)',   tabs:['dash','form-maq','records','sync','admin']},
+  capataz:   {label:'Capataz',           color:'var(--amber)',  bg:'var(--amber-dim)',     tabs:['dash','records','cuadrilla','sync']},
+  jefe:      {label:'Jefe de Terreno',   color:'var(--green)',  bg:'var(--green-dim)',     tabs:['dash','records','cuadrilla','sync']},
+  supervisor:{label:'Supervisor',        color:'var(--purple)', bg:'rgba(139,92,246,.1)',  tabs:['dash','records','cuadrilla','sync']},
+  admin:     {label:'Control Producción',color:'var(--red)',    bg:'rgba(239,68,68,.1)',   tabs:['dash','form-maq','records','cuadrilla','sync','admin']},
 };
 
 const TAB_DEF = [
-  {id:'dash',     label:'Inicio',      ico:'🏠'},
-  {id:'form-maq', label:'Formulario',  ico:'📋'},
-  {id:'records',  label:'Registros',   ico:'📁'},
-  {id:'sync',     label:'Sincronizar', ico:'🔄'},
-  {id:'admin',    label:'Admin',       ico:'⚙️'},
+  {id:'dash',      label:'Inicio',      ico:'🏠'},
+  {id:'form-maq',  label:'Formulario',  ico:'📋'},
+  {id:'records',   label:'Registros',   ico:'📁'},
+  {id:'cuadrilla', label:'Cuadrilla',   ico:'👷'},
+  {id:'sync',      label:'Sincronizar', ico:'🔄'},
+  {id:'admin',     label:'Admin',       ico:'⚙️'},
 ];
 
 /* ── ESTADO GLOBAL ── */
@@ -965,7 +1083,8 @@ let currentUser      = null;
 let records          = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
 let isOnline         = navigator.onLine;
 let selectedTurno    = 'A';
-let selectedEquipo   = '';
+let selectedEquipo   = '';   // nomenclatura interna, ej: "RH-94"
+let selectedEquipoObj= null; // objeto completo {categoria,tipo,marca,modelo,equipo}
 let selectedTipoMaterial = null;
 let actividadCount   = 0;
 let activeFilter     = 'all';
@@ -1085,7 +1204,7 @@ function showApp(){
   wizardInit();
   renderRecords();updateStats();updateSyncUI();
   showTab('dash');
-  setTimeout(async()=>{await cargarCapataces();await cargarDesdeFirebase();if(currentUser.rol==='admin')await cargarUsuarios();},1500);
+  setTimeout(async()=>{await cargarCapataces();await cargarEquipos();await cargarDesdeFirebase();if(currentUser.rol==='admin')await cargarUsuarios();},1500);
 }
 
 function buildTabs(){
@@ -1105,6 +1224,7 @@ function showTab(id){
   if(id==='sync') updateSyncUI();
   if(id==='admin') renderAdminPanel();
   if(id==='dash') initDashboard();
+  if(id==='cuadrilla') renderCuadrilla();
 }
 
 function updateUserHeader(){
@@ -1231,9 +1351,13 @@ function wizardNext(){
   if(wizStep===1){
     const op=document.getElementById('maq-operador').value.trim();
     if(!op){showFieldError('maq-operador','Nombre del operador obligatorio');return;}
-    if(!selectedEquipo){showToast('⚠️ Selecciona el tipo de equipo','warn');document.getElementById('equipoSearch').classList.add('error');return;}
+    if(!selectedEquipoObj){
+      showToast('⚠️ Selecciona categoría y equipo','warn');
+      document.getElementById('equipoCategoria')?.classList.add('error');
+      return;
+    }
     clearFieldError('maq-operador');
-    document.getElementById('equipoSearch').classList.remove('error');
+    document.getElementById('equipoCategoria')?.classList.remove('error');
   }
   if(wizStep===3){
     if(!document.querySelectorAll('[id^="act-card-"]').length){showToast('⚠️ Agrega al menos una actividad','warn');return;}
@@ -1284,17 +1408,23 @@ function autoSave(){
 function autorellenar(){
   try{
     const last=JSON.parse(localStorage.getItem(LASTUSED_KEY)||'{}');
-    // Solo autorellenar equipo y N° (no el nombre del operador — puede ser otra persona)
-    if(last.equipo&&!selectedEquipo){
-      selectedEquipo=last.equipo;
-      const el=document.getElementById('equipoSearch');
-      if(el)el.value=last.equipo;
-      const badge=document.getElementById('equipoSelectedBadge');
-      const txt=document.getElementById('equipoSelectedText');
-      if(badge&&txt){badge.style.display='inline-flex';txt.textContent=last.equipo;}
+    if(last.equipoObj && !selectedEquipoObj){
+      selectedEquipoObj = last.equipoObj;
+      selectedEquipo    = last.equipoObj.equipo;
+      // Restaurar dropdowns después de que listaEquipos esté cargada
+      setTimeout(()=>{
+        const selCat = document.getElementById('equipoCategoria');
+        if(selCat && listaEquipos.length){
+          initEquipoDropdowns(); // reconstruye con selección
+          const info = document.getElementById('equipoInfoBox');
+          const badge = document.getElementById('equipoSelectedBadge');
+          const txt   = document.getElementById('equipoSelectedText');
+          if(badge&&txt){badge.style.display='inline-flex';txt.textContent=`${last.equipoObj.categoria} · ${last.equipoObj.equipo}`;}
+          if(info){info.style.display='block';info.innerHTML=`🚧 <strong>${last.equipoObj.categoria}</strong>${last.equipoObj.tipo?' · '+last.equipoObj.tipo:''}${last.equipoObj.marca?' · '+last.equipoObj.marca:''}${last.equipoObj.modelo?' · '+last.equipoObj.modelo:''}`;}
+          const nEl=document.getElementById('maq-nEquipo');if(nEl)nEl.value=last.equipoObj.equipo;
+        }
+      },300);
     }
-    if(last.nEquipo){const el=document.getElementById('maq-nEquipo');if(el&&!el.value)el.value=last.nEquipo;}
-    // Solo rellenar operador si el uid coincide con el último
     if(last.uid && last.uid===currentUser?.uid && last.operador){
       const el=document.getElementById('maq-operador');if(el&&!el.value)el.value=last.operador;
     }
@@ -1307,48 +1437,116 @@ function autorellenar(){
   }catch(e){}
 }
 
-/* ── EQUIPO SEARCH ── */
-function initEquipoSearch(){
-  const dropdown=document.getElementById('equipoDropdown');
-  if(!dropdown) return;
-  dropdown.innerHTML=EQUIPOS.map(e=>`<div class="equipo-opt" onclick="selectEquipo('${e}')">${e}</div>`).join('');
+/* ── EQUIPO — Carga y helpers ── */
+function getCategorias(){
+  return [...new Set(listaEquipos.map(e=>e.categoria))].sort();
+}
+function getEquiposPorCategoria(cat){
+  return listaEquipos.filter(e=>e.categoria===cat);
 }
 
-function filterEquipos(){
-  const search=document.getElementById('equipoSearch');
-  const dropdown=document.getElementById('equipoDropdown');
-  const q=search.value.toLowerCase();
-  if(!q){dropdown.classList.remove('show');return;}
-  const filtered=EQUIPOS.filter(e=>e.toLowerCase().includes(q));
-  dropdown.innerHTML=filtered.length
-    ?filtered.map(e=>`<div class="equipo-opt" onclick="selectEquipo('${e}')">${e}</div>`).join('')
-    :'<div class="equipo-opt" style="color:var(--text3)">Sin resultados</div>';
-  dropdown.classList.add('show');
+function initEquipoDropdowns(){
+  const selCat = document.getElementById('equipoCategoria');
+  if(!selCat) return;
+  const cats = getCategorias();
+  selCat.innerHTML = '<option value="">Seleccionar categoría...</option>'
+    + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  // Restaurar selección si hay selectedEquipoObj
+  if(selectedEquipoObj){
+    selCat.value = selectedEquipoObj.categoria;
+    populateNomenclaturas(selectedEquipoObj.categoria, selectedEquipoObj.equipo);
+  }
 }
 
-function selectEquipo(nombre){
-  selectedEquipo=nombre;
-  document.getElementById('equipoSearch').value=nombre;
-  document.getElementById('equipoSearch').classList.remove('error');
-  document.getElementById('equipoDropdown').classList.remove('show');
-  const badge=document.getElementById('equipoSelectedBadge');
-  const txt=document.getElementById('equipoSelectedText');
-  if(badge&&txt){badge.style.display='inline-flex';txt.textContent=nombre;}
+function populateNomenclaturas(cat, selectedVal=''){
+  const selNom = document.getElementById('equipoNomenclatura');
+  if(!selNom) return;
+  const equipos = getEquiposPorCategoria(cat);
+  selNom.disabled = false;
+  selNom.innerHTML = '<option value="">Seleccionar equipo...</option>'
+    + equipos.map(e=>`<option value="${e.equipo}">${e.equipo}${e.marca?' — '+e.marca:''}${e.modelo?' '+e.modelo:''}</option>`).join('');
+  if(selectedVal) selNom.value = selectedVal;
+}
+
+function onCategoriaChange(){
+  const cat = document.getElementById('equipoCategoria').value;
+  const selNom = document.getElementById('equipoNomenclatura');
+  clearEquipo();
+  if(!cat){ selNom.disabled=true; selNom.innerHTML='<option value="">Primero selecciona categoría...</option>'; return; }
+  populateNomenclaturas(cat);
+}
+
+function onNomenclaturaChange(){
+  const nom = document.getElementById('equipoNomenclatura').value;
+  const cat = document.getElementById('equipoCategoria').value;
+  if(!nom){ clearEquipo(); return; }
+  const obj = listaEquipos.find(e=>e.equipo===nom && e.categoria===cat);
+  if(!obj) return;
+  selectedEquipo    = obj.equipo;
+  selectedEquipoObj = obj;
+  // Badge
+  const badge = document.getElementById('equipoSelectedBadge');
+  const txt   = document.getElementById('equipoSelectedText');
+  if(badge&&txt){ badge.style.display='inline-flex'; txt.textContent=`${obj.categoria} · ${obj.equipo}`; }
+  // Info box
+  const info = document.getElementById('equipoInfoBox');
+  if(info){
+    info.style.display='block';
+    info.innerHTML=`🚧 <strong>${obj.categoria}</strong>${obj.tipo?' · '+obj.tipo:''}${obj.marca?' · '+obj.marca:''}${obj.modelo?' · '+obj.modelo:''}`;
+  }
+  // Auto-rellenar N° interno
+  const nEqEl = document.getElementById('maq-nEquipo');
+  if(nEqEl) nEqEl.value = obj.equipo;
+  // Limpiar error si había
+  document.getElementById('equipoCategoria')?.classList.remove('error');
+  document.getElementById('equipoNomenclatura')?.classList.remove('error');
+  // Mostrar/ocultar secciones especiales en paso 5
+  const esCamionTolva  = obj.categoria === 'Camión Tolva';
+  const esCamionAljibe = obj.categoria === 'Camión Aljibe';
+  document.getElementById('section-tolva')?.classList.toggle('show', esCamionTolva);
+  document.getElementById('section-aljibe')?.classList.toggle('show', esCamionAljibe);
 }
 
 function clearEquipo(){
-  selectedEquipo='';
-  document.getElementById('equipoSearch').value='';
-  const badge=document.getElementById('equipoSelectedBadge');
+  selectedEquipo    = '';
+  selectedEquipoObj = null;
+  const badge = document.getElementById('equipoSelectedBadge');
   if(badge) badge.style.display='none';
+  const info = document.getElementById('equipoInfoBox');
+  if(info) info.style.display='none';
+  const nEqEl = document.getElementById('maq-nEquipo');
+  if(nEqEl) nEqEl.value='';
 }
 
-// Cerrar dropdown al click fuera
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.equipo-search-wrap')){
-    document.getElementById('equipoDropdown')?.classList.remove('show');
+// Carga equipos desde Firebase; si no hay, precarga los iniciales
+async function cargarEquipos(){
+  try{
+    if(isOnline && window._firebaseReady){
+      const snap = await window._fsGetDoc(window._fsDoc(window._db,'configuracion','equipos'));
+      if(snap.exists() && (snap.data().lista||[]).length){
+        listaEquipos = snap.data().lista;
+      } else {
+        // Primera vez: subir los iniciales
+        listaEquipos = [...EQUIPOS_INICIALES];
+        if(currentUser?.rol==='admin') await subirEquiposAFirebase();
+      }
+    } else {
+      listaEquipos = [...EQUIPOS_INICIALES];
+    }
+  } catch(e){
+    listaEquipos = [...EQUIPOS_INICIALES];
   }
-});
+  initEquipoDropdowns();
+}
+
+async function subirEquiposAFirebase(){
+  try{ await window._fsSetDoc(window._fsDoc(window._db,'configuracion','equipos'),{lista:listaEquipos}); }
+  catch(e){ console.error('Error subiendo equipos:',e); }
+}
+
+// Compatibilidad: initEquipoSearch ya no usa dropdown de texto
+function initEquipoSearch(){ initEquipoDropdowns(); }
+function filterEquipos(){}  // no-op, ya no se usa
 
 /* ── TURNO ── */
 function selectTurno(btn,val){
@@ -1553,9 +1751,25 @@ function editarRegistro(id){
     const fechaEl=document.getElementById('maq-fecha');if(fechaEl)fechaEl.value=r.fecha||'';
     selectedTurno=r.turno||'A';
     document.querySelectorAll('.turno-btn').forEach(b=>b.classList.toggle('selected',b.textContent.includes('Turno '+selectedTurno)));
-    // Equipo
-    if(r.equipo?.tipo) selectEquipo(r.equipo.tipo);
-    const nEqEl=document.getElementById('maq-nEquipo');if(nEqEl)nEqEl.value=r.equipo?.numero||'';
+    // Equipo — restaurar dropdowns encadenados
+    if(r.equipo?.tipo){
+      const obj = listaEquipos.find(e=>e.equipo===r.equipo.numero) || {
+        categoria:r.equipo.tipo, tipo:r.equipo.tipoTonelaje||'', marca:r.equipo.marca||'',
+        modelo:r.equipo.modelo||'', equipo:r.equipo.numero||r.equipo.tipo
+      };
+      selectedEquipoObj = obj;
+      selectedEquipo    = obj.equipo;
+      setTimeout(()=>{
+        const selCat = document.getElementById('equipoCategoria');
+        if(selCat){ initEquipoDropdowns(); }
+        const info  = document.getElementById('equipoInfoBox');
+        const badge = document.getElementById('equipoSelectedBadge');
+        const txt   = document.getElementById('equipoSelectedText');
+        if(badge&&txt){badge.style.display='inline-flex';txt.textContent=`${obj.categoria} · ${obj.equipo}`;}
+        if(info){info.style.display='block';info.innerHTML=`🚧 <strong>${obj.categoria}</strong>${obj.tipo?' · '+obj.tipo:''}${obj.marca?' · '+obj.marca:''}${obj.modelo?' · '+obj.modelo:''}`;}
+        const nEl=document.getElementById('maq-nEquipo');if(nEl)nEl.value=obj.equipo;
+      },150);
+    }
     const patEl=document.getElementById('maq-patente');if(patEl)patEl.value=r.equipo?.patente||'';
     // Horómetro
     const hIni=document.getElementById('maq-horoIni');if(hIni)hIni.value=r.horometro?.inicial||'';
@@ -1615,7 +1829,7 @@ function editarRegistro(id){
 }
 function guardarMaquinaria(){
   const operador=document.getElementById('maq-operador').value.trim();
-  if(!operador||!selectedEquipo){showToast('⚠️ Faltan datos obligatorios','warn');return;}
+  if(!operador||!selectedEquipoObj){showToast('⚠️ Faltan datos obligatorios','warn');return;}
 
   // Recolectar actividades
   const actividades=[];
@@ -1646,7 +1860,14 @@ function guardarMaquinaria(){
     nDailyReport:records.filter(r=>r.fecha===document.getElementById('maq-fecha').value).length+1,
     creadoPor:{uid:currentUser.uid,nombre:currentUser.nombre,rol:currentUser.rol},
     operador:{nombre:operador},
-    equipo:{tipo:selectedEquipo,numero:document.getElementById('maq-nEquipo').value.trim(),patente:document.getElementById('maq-patente').value.toUpperCase().trim()},
+    equipo:{
+      tipo:selectedEquipoObj?.categoria||selectedEquipo,
+      numero:selectedEquipoObj?.equipo||document.getElementById('maq-nEquipo').value.trim(),
+      patente:document.getElementById('maq-patente').value.toUpperCase().trim(),
+      marca:selectedEquipoObj?.marca||'',
+      modelo:selectedEquipoObj?.modelo||'',
+      tipoTonelaje:selectedEquipoObj?.tipo||'',
+    },
     horometro:{inicial:parseFloat(document.getElementById('maq-horoIni').value)||0,final:parseFloat(document.getElementById('maq-horoFin').value)||0},
     kilometraje:{inicial:parseFloat(document.getElementById('maq-kmIni').value)||0,final:parseFloat(document.getElementById('maq-kmFin').value)||0},
     actividades,
@@ -1665,7 +1886,7 @@ function guardarMaquinaria(){
   };
 
   // Guardar últimos datos (incluye uid para identificar usuario)
-  localStorage.setItem(LASTUSED_KEY,JSON.stringify({uid:currentUser.uid,operador,equipo:selectedEquipo,nEquipo:record.equipo.numero,turno:selectedTurno}));
+  localStorage.setItem(LASTUSED_KEY,JSON.stringify({uid:currentUser.uid,operador,equipoObj:selectedEquipoObj,turno:selectedTurno}));
 
   // Si estamos editando, reemplazar el registro existente
   if(editandoId){
@@ -1709,8 +1930,10 @@ function resetForm(){
   document.getElementById('section-tolva').classList.remove('show');
   document.getElementById('section-aljibe').classList.remove('show');
   document.querySelectorAll('.turno-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
-  selectedTurno='A';selectedEquipo='';selectedTipoMaterial=null;actividadCount=0;tiemposAvanzado=false;
+  selectedTurno='A';selectedEquipo='';selectedEquipoObj=null;selectedTipoMaterial=null;actividadCount=0;tiemposAvanzado=false;
   clearEquipo();
+  const selCat=document.getElementById('equipoCategoria');if(selCat)selCat.value='';
+  const selNom=document.getElementById('equipoNomenclatura');if(selNom){selNom.value='';selNom.disabled=true;selNom.innerHTML='<option value="">Primero selecciona categoría...</option>';}
   document.getElementById('tiemposAvanzado')?.classList.remove('show');
   document.getElementById('tiemposToggle').textContent='🔧 Ver detalle avanzado';
   wizardInit();
@@ -1884,709 +2107,72 @@ function updateSyncUI(){
 
 function checkOnline(){isOnline=navigator.onLine;updateOnlineUI();showToast(isOnline?'📶 En línea':'📡 Sin señal',isOnline?'':'warn');}
 
-/* ── EXPORT EXCEL CON FORMATO — HTML → XLS ── */
+/* ── EXPORT EXCEL — SheetJS simple ── */
 function exportExcel(){
   if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
+  if(typeof XLSX==='undefined'){showToast('⚠️ Error cargando librería','err');return;}
 
+  const wb=XLSX.utils.book_new();
   const sorted=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
   const fecha=new Date().toISOString().slice(0,10);
 
-  // ── ESTILOS CSS para Excel ──────────────
-  const css = `
-    table { border-collapse: collapse; font-family: Calibri, sans-serif; font-size: 9pt; }
-    .titulo { background:#2563EB; color:#fff; font-size:12pt; font-weight:bold; padding:8px 12px; }
-    .header { background:#2563EB; color:#fff; font-weight:bold; font-size:9pt; text-align:center; padding:6px 8px; border:1px solid #fff; vertical-align:middle; }
-    .par    { background:#DBEAFE; font-size:9pt; padding:4px 8px; border:1px solid #CBD5E1; vertical-align:middle; }
-    .impar  { background:#FFFFFF; font-size:9pt; padding:4px 8px; border:1px solid #CBD5E1; vertical-align:middle; }
-    .num    { text-align:right; }
-    .total  { background:#D1FAE5; font-weight:bold; font-size:10pt; padding:5px 8px; border:2px solid #10B981; }
-    .total-num { background:#D1FAE5; font-weight:bold; font-size:10pt; padding:5px 8px; border:2px solid #10B981; text-align:right; }
-    .label-total { color:#475569; font-weight:bold; }
-  `;
-
-  // ── HELPER: generar tabla HTML ──────────
-  function tabla(titulo, headers, filas, numericCols=[], totales=null){
-    const ncols = headers.length;
-    let html = `<table>`;
-
-    // Fila título
-    html += `<tr><td colspan="${ncols}" class="titulo">
-      CONPAX-Report — ${titulo} | Proyecto: Obras Complementarias Habilitación Polo Sur en Caso Base | Exportado: ${fecha}
-    </td></tr>`;
-
-    // Encabezados
-    html += '<tr>' + headers.map(h=>`<td class="header">${h}</td>`).join('') + '</tr>';
-
-    // Datos
-    filas.forEach((fila, idx)=>{
-      const cls = idx%2===0 ? 'par' : 'impar';
-      html += '<tr>' + fila.map((v,ci)=>{
-        const isNum = numericCols.includes(ci);
-        const val   = isNum && typeof v==='number' ? v.toFixed(1) : (v??'');
-        return `<td class="${cls}${isNum?' num':''}">${val}</td>`;
-      }).join('') + '</tr>';
-    });
-
-    // Totales
-    if(totales){
-      html += '<tr>' + totales.map((v,ci)=>{
-        const isNum = numericCols.includes(ci);
-        const val   = isNum && typeof v==='number' ? v.toFixed(1) : (v??'');
-        const cls2  = isNum ? 'total-num' : 'total';
-        return `<td class="${cls2}">${val}</td>`;
-      }).join('') + '</tr>';
-    }
-
-    html += '</table>';
-    return html;
-  }
-
-  // ══════════════════════════════════════
-  // HOJA 1 — Control Maquinaria
-  // ══════════════════════════════════════
-  const h1=['Correlativo','N° Daily Report','Fecha','Turno',
-    'Equipo','N° Interno','Patente','Operador',
-    'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva',
-    'Fuera de Servicio','En Espera','Sin Operador',
-    'Horómetro Inicial','Horómetro Final','Total Horómetro',
-    'HM Parcial','HM Acum',
+  // Hoja 1: Control Maquinaria
+  const h1=['Correlativo','N° Daily Report','Fecha','Turno','Equipo','N° Interno','Patente','Operador',
+    'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva','Fuera de Servicio','En Espera','Sin Operador',
+    'Horómetro Ini','Horómetro Fin','Total Horómetro','HM Parcial','HM Acum',
     'Frente Principal','Capataz Principal','Actividades','Observaciones'];
-
   const acumEq={};
   const r1=sorted.map((r,i)=>{
     const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
     if(!acumEq[key])acumEq[key]=0;
-    const hm=Number(r.operatividad?.hrsOperativas||0);
-    acumEq[key]+=hm;
-    const pa=r.actividades?.[0];
-    const frente  = typeof pa==='object'?pa?.frente||'':pa||'';
-    const capataz = typeof pa==='object'?pa?.capataz||'':'';
-    const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
-    return [
-      i+1, r.nDailyReport||i+1, r.fecha||'', 'Turno '+(r.turno||''),
-      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
-      Number(r.operatividad?.hmJornada||0),
-      Number(r.operatividad?.hrsOperativas||0),
-      Number(r.operatividad?.mantCorrectiva||0),
-      Number(r.operatividad?.mantPreventiva||0),
-      Number(r.operatividad?.fueraServicio||0),
-      Number(r.operatividad?.enEspera||0),
-      Number(r.operatividad?.sinOperador||0),
-      Number(r.horometro?.inicial||0),
-      Number(r.horometro?.final||0),
-      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),
-      hm, acumEq[key],
-      frente, capataz, acts, r.observaciones||''
-    ];
-  });
-  const tot1=['','','','TOTALES','','','','',
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hmJornada||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantCorrectiva||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantPreventiva||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.fueraServicio||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.enEspera||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.sinOperador||0),0),
-    '','',
-    sorted.reduce((s,r)=>s+Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
-    '','','','',''
-  ];
-  const t1=tabla('Control de Maquinaria',h1,r1,[8,9,10,11,12,13,14,15,16,17,18,19],tot1);
-
-  // ══════════════════════════════════════
-  // HOJA 2 — Control Rellenos
-  // ══════════════════════════════════════
-  const rellenos=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
-  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
-  const ar={};
-  const r2=rellenos.map((r,i)=>{
-    const p=r.datosEspecificos?.pozo||'Sin nombre';
-    if(!ar[p])ar[p]=0;
-    const m=Number(r.datosEspecificos?.m3||0);
-    ar[p]+=m;
-    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
-  });
-  const tot2=['','','TOTALES','','','',
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
-  ];
-  const t2=tabla('Control de Rellenos desde Empréstito',h2,r2,[6,7,8,9],r2.length?tot2:null);
-
-  // ══════════════════════════════════════
-  // HOJA 3 — Control Agua Industrial
-  // ══════════════════════════════════════
-  const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
-  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
-  const aa={};
-  const r3=aljibes.map((r,i)=>{
-    const c=r.datosEspecificos?.cachimba||'Sin nombre';
-    if(!aa[c])aa[c]=0;
-    const m=Number(r.datosEspecificos?.m3||0);
-    aa[c]+=m;
-    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
-  });
-  const tot3=['','','TOTALES','','','',
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
-  ];
-  const t3=tabla('Control de M3 de Agua Industrial',h3,r3,[6,7,8,9],r3.length?tot3:null);
-
-  // ══════════════════════════════════════
-  // HOJA 4 — Detalle de Tiempos
-  // ══════════════════════════════════════
-  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción Detalle','Horas'];
-  const r4=[];
-  sorted.forEach((r,i)=>{
-    TIEMPO_FIELDS.forEach(f=>{
-      const h=Number(r.tiempos?.[f.id]||0);
-      if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
-    });
-  });
-  if(!r4.length) r4.push(['Sin datos','','','','','','','',0]);
-  const tot4=['','','TOTALES','','','','','',r4.reduce((s,row)=>s+Number(row[8]||0),0)];
-  const t4=tabla('Detalle de Tiempos',h4,r4,[8],tot4);
-
-  // ── Armar HTML completo con 4 hojas ────
-  // Excel abre el HTML con múltiples tablas en hojas separadas usando mso-sheet-name
-  const htmlCompleto = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:x="urn:schemas-microsoft-com:office:excel"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="UTF-8">
-      <!--[if gte mso 9]>
-      <xml><x:ExcelWorkbook><x:ExcelWorksheets>
-        <x:ExcelWorksheet><x:Name>Control Maquinaria</x:Name><x:WorksheetOptions><x:Selected/></x:WorksheetOptions></x:ExcelWorksheet>
-        <x:ExcelWorksheet><x:Name>Control Rellenos</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
-        <x:ExcelWorksheet><x:Name>Control Agua Industrial</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
-        <x:ExcelWorksheet><x:Name>Detalle de Tiempos</x:Name><x:WorksheetOptions/></x:ExcelWorksheet>
-      </x:ExcelWorksheets></x:ExcelWorkbook></xml>
-      <![endif]-->
-      <style>${css}</style>
-    </head>
-    <body>
-      <div style="mso-ignore:padding" class="Sheet1">${t1}</div>
-      <br clear="all" style="mso-special-character:line-break;page-break-before:always">
-      <div style="mso-ignore:padding" class="Sheet2">${t2}</div>
-      <br clear="all" style="mso-special-character:line-break;page-break-before:always">
-      <div style="mso-ignore:padding" class="Sheet3">${t3}</div>
-      <br clear="all" style="mso-special-character:line-break;page-break-before:always">
-      <div style="mso-ignore:padding" class="Sheet4">${t4}</div>
-    </body>
-    </html>`;
-
-  // ── Descargar como .xls ─────────────────
-  const BOM  = '\uFEFF';
-  const blob = new Blob([BOM+htmlCompleto], {type:'application/vnd.ms-excel;charset=utf-8'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `CONPAX_Report_${fecha}.xls`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
-}
-  if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
-  if(typeof ExcelJS==='undefined'){showToast('⚠️ Error cargando ExcelJS','err');return;}
-
-  showToast('⏳ Generando Excel...');
-  const sorted=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const fecha=new Date().toISOString().slice(0,10);
-  const wb=new ExcelJS.Workbook();
-  wb.creator='CONPAX-Report';
-  wb.created=new Date();
-
-  // ── ESTILOS BASE ────────────────────────
-  const AZUL   = '2563EB';
-  const BLANCO = 'FFFFFF';
-  const AZ_CL  = 'DBEAFE';  // azul muy claro filas pares
-  const GRIS   = 'F1F5F9';  // filas impares
-  const VERDE  = '10B981';
-  const VE_CL  = 'D1FAE5';
-  const AMBER  = 'FEF3C7';
-  const NEGRO  = '1E293B';
-
-  const fontBase  = {name:'Calibri', size:9,  color:{argb:'FF'+NEGRO}};
-  const fontHead  = {name:'Calibri', size:10, bold:true, color:{argb:'FF'+BLANCO}};
-  const fontTitle = {name:'Calibri', size:12, bold:true, color:{argb:'FF'+BLANCO}};
-  const fontTotal = {name:'Calibri', size:10, bold:true, color:{argb:'FF'+NEGRO}};
-
-  const fillAzul  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+AZUL}};
-  const fillAzCl  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+AZ_CL}};
-  const fillGris  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+GRIS}};
-  const fillVeCl  = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+VE_CL}};
-  const fillAmber = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+AMBER}};
-
-  const borderThin = {
-    top:   {style:'thin', color:{argb:'FFCBD5E1'}},
-    bottom:{style:'thin', color:{argb:'FFCBD5E1'}},
-    left:  {style:'thin', color:{argb:'FFCBD5E1'}},
-    right: {style:'thin', color:{argb:'FFCBD5E1'}},
-  };
-  const borderHead = {
-    top:   {style:'thin', color:{argb:'FFFFFFFF'}},
-    bottom:{style:'thin', color:{argb:'FFFFFFFF'}},
-    left:  {style:'thin', color:{argb:'FFFFFFFF'}},
-    right: {style:'thin', color:{argb:'FFFFFFFF'}},
-  };
-  const borderTotal = {
-    top:   {style:'medium', color:{argb:'FF'+VERDE}},
-    bottom:{style:'medium', color:{argb:'FF'+VERDE}},
-    left:  {style:'thin',   color:{argb:'FFCBD5E1'}},
-    right: {style:'thin',   color:{argb:'FFCBD5E1'}},
-  };
-
-  // ── HELPER: crear hoja con formato ─────
-  function crearHoja(nombre, headers, filas, colWidths, numericCols=[], totales=null, subtitulo=''){
-    const ws = wb.addWorksheet(nombre, {
-      views:[{state:'frozen', xSplit:0, ySplit:2}],
-      properties:{tabColor:{argb:'FF'+AZUL}}
-    });
-
-    // Fila 1 — Título del proyecto
-    const tituloRow = ws.addRow([`CONPAX-Report — ${subtitulo} | Proyecto: Obras Complementarias Habilitación Polo Sur | Exportado: ${fecha}`]);
-    tituloRow.height = 24;
-    tituloRow.getCell(1).font   = fontTitle;
-    tituloRow.getCell(1).fill   = fillAzul;
-    tituloRow.getCell(1).alignment = {horizontal:'left', vertical:'middle'};
-    // Merge título
-    ws.mergeCells(1, 1, 1, headers.length);
-
-    // Fila 2 — Encabezados
-    const headRow = ws.addRow(headers);
-    headRow.height = 30;
-    headRow.eachCell(cell=>{
-      cell.font      = fontHead;
-      cell.fill      = fillAzul;
-      cell.border    = borderHead;
-      cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true};
-    });
-
-    // Filas de datos
-    filas.forEach((fila, idx)=>{
-      const row = ws.addRow(fila);
-      row.height = 18;
-      const isEven = idx % 2 === 0;
-      row.eachCell({includeEmpty:true}, (cell, colNum)=>{
-        cell.font      = fontBase;
-        cell.fill      = isEven ? fillAzCl : fillGris;
-        cell.border    = borderThin;
-        cell.alignment = {
-          horizontal: numericCols.includes(colNum) ? 'right' : 'left',
-          vertical:'middle'
-        };
-        // Formato número con 1 decimal para columnas numéricas
-        if(numericCols.includes(colNum) && typeof cell.value === 'number'){
-          cell.numFmt = '0.0';
-        }
-      });
-    });
-
-    // Fila de totales
-    if(totales){
-      const totRow = ws.addRow(totales);
-      totRow.height = 20;
-      totRow.eachCell({includeEmpty:true}, (cell, colNum)=>{
-        cell.font      = fontTotal;
-        cell.fill      = fillVeCl;
-        cell.border    = borderTotal;
-        cell.alignment = {
-          horizontal: numericCols.includes(colNum) ? 'right' : 'left',
-          vertical:'middle'
-        };
-        if(numericCols.includes(colNum) && typeof cell.value === 'number'){
-          cell.numFmt = '0.0';
-        }
-      });
-    }
-
-    // Anchos de columna
-    colWidths.forEach((w, i)=>{
-      ws.getColumn(i+1).width = w;
-    });
-
-    return ws;
-  }
-
-  // ══════════════════════════════════════
-  // HOJA 1 — Control Maquinaria
-  // ══════════════════════════════════════
-  const h1=['Correlativo','N° Daily\nReport','Fecha','Turno',
-    'Equipo','N° Interno','Patente','Operador',
-    'HM Jornada','HM Operativos','Mant.\nCorrectiva','Mant.\nPreventiva',
-    'Fuera de\nServicio','En Espera','Sin Operador',
-    'Horómetro\nInicial','Horómetro\nFinal','Total\nHorómetro',
-    'HM Parcial','HM Acum',
-    'Frente Principal','Capataz Principal','Actividades','Observaciones'];
-
-  const acumEq={};
-  const r1=sorted.map((r,i)=>{
-    const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
-    if(!acumEq[key])acumEq[key]=0;
-    const hm=Number(r.operatividad?.hrsOperativas||0);
-    acumEq[key]+=hm;
+    const hm=Number(r.operatividad?.hrsOperativas||0);acumEq[key]+=hm;
     const pa=r.actividades?.[0];
     const frente=typeof pa==='object'?pa?.frente||'':pa||'';
     const capataz=typeof pa==='object'?pa?.capataz||'':'';
     const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
-    return [
-      i+1, r.nDailyReport||i+1, r.fecha||'', 'Turno '+(r.turno||''),
-      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
-      Number(r.operatividad?.hmJornada||0),
-      Number(r.operatividad?.hrsOperativas||0),
-      Number(r.operatividad?.mantCorrectiva||0),
-      Number(r.operatividad?.mantPreventiva||0),
-      Number(r.operatividad?.fueraServicio||0),
-      Number(r.operatividad?.enEspera||0),
-      Number(r.operatividad?.sinOperador||0),
-      Number(r.horometro?.inicial||0),
-      Number(r.horometro?.final||0),
-      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),
-      hm, acumEq[key],
-      frente, capataz, acts, r.observaciones||''
-    ];
+    return [i+1,r.nDailyReport||i+1,r.fecha||'','Turno '+(r.turno||''),
+      r.equipo?.tipo||'',r.equipo?.numero||'',r.equipo?.patente||'',r.operador?.nombre||'',
+      Number(r.operatividad?.hmJornada||0),Number(r.operatividad?.hrsOperativas||0),
+      Number(r.operatividad?.mantCorrectiva||0),Number(r.operatividad?.mantPreventiva||0),
+      Number(r.operatividad?.fueraServicio||0),Number(r.operatividad?.enEspera||0),Number(r.operatividad?.sinOperador||0),
+      Number(r.horometro?.inicial||0),Number(r.horometro?.final||0),
+      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),hm,acumEq[key],
+      frente,capataz,acts,r.observaciones||''];
   });
+  const ws1=XLSX.utils.aoa_to_sheet([h1,...r1]);
+  ws1['!cols']=[{wch:8},{wch:8},{wch:11},{wch:8},{wch:22},{wch:10},{wch:10},{wch:22},
+    {wch:10},{wch:12},{wch:13},{wch:13},{wch:13},{wch:11},{wch:11},
+    {wch:13},{wch:13},{wch:13},{wch:10},{wch:10},{wch:30},{wch:22},{wch:45},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Control Maquinaria');
 
-  const tot1=['','','TOTALES','','','','','',
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hmJornada||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantCorrectiva||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantPreventiva||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.fueraServicio||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.enEspera||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.sinOperador||0),0),
-    '','','',
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
-    '','','','',''
-  ];
-
-  crearHoja('Control Maquinaria', h1, r1,
-    [8,8,11,8,22,10,10,22,10,12,10,10,10,10,10,12,12,12,10,10,30,22,45,30],
-    [9,10,11,12,13,14,15,16,17,18,19,20], tot1,
-    'Control de Maquinaria'
-  );
-
-  // ══════════════════════════════════════
-  // HOJA 2 — Control Rellenos
-  // ══════════════════════════════════════
+  // Hoja 2: Control Rellenos
   const rellenos=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
-  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
+  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. Vueltas','M3 Relleno','M3 Parcial','M3 Acum'];
   const ar={};
   const r2=rellenos.map((r,i)=>{
-    const p=r.datosEspecificos?.pozo||'Sin nombre';
-    if(!ar[p])ar[p]=0;
-    const m=Number(r.datosEspecificos?.m3||0);
-    ar[p]+=m;
+    const p=r.datosEspecificos?.pozo||'Sin nombre';if(!ar[p])ar[p]=0;
+    const m=Number(r.datosEspecificos?.m3||0);ar[p]+=m;
     return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
   });
-  const tot2=['','','TOTALES','','','',
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
-  ];
-  crearHoja('Control Rellenos', h2, r2,
-    [10,12,8,22,10,30,14,14,14,14],
-    [7,8,9,10], r2.length?tot2:null,
-    'Control de Rellenos desde Empréstito'
-  );
-
-  // ══════════════════════════════════════
-  // HOJA 3 — Control Agua Industrial
-  // ══════════════════════════════════════
-  const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
-  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
-  const aa={};
-  const r3=aljibes.map((r,i)=>{
-    const c=r.datosEspecificos?.cachimba||'Sin nombre';
-    if(!aa[c])aa[c]=0;
-    const m=Number(r.datosEspecificos?.m3||0);
-    aa[c]+=m;
-    return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
-  });
-  const tot3=['','','TOTALES','','','',
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),''
-  ];
-  crearHoja('Control Agua Industrial', h3, r3,
-    [10,12,8,22,10,30,14,12,12,14],
-    [7,8,9,10], r3.length?tot3:null,
-    'Control de M3 de Agua Industrial Utilizada'
-  );
-
-  // ══════════════════════════════════════
-  // HOJA 4 — Detalle de Tiempos
-  // ══════════════════════════════════════
-  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción Detalle','Horas'];
-  const r4=[];
-  sorted.forEach((r,i)=>{
-    TIEMPO_FIELDS.forEach(f=>{
-      const h=Number(r.tiempos?.[f.id]||0);
-      if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
-    });
-  });
-  if(!r4.length) r4.push(['Sin datos','','','','','','','',0]);
-  const tot4=['','','TOTALES','','','','','',r4.reduce((s,row)=>s+Number(row[8]||0),0)];
-  crearHoja('Detalle de Tiempos', h4, r4,
-    [10,12,8,22,10,22,26,48,10],
-    [9], tot4,
-    'Detalle de Tiempos'
-  );
-
-  // ── Descargar ───────────────────────
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob   = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const url    = URL.createObjectURL(blob);
-  const a      = document.createElement('a');
-  a.href       = url;
-  a.download   = `CONPAX_Report_${fecha}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
-}
-  if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
-  if(typeof XLSX==='undefined'){showToast('⚠️ Error cargando librería Excel','err');return;}
-
-  const wb = XLSX.utils.book_new();
-  const sorted = [...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const fecha  = new Date().toISOString().slice(0,10);
-
-  // ── COLORES CONPAX ──────────────────────────
-  const C = {
-    azul:       '2563EB',  // Azul CONPAX
-    azul_claro: 'DBEAFE',  // Azul muy claro (fila par)
-    blanco:     'FFFFFF',
-    gris_claro: 'F1F5F9',  // Fila impar
-    gris_osc:   '475569',  // Texto secundario
-    verde:      '10B981',  // Total / acum positivo
-    verde_claro:'D1FAE5',
-    amber:      'F59E0B',
-    amber_claro:'FEF3C7',
-    negro:      '1E293B',
-  };
-
-  // ── HELPERS DE ESTILO ───────────────────────
-  const styleHeader = (bold=true, color=C.blanco, bg=C.azul, size=10, wrap=true) => ({
-    font:      { bold, color:{ rgb: color }, sz: size, name:'Calibri' },
-    fill:      { fgColor:{ rgb: bg }, patternType:'solid' },
-    alignment: { horizontal:'center', vertical:'center', wrapText: wrap },
-    border: {
-      top:   {style:'thin', color:{rgb:'FFFFFF'}},
-      bottom:{style:'thin', color:{rgb:'FFFFFF'}},
-      left:  {style:'thin', color:{rgb:'FFFFFF'}},
-      right: {style:'thin', color:{rgb:'FFFFFF'}},
-    }
-  });
-
-  const styleRow = (isEven, isNum=false, bold=false) => ({
-    font:      { bold, sz: 9, name:'Calibri', color:{rgb: C.negro} },
-    fill:      { fgColor:{ rgb: isEven ? C.azul_claro : C.blanco }, patternType:'solid' },
-    alignment: { horizontal: isNum ? 'right' : 'left', vertical:'center', wrapText:false },
-    border: {
-      top:   {style:'thin', color:{rgb:'CBD5E1'}},
-      bottom:{style:'thin', color:{rgb:'CBD5E1'}},
-      left:  {style:'thin', color:{rgb:'CBD5E1'}},
-      right: {style:'thin', color:{rgb:'CBD5E1'}},
-    }
-  });
-
-  const styleTotal = (bg=C.verde_claro) => ({
-    font:      { bold:true, sz:10, name:'Calibri', color:{rgb: C.negro} },
-    fill:      { fgColor:{ rgb: bg }, patternType:'solid' },
-    alignment: { horizontal:'right', vertical:'center' },
-    border: {
-      top:   {style:'medium', color:{rgb: C.verde}},
-      bottom:{style:'medium', color:{rgb: C.verde}},
-      left:  {style:'thin',   color:{rgb:'CBD5E1'}},
-      right: {style:'thin',   color:{rgb:'CBD5E1'}},
-    }
-  });
-
-  const styleTitleSheet = () => ({
-    font:      { bold:true, sz:13, name:'Calibri', color:{rgb: C.blanco} },
-    fill:      { fgColor:{ rgb: C.azul }, patternType:'solid' },
-    alignment: { horizontal:'left', vertical:'center' },
-  });
-
-  // Función para aplicar estilos a una hoja
-  function applyStyles(ws, headers, dataRows, numCols, numericCols=[], totalRow=null){
-    const range = XLSX.utils.decode_range(ws['!ref']);
-
-    // Fila 0 = título de hoja (si existe)
-    // Fila 1 = encabezados
-    // Fila 2+ = datos
-
-    for(let R=range.s.r; R<=range.e.r; R++){
-      for(let C2=range.s.c; C2<=range.e.c; C2++){
-        const addr = XLSX.utils.encode_cell({r:R, c:C2});
-        if(!ws[addr]) ws[addr]={v:'', t:'s'};
-        if(!ws[addr].s) ws[addr].s={};
-
-        if(R===0) {
-          // Título de proyecto
-          ws[addr].s = styleTitleSheet();
-        } else if(R===1){
-          // Encabezados
-          ws[addr].s = styleHeader();
-        } else {
-          // Filas de datos
-          const isEven = (R-2) % 2 === 0;
-          const isNum  = numericCols.includes(C2);
-          if(totalRow && R===range.e.r){
-            ws[addr].s = styleTotal();
-          } else {
-            ws[addr].s = styleRow(isEven, isNum);
-          }
-        }
-      }
-    }
-    // Altura de filas
-    ws['!rows'] = [];
-    for(let i=0; i<=range.e.r; i++){
-      ws['!rows'][i] = {hpt: i===0 ? 24 : i===1 ? 32 : 18};
-    }
-  }
-
-  // ══════════════════════════════════════════
-  // HOJA 1 — Control Maquinaria
-  // ══════════════════════════════════════════
-  const h1 = [
-    'Correlativo','N° Daily Report','Fecha','Turno',
-    'Descripción (Equipo)','N° Interno','Patente','Operador',
-    'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva',
-    'Fuera de Servicio','En Espera','Sin Operador',
-    'Horómetro Ini','Horómetro Fin','Total Horómetro',
-    'HM Parcial','HM Acum',
-    'Frente Principal','Capataz Principal',
-    'Actividades','Observaciones'
-  ];
-
-  // Fila título
-  const titulo1 = [`CONPAX-Report — Control de Maquinaria | Proyecto: Obras Complementarias Habilitación Polo Sur | Fecha exportación: ${fecha}`];
-  while(titulo1.length < h1.length) titulo1.push('');
-
-  const acumEq={};
-  const r1=sorted.map((r,i)=>{
-    const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
-    if(!acumEq[key]) acumEq[key]=0;
-    const hm=Number(r.operatividad?.hrsOperativas||0);
-    acumEq[key]+=hm;
-    const pa=r.actividades?.[0];
-    const frente=typeof pa==='object'?pa?.frente||'':pa||'';
-    const capataz=typeof pa==='object'?pa?.capataz||'':'';
-    const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
-    return [
-      i+1, r.nDailyReport||i+1, r.fecha||'', 'Turno '+(r.turno||''),
-      r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
-      Number(r.operatividad?.hmJornada||0),
-      Number(r.operatividad?.hrsOperativas||0),
-      Number(r.operatividad?.mantCorrectiva||0),
-      Number(r.operatividad?.mantPreventiva||0),
-      Number(r.operatividad?.fueraServicio||0),
-      Number(r.operatividad?.enEspera||0),
-      Number(r.operatividad?.sinOperador||0),
-      Number(r.horometro?.inicial||0),
-      Number(r.horometro?.final||0),
-      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),
-      hm,
-      acumEq[key],
-      frente, capataz, acts, r.observaciones||''
-    ];
-  });
-
-  // Fila totales hoja 1
-  const tot1 = ['','','','TOTALES','','','','',
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hmJornada||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantCorrectiva||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.mantPreventiva||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.fueraServicio||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.enEspera||0),0),
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.sinOperador||0),0),
-    '','','',
-    sorted.reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0),
-    '','','','',''
-  ];
-
-  const ws1 = XLSX.utils.aoa_to_sheet([titulo1, h1, ...r1, tot1]);
-  ws1['!cols'] = [
-    {wch:10},{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:10},{wch:22},
-    {wch:10},{wch:12},{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},
-    {wch:14},{wch:14},{wch:14},{wch:10},{wch:10},
-    {wch:32},{wch:22},{wch:45},{wch:30}
-  ];
-  // Merge título
-  ws1['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:h1.length-1}}];
-  // Freeze primera fila de encabezado
-  ws1['!freeze'] = {xSplit:0, ySplit:2};
-  applyStyles(ws1, h1, r1, h1.length, [8,9,10,11,12,13,14,15,16,17,18,19], true);
-  XLSX.utils.book_append_sheet(wb, ws1, 'Control Maquinaria');
-
-  // ══════════════════════════════════════════
-  // HOJA 2 — Control de Rellenos
-  // ══════════════════════════════════════════
-  const rellenos = sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
-  const h2 = ['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. de Vueltas','M3 de Relleno','M3 Parcial','M3 Acum'];
-  const titulo2 = [`CONPAX-Report — Control de Rellenos desde Empréstito | Fecha exportación: ${fecha}`];
-  while(titulo2.length < h2.length) titulo2.push('');
-  const ar={};
-  const r2=rellenos.map((r,i)=>{
-    const p=r.datosEspecificos?.pozo||'Sin nombre';
-    if(!ar[p])ar[p]=0;
-    const m=Number(r.datosEspecificos?.m3||0);
-    ar[p]+=m;
-    return [i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
-  });
-  const tot2=['','','TOTALES','','','',
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    rellenos.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    ''
-  ];
-  const ws2=XLSX.utils.aoa_to_sheet([titulo2,h2,...r2,tot2]);
-  ws2['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:14},{wch:14},{wch:14}];
-  ws2['!merges']=[{s:{r:0,c:0},e:{r:0,c:h2.length-1}}];
-  ws2['!freeze']={xSplit:0,ySplit:2};
-  applyStyles(ws2,h2,r2,h2.length,[6,7,8,9],true);
+  const ws2=XLSX.utils.aoa_to_sheet([h2,...r2]);
+  ws2['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:12},{wch:12},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws2,'Control Rellenos');
 
-  // ══════════════════════════════════════════
-  // HOJA 3 — Control Agua Industrial
-  // ══════════════════════════════════════════
+  // Hoja 3: Control Agua Industrial
   const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
-  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Nombre Cachimba','Cant. de Vueltas','M3','M3 Parcial','M3 Acum'];
-  const titulo3=[`CONPAX-Report — Control de M3 de Agua Industrial Utilizada | Fecha exportación: ${fecha}`];
-  while(titulo3.length<h3.length) titulo3.push('');
+  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Cachimba','Cant. Vueltas','M3','M3 Parcial','M3 Acum'];
   const aa={};
   const r3=aljibes.map((r,i)=>{
-    const c=r.datosEspecificos?.cachimba||'Sin nombre';
-    if(!aa[c])aa[c]=0;
-    const m=Number(r.datosEspecificos?.m3||0);
-    aa[c]+=m;
+    const c=r.datosEspecificos?.cachimba||'Sin nombre';if(!aa[c])aa[c]=0;
+    const m=Number(r.datosEspecificos?.m3||0);aa[c]+=m;
     return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
   });
-  const tot3=['','','TOTALES','','','',
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.vueltas||0),0),
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    aljibes.reduce((s,r)=>s+Number(r.datosEspecificos?.m3||0),0),
-    ''
-  ];
-  const ws3=XLSX.utils.aoa_to_sheet([titulo3,h3,...r3,tot3]);
-  ws3['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:12},{wch:12},{wch:14}];
-  ws3['!merges']=[{s:{r:0,c:0},e:{r:0,c:h3.length-1}}];
-  ws3['!freeze']={xSplit:0,ySplit:2};
-  applyStyles(ws3,h3,r3,h3.length,[6,7,8,9],true);
+  const ws3=XLSX.utils.aoa_to_sheet([h3,...r3]);
+  ws3['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:12},{wch:12},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws3,'Control Agua Industrial');
 
-  // ══════════════════════════════════════════
-  // HOJA 4 — Detalle de Tiempos
-  // ══════════════════════════════════════════
-  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción Detalle','Horas'];
-  const titulo4=[`CONPAX-Report — Detalle de Tiempos | Fecha exportación: ${fecha}`];
-  while(titulo4.length<h4.length) titulo4.push('');
+  // Hoja 4: Detalle de Tiempos
+  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción','Horas'];
   const r4=[];
   sorted.forEach((r,i)=>{
     TIEMPO_FIELDS.forEach(f=>{
@@ -2594,16 +2180,11 @@ function exportExcel(){
       if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
     });
   });
-  if(!r4.length) r4.push(['Sin datos de tiempos registrados','','','','','','','',0]);
-  const tot4=['','','TOTALES','','','','','',r4.reduce((s,row)=>s+Number(row[8]||0),0)];
-  const ws4=XLSX.utils.aoa_to_sheet([titulo4,h4,...r4,tot4]);
+  if(!r4.length) r4.push(['Sin datos de tiempos','','','','','','','',0]);
+  const ws4=XLSX.utils.aoa_to_sheet([h4,...r4]);
   ws4['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:22},{wch:26},{wch:48},{wch:10}];
-  ws4['!merges']=[{s:{r:0,c:0},e:{r:0,c:h4.length-1}}];
-  ws4['!freeze']={xSplit:0,ySplit:2};
-  applyStyles(ws4,h4,r4,h4.length,[8],true);
   XLSX.utils.book_append_sheet(wb,ws4,'Detalle de Tiempos');
 
-  // ── Descargar ───────────────────────────
   XLSX.writeFile(wb,`CONPAX_Report_${fecha}.xlsx`);
   showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
 }
@@ -2614,6 +2195,46 @@ function renderAdminPanel(){
   if(!screen) return;
   const supervisores=listaUsuarios.filter(u=>u.rol==='supervisor');
   screen.innerHTML=`<div class="screen-inner">
+
+    <!-- ── GESTIÓN DE EQUIPOS ── -->
+    <div class="admin-section">
+      <div class="admin-section-head"><span class="section-num">🚧</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Gestión de Equipos / Maquinaria</span></div>
+      <div class="admin-section-body">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Listado de equipos disponibles para los operadores. Ordenado por categoría.</p>
+
+        <!-- Formulario agregar equipo -->
+        <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">➕ Agregar equipo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Categoría <span style="color:var(--red)">*</span></label>
+              <input type="text" id="eq-categoria" placeholder="Excavadora, Bulldozer..." list="eq-cat-list" style="margin:0">
+              <datalist id="eq-cat-list">${[...new Set(listaEquipos.map(e=>e.categoria))].sort().map(c=>`<option value="${c}">`).join('')}</datalist>
+            </div>
+            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Tipo / Capacidad</label>
+              <input type="text" id="eq-tipo" placeholder="45 Toneladas, 20 m3..." style="margin:0">
+            </div>
+            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Marca</label>
+              <input type="text" id="eq-marca" placeholder="Komatsu, Volvo..." style="margin:0">
+            </div>
+            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Modelo</label>
+              <input type="text" id="eq-modelo" placeholder="PC-450 LC-8..." style="margin:0">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Nomenclatura / N° Interno <span style="color:var(--red)">*</span></label>
+              <input type="text" id="eq-nomenclatura" placeholder="RH-94, CT-107, BUL-10..." style="margin:0;text-transform:uppercase">
+            </div>
+            <div style="align-self:flex-end">
+              <button onclick="agregarEquipo()" style="background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px 16px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;white-space:nowrap;height:42px">+ Agregar</button>
+            </div>
+          </div>
+          <div id="eqError" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
+        </div>
+
+        <!-- Tabla de equipos agrupada por categoría -->
+        <div id="listaEquiposAdmin">${renderTablaEquiposAdmin()}</div>
+      </div>
+    </div>
 
     <div class="admin-section">
       <div class="admin-section-head"><span class="section-num">👷</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Gestión de Capataces</span></div>
@@ -2699,6 +2320,72 @@ function renderAdminPanel(){
   </div>`;
 }
 
+/* ── ADMIN: GESTIÓN DE EQUIPOS ── */
+function renderTablaEquiposAdmin(){
+  if(!listaEquipos.length) return '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin equipos cargados</div>';
+  // Agrupar por categoría
+  const grupos={};
+  listaEquipos.forEach((e,idx)=>{
+    if(!grupos[e.categoria]) grupos[e.categoria]=[];
+    grupos[e.categoria].push({...e,_idx:idx});
+  });
+  return Object.entries(grupos).sort(([a],[b])=>a.localeCompare(b)).map(([cat,equs])=>`
+    <div style="margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;padding:5px 10px;background:var(--blue-dim);border-radius:6px;margin-bottom:5px">
+        ${cat} <span style="font-size:10px;opacity:.7">(${equs.length})</span>
+      </div>
+      ${equs.map(e=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:4px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-dim);padding:2px 8px;border-radius:4px">${e.equipo}</span>
+              ${e.tipo?`<span style="font-size:11px;color:var(--text2)">${e.tipo}</span>`:''}
+              ${e.marca?`<span style="font-size:11px;color:var(--text3)">${e.marca}${e.modelo?' · '+e.modelo:''}</span>`:''}
+              ${e.equipo==='Arriendo Externo'?`<span style="font-size:10px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.25);padding:1px 7px;border-radius:999px">Arriendo</span>`:''}
+            </div>
+          </div>
+          <button onclick="eliminarEquipo(${e._idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:2px 6px;line-height:1">✕</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+async function agregarEquipo(){
+  const cat   = document.getElementById('eq-categoria')?.value.trim();
+  const tipo  = document.getElementById('eq-tipo')?.value.trim();
+  const marca = document.getElementById('eq-marca')?.value.trim();
+  const modelo= document.getElementById('eq-modelo')?.value.trim();
+  const nom   = document.getElementById('eq-nomenclatura')?.value.trim().toUpperCase();
+  const errEl = document.getElementById('eqError');
+  errEl.style.display='none';
+  if(!cat){errEl.textContent='La categoría es obligatoria.';errEl.style.display='block';return;}
+  if(!nom){errEl.textContent='La nomenclatura / N° interno es obligatorio.';errEl.style.display='block';return;}
+  if(listaEquipos.some(e=>e.equipo===nom&&e.categoria===cat)){
+    errEl.textContent=`Ya existe "${nom}" en la categoría "${cat}".`;errEl.style.display='block';return;
+  }
+  listaEquipos.push({categoria:cat,tipo,marca,modelo,equipo:nom});
+  listaEquipos.sort((a,b)=>a.categoria.localeCompare(b.categoria)||a.equipo.localeCompare(b.equipo));
+  try{
+    await subirEquiposAFirebase();
+    ['eq-categoria','eq-tipo','eq-marca','eq-modelo','eq-nomenclatura'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    showToast(`✔ Equipo "${nom}" agregado`);
+    renderAdminPanel();
+    initEquipoDropdowns(); // actualizar selector en formulario
+  }catch(e){showToast('⚠️ Error guardando','err');listaEquipos.pop();}
+}
+
+async function eliminarEquipo(idx){
+  const eq=listaEquipos[idx];
+  if(!confirm(`¿Eliminar "${eq.equipo}" (${eq.categoria})?`))return;
+  listaEquipos.splice(idx,1);
+  try{
+    await subirEquiposAFirebase();
+    showToast(`✔ Equipo eliminado`);
+    renderAdminPanel();
+    initEquipoDropdowns();
+  }catch(e){showToast('⚠️ Error','err');listaEquipos.splice(idx,0,eq);}
+}
+
+/* ── ADMIN: CAPATACES ── */
 async function agregarCapataz(){
   const input=document.getElementById('nuevoCapataz');
   const nombre=input.value.trim();
@@ -2763,8 +2450,205 @@ function showToast(msg,type){
   t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
 }
 
+
+/* ══════════════════════════════════════
+   MÓDULO CUADRILLA — Fase 2
+══════════════════════════════════════ */
+
+let cqFechaFil  = new Date().toISOString().slice(0,10);
+let cqTurnoFil  = 'ambos';   // 'A', 'B', 'ambos'
+let cqCapFil    = '';         // capataz específico o ''
+
+// Retorna los capataces visibles para el usuario actual
+function getCapatacesVisibles(){
+  const rol = currentUser?.rol;
+  if(rol === 'admin' || rol === 'jefe') return listaCapataces;
+  if(rol === 'supervisor') return currentUser.capataces || [];
+  if(rol === 'capataz') return [currentUser.nombre];
+  return [];
+}
+
+// Filtra los records según los criterios de cuadrilla
+function getCuadrillaRecords(){
+  const caps = getCapatacesVisibles();
+  return records.filter(r => {
+    // filtro fecha
+    if(cqFechaFil && r.fecha !== cqFechaFil) return false;
+    // filtro turno
+    if(cqTurnoFil !== 'ambos' && r.turno !== cqTurnoFil) return false;
+    // filtro capataz asignado al rol
+    const recCaps = (r.actividades || []).map(a => typeof a === 'object' ? a?.capataz : '').filter(Boolean);
+    const tieneCap = caps.length === 0 || recCaps.some(c => caps.includes(c));
+    if(!tieneCap) return false;
+    // filtro capataz específico seleccionado
+    if(cqCapFil && !recCaps.includes(cqCapFil)) return false;
+    return true;
+  });
+}
+
+function renderCuadrilla(){
+  const inner = document.getElementById('cuadrillaInner');
+  if(!inner) return;
+
+  const caps    = getCapatacesVisibles();
+  const recsAll = getCuadrillaRecords();
+  const today   = new Date().toISOString().slice(0,10);
+
+  // ── KPIs globales ──
+  const totalEquipos  = recsAll.length;
+  const totalHMOp     = recsAll.reduce((s,r) => s + Number(r.operatividad?.hrsOperativas||0), 0);
+  const totalHMJor    = recsAll.reduce((s,r) => s + Number(r.operatividad?.hmJornada||0), 0);
+  const pctOp         = totalHMJor > 0 ? Math.round((totalHMOp/totalHMJor)*100) : 0;
+  const sinReporte    = cqFechaFil === today
+    ? caps.filter(c => !recsAll.some(r => (r.actividades||[]).some(a => (typeof a==='object' ? a?.capataz : '') === c)))
+    : [];
+
+  // ── Agrupar por capataz ──
+  const grupos = {};
+  caps.forEach(c => { grupos[c] = []; });
+  recsAll.forEach(r => {
+    const recCaps = [...new Set((r.actividades||[]).map(a => typeof a==='object' ? a?.capataz : '').filter(Boolean))];
+    if(!recCaps.length){ if(grupos['__sin_capataz__']) grupos['__sin_capataz__'].push(r); else grupos['__sin_capataz__']=[r]; }
+    else recCaps.forEach(c => { if(grupos[c]) grupos[c].push(r); else grupos[c]=[r]; });
+  });
+
+  // ── Opciones capataz para el select ──
+  const capOpts = ['<option value="">Todos los capataces</option>',
+    ...caps.map(c => `<option value="${c}" ${cqCapFil===c?'selected':''}>${c}</option>`)
+  ].join('');
+
+  inner.innerHTML = `
+    <!-- Hero filtros -->
+    <div class="cq-hero">
+      <div class="cq-hero-title">👷 Mi Cuadrilla</div>
+      <div class="cq-hero-sub">Visión consolidada por capataz y equipo</div>
+      <div class="cq-filter-row" style="margin-bottom:8px">
+        <input type="date" id="cqFechaInput" value="${cqFechaFil}"
+          onchange="cqFechaFil=this.value;renderCuadrilla()"
+          style="background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.15);color:#fff;">
+        <select id="cqCapInput" onchange="cqCapFil=this.value;renderCuadrilla()"
+          style="background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.15);color:#fff;">${capOpts}</select>
+      </div>
+    </div>
+
+    <!-- Turno toggle -->
+    <div class="cq-turno-row">
+      <button class="cq-turno-btn ${cqTurnoFil==='ambos'?'active':''}" onclick="cqTurnoFil='ambos';renderCuadrilla()">Ambos turnos</button>
+      <button class="cq-turno-btn ${cqTurnoFil==='A'?'active':''}" onclick="cqTurnoFil='A';renderCuadrilla()">Turno A</button>
+      <button class="cq-turno-btn ${cqTurnoFil==='B'?'active':''}" onclick="cqTurnoFil='B';renderCuadrilla()">Turno B</button>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="cq-kpi-strip">
+      <div class="cq-kpi">
+        <div class="cq-kpi-val" style="color:var(--blue)">${totalEquipos}</div>
+        <div class="cq-kpi-label">Reportes del turno</div>
+      </div>
+      <div class="cq-kpi">
+        <div class="cq-kpi-val" style="color:var(--green)">${totalHMOp.toFixed(1)}</div>
+        <div class="cq-kpi-label">HM Operativos</div>
+      </div>
+      <div class="cq-kpi">
+        <div class="cq-kpi-val" style="color:${pctOp>=75?'var(--green)':pctOp>=50?'var(--amber)':'var(--red)'}">${pctOp}%</div>
+        <div class="cq-kpi-label">% Operatividad</div>
+      </div>
+      <div class="cq-kpi">
+        <div class="cq-kpi-val" style="color:${sinReporte.length===0?'var(--green)':'var(--amber)'}">${sinReporte.length}</div>
+        <div class="cq-kpi-label">Sin reporte hoy</div>
+      </div>
+    </div>
+
+    <!-- Alerta capataces sin reporte -->
+    <div class="cq-alert ${sinReporte.length?'show':''}">
+      <div class="cq-alert-title">⚠ Cuadrillas sin reporte hoy</div>
+      ${sinReporte.map(c=>`<div class="cq-alert-item">${c}</div>`).join('')}
+    </div>
+
+    <!-- Secciones por capataz -->
+    <div id="cqGrupos">${renderGruposHTML(grupos)}</div>
+  `;
+}
+
+function renderGruposHTML(grupos){
+  const entries = Object.entries(grupos).filter(([,recs]) => recs.length > 0);
+  if(!entries.length){
+    return `<div class="no-records"><div class="no-records-ico">📋</div>
+      <div class="no-records-txt">Sin reportes para los filtros seleccionados.</div></div>`;
+  }
+  return entries.map(([cap, recs]) => {
+    const totalHMOp  = recs.reduce((s,r) => s + Number(r.operatividad?.hrsOperativas||0), 0);
+    const totalHMJor = recs.reduce((s,r) => s + Number(r.operatividad?.hmJornada||0), 0);
+    const pct        = totalHMJor > 0 ? Math.round((totalHMOp/totalHMJor)*100) : 0;
+    const capKey     = cap.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+    const capLabel   = cap === '__sin_capataz__' ? '⚠ Sin capataz asignado' : cap;
+
+    const equiposHTML = recs.map(r => renderEquipoCardHTML(r)).join('');
+
+    return `
+    <div class="cq-capataz-section">
+      <div class="cq-capataz-head" onclick="toggleCqSection('${capKey}')">
+        <div>
+          <div class="cq-capataz-name">👷 ${capLabel}</div>
+          <div class="cq-capataz-meta">${recs.length} equipo(s) · ${totalHMOp.toFixed(1)} HM operativos</div>
+        </div>
+        <div class="cq-capataz-badges">
+          <span class="cq-badge ${pct>=75?'cq-badge-green':pct>=50?'cq-badge-amber':'cq-badge-red'}">${pct}% op.</span>
+          <span class="cq-chevron" id="chevron-${capKey}">▼</span>
+        </div>
+      </div>
+      <div class="cq-capataz-body open" id="cqbody-${capKey}">
+        ${equiposHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderEquipoCardHTML(r){
+  const op    = r.operatividad || {};
+  const hmOp  = Number(op.hrsOperativas||0);
+  const hmJor = Number(op.hmJornada||0);
+  const pct   = hmJor > 0 ? Math.round((hmOp/hmJor)*100) : 0;
+  const cls   = pct >= 75 ? 'op-alta' : pct >= 50 ? 'op-media' : 'op-baja';
+  const barCls= pct >= 75 ? 'high' : pct >= 50 ? 'mid' : 'low';
+  const eq    = r.equipo || {};
+  const frentes = [...new Set((r.actividades||[]).map(a => typeof a==='object' ? a?.frente : '').filter(Boolean))];
+  const sinced  = r.estado?.synced;
+
+  return `
+  <div class="cq-equipo-card ${cls}" onclick="openModal('${r.id}')">
+    <div class="cq-eq-top">
+      <div>
+        <div class="cq-eq-nombre">${eq.tipo||'Equipo'}${eq.numero?' · '+eq.numero:''}</div>
+        <div class="cq-eq-operador">👤 ${r.operador?.nombre||'—'} · Turno ${r.turno||'—'}</div>
+      </div>
+      <span class="cq-badge ${sinced?'cq-badge-green':'cq-badge-amber'}">${sinced?'✓':'⏳'}</span>
+    </div>
+    <div class="cq-eq-kpis">
+      <span>⏱ ${hmOp.toFixed(1)} / ${hmJor.toFixed(1)} HM</span>
+      <span>🔧 ${Number(op.mantCorrectiva||0).toFixed(1)} mant.</span>
+      <span>⏸ ${Number(op.enEspera||0).toFixed(1)} espera</span>
+      ${r.datosEspecificos ? `<span>📦 ${r.datosEspecificos.m3||0} m³</span>` : ''}
+    </div>
+    <div class="cq-op-bar-wrap">
+      <div class="cq-op-bar-label"><span>Operatividad</span><span>${pct}%</span></div>
+      <div class="cq-op-bar-bg"><div class="cq-op-bar-fill ${barCls}" style="width:${pct}%"></div></div>
+    </div>
+    ${frentes.length ? `<div style="margin-top:8px">${frentes.map(f=>`<span class="cq-frente-tag">${f.length>30?f.slice(0,30)+'…':f}</span>`).join('')}</div>` : ''}
+  </div>`;
+}
+
+function toggleCqSection(key){
+  const body    = document.getElementById('cqbody-'+key);
+  const chevron = document.getElementById('chevron-'+key);
+  if(!body) return;
+  const isOpen  = body.classList.toggle('open');
+  body.style.display = isOpen ? 'block' : 'none';
+  if(chevron) chevron.classList.toggle('open', isOpen);
+}
+
 /* ── UTILS ── */
 function forzarActualizacion(){localStorage.removeItem('app_version');window.location.reload(true);}
+
 </script>
 </body>
 </html>
