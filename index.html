@@ -459,6 +459,63 @@ label .req { color:var(--red); }
 /* Sin equipos placeholder */
 .cq-empty{text-align:center;padding:20px 12px;color:var(--text3);font-size:12px;background:var(--input-bg);border:1px dashed var(--border2);border-radius:var(--r);}
 
+/* ══════════════════════════════════════
+   DASHBOARD v2 — Adaptativo por Rol
+══════════════════════════════════════ */
+
+/* Saludo hero */
+.dv2-greeting{padding:20px 0 4px;margin-bottom:14px;}
+.dv2-greeting-top{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.dv2-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0;border:2px solid;}
+.dv2-greeting-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;line-height:1.1;}
+.dv2-greeting-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+.dv2-date-pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;}
+.dv2-date-pill .dot{width:6px;height:6px;border-radius:50%;}
+
+/* Accesos rápidos — grid de tarjetas */
+.dv2-section-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;}
+.dv2-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.dv2-action-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:16px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;text-align:left;}
+.dv2-action-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.dv2-action-card.ac-blue::after{background:var(--blue);}
+.dv2-action-card.ac-green::after{background:var(--green);}
+.dv2-action-card.ac-amber::after{background:var(--amber);}
+.dv2-action-card.ac-purple::after{background:var(--purple);}
+.dv2-action-card.ac-red::after{background:var(--red);}
+.dv2-action-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.3);}
+.dv2-action-card.full-width{grid-column:1/-1;}
+.dv2-ac-ico{font-size:26px;margin-bottom:10px;display:block;}
+.dv2-ac-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.dv2-ac-desc{font-size:11px;color:var(--text3);line-height:1.4;}
+.dv2-ac-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;font-family:'DM Mono',monospace;}
+
+/* KPI strip del dashboard */
+.dv2-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:4px;}
+.dv2-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:13px 8px;text-align:center;}
+.dv2-kpi-val{font-family:'DM Mono',monospace;font-size:24px;font-weight:500;line-height:1;margin-bottom:3px;}
+.dv2-kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+
+/* Estado del sistema (admin) */
+.dv2-status-row{display:flex;gap:8px;margin-bottom:4px;}
+.dv2-status-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--rr);padding:12px;display:flex;align-items:center;gap:10px;}
+.dv2-status-ico{font-size:20px;flex-shrink:0;}
+.dv2-status-label{font-size:11px;color:var(--text2);line-height:1.3;}
+.dv2-status-val{font-size:12px;font-weight:700;color:var(--text);}
+
+/* Actividad reciente compacta */
+.dv2-recent-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color .2s;display:flex;align-items:center;gap:10px;}
+.dv2-recent-item:hover{border-color:var(--border2);}
+.dv2-recent-left{min-width:0;flex:1;}
+.dv2-recent-eq{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dv2-recent-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+.dv2-recent-right{flex-shrink:0;text-align:right;}
+.dv2-recent-hm{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;}
+.dv2-recent-fecha{font-size:10px;color:var(--text3);}
+
+/* Barra operatividad micro */
+.dv2-op-bar{height:3px;border-radius:999px;margin-top:5px;background:var(--border);overflow:hidden;}
+.dv2-op-fill{height:100%;border-radius:999px;}
+
 /* ── ADMIN TABS ── */
 .admin-tabs-wrap{position:sticky;top:54px;z-index:80;background:var(--bg);padding:10px 0 8px;}
 .admin-tabs-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:transparent;margin-bottom:0;}
@@ -560,30 +617,8 @@ label .req { color:var(--red); }
 
   <!-- ══ SCREEN: DASHBOARD ══ -->
   <div class="screen" id="screen-dash">
-    <div class="screen-inner">
-      <div class="dash-hero">
-        <div class="dash-hero-title">CONPAX — Polo Sur Caso Base</div>
-        <div class="dash-hero-date" id="dashFecha">—</div>
-        <button class="dash-new-btn" onclick="nuevoReporte()">
-          ➕ Nuevo Reporte
-        </button>
-      </div>
-      <div class="dash-stats">
-        <div class="dash-stat">
-          <div class="dash-stat-val" style="color:var(--blue)" id="dash-total">0</div>
-          <div class="dash-stat-label">Total</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-val" style="color:var(--amber)" id="dash-pending">0</div>
-          <div class="dash-stat-label">Pendientes</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-val" style="color:var(--green)" id="dash-synced">0</div>
-          <div class="dash-stat-label">Sincronizados</div>
-        </div>
-      </div>
-      <div class="dash-recent-title">Reportes recientes</div>
-      <div id="dashRecentList"></div>
+    <div class="screen-inner" id="dashInner">
+      <!-- Contenido generado dinámicamente por initDashboard() según el rol -->
     </div>
   </div>
 
@@ -1247,34 +1282,277 @@ function updateUserHeader(){
   document.getElementById('userRoleLabel').textContent=rolCfg.label;
 }
 
-/* ── DASHBOARD ── */
+/* ── DASHBOARD v2 — Adaptativo por Rol ── */
 function initDashboard(){
-  const now=new Date();
-  const dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  document.getElementById('dashFecha').textContent=`${dias[now.getDay()]} ${now.getDate()} de ${meses[now.getMonth()]} de ${now.getFullYear()}`;
+  const inner = document.getElementById('dashInner');
+  if(!inner) return;
+  const rol = currentUser?.rol || 'operador';
+  if(rol === 'admin') inner.innerHTML = dashAdmin();
+  else if(rol === 'supervisor' || rol === 'jefe') inner.innerHTML = dashSupervisor();
+  else if(rol === 'capataz') inner.innerHTML = dashCapataz();
+  else inner.innerHTML = dashOperador();
   updateStats();
-  // Mostrar últimos 3 registros
-  const list=document.getElementById('dashRecentList');
-  const recent=records.slice(0,5);
-  if(!recent.length){list.innerHTML=`<div class="no-records"><div class="no-records-ico">📋</div><div class="no-records-txt">Sin reportes aún.<br>Toca "Nuevo Reporte" para comenzar.</div></div>`;return;}
-  list.innerHTML=recent.map(r=>{
-    const synced=r.estado?.synced??false;
-    const tipoEq=r.equipo?.tipo??'Equipo';
-    const nEquipo=r.equipo?.numero??'';
-    const operador=r.operador?.nombre??'—';
-    return `<div class="record-card ${synced?'synced':'pending'}" onclick="openModal('${r.id}')">
-      <div class="rc-top">
-        <div><div class="rc-equipo">${tipoEq}${nEquipo?' · '+nEquipo:''}</div><div class="rc-operador">👷 ${operador}</div></div>
-        <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓ sync':'⏳'}</span>
+}
+
+/* ─── helpers compartidos ─── */
+function _dashGreeting(){
+  const now  = new Date();
+  const dias  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto',
+                 'septiembre','octubre','noviembre','diciembre'];
+  const hora  = now.getHours();
+  const saludo = hora<12?'Buenos días':hora<19?'Buenas tardes':'Buenas noches';
+  const nombre = (currentUser?.nombre||'').split(' ')[0];
+  const rolCfg = ROL_CONFIG[currentUser?.rol]||ROL_CONFIG.operador;
+  const initials = (currentUser?.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const fechaStr = `${dias[now.getDay()]} ${now.getDate()} de ${meses[now.getMonth()]}`;
+  return `
+    <div class="dv2-greeting">
+      <div class="dv2-greeting-top">
+        <div class="dv2-avatar" style="background:${rolCfg.bg};color:${rolCfg.color};border-color:${rolCfg.color}44">${initials}</div>
+        <div>
+          <div class="dv2-greeting-name">${saludo}, ${nombre}</div>
+          <div class="dv2-greeting-sub">${rolCfg.label} · CONPAX Polo Sur</div>
+        </div>
       </div>
-      <div class="rc-meta">
-        <span>📅 ${r.fecha||'—'}</span>
-        <span>Turno ${r.turno||'—'}</span>
-        <span>⏱ ${Number(r.operatividad?.hrsOperativas||0).toFixed(1)} HM</span>
+      <div class="dv2-date-pill">
+        <span class="dot" style="background:${rolCfg.color}"></span>
+        ${fechaStr}
+      </div>
+    </div>`;
+}
+
+function _dashKPIs(labelA, labelB, labelC){
+  const pending = records.filter(r=>!r.estado?.synced).length;
+  const synced  = records.filter(r=> r.estado?.synced).length;
+  return `
+    <div class="dv2-kpi-row">
+      <div class="dv2-kpi">
+        <div class="dv2-kpi-val" style="color:var(--blue)" id="dash-total">${records.length}</div>
+        <div class="dv2-kpi-label">${labelA||'Total'}</div>
+      </div>
+      <div class="dv2-kpi">
+        <div class="dv2-kpi-val" style="color:var(--amber)" id="dash-pending">${pending}</div>
+        <div class="dv2-kpi-label">${labelB||'Pendientes'}</div>
+      </div>
+      <div class="dv2-kpi">
+        <div class="dv2-kpi-val" style="color:var(--green)" id="dash-synced">${synced}</div>
+        <div class="dv2-kpi-label">${labelC||'Sincronizados'}</div>
+      </div>
+    </div>`;
+}
+
+function _dashRecientes(max){
+  const recent = records.slice(0,max||4);
+  if(!recent.length) return `<div class="no-records"><div class="no-records-ico">📋</div><div class="no-records-txt">Sin reportes aún.</div></div>`;
+  return recent.map(r=>{
+    const synced = r.estado?.synced;
+    const hmOp   = Number(r.operatividad?.hrsOperativas||0);
+    const hmJor  = Number(r.operatividad?.hmJornada||0);
+    const pct    = hmJor>0?Math.round(hmOp/hmJor*100):0;
+    const barClr = pct>=75?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+    return `<div class="dv2-recent-item" onclick="openModal('${r.id}')">
+      <div class="dv2-recent-left">
+        <div class="dv2-recent-eq">${r.equipo?.tipo||'Equipo'}${r.equipo?.numero?' · '+r.equipo.numero:''}</div>
+        <div class="dv2-recent-meta">👤 ${r.operador?.nombre||'—'} · Turno ${r.turno||'—'}</div>
+        <div class="dv2-op-bar"><div class="dv2-op-fill" style="width:${pct}%;background:${barClr}"></div></div>
+      </div>
+      <div class="dv2-recent-right">
+        <div class="dv2-recent-hm" style="color:${barClr}">${hmOp.toFixed(1)}<span style="font-size:9px;color:var(--text3)"> HM</span></div>
+        <div class="dv2-recent-fecha">${r.fecha||'—'}</div>
+        <div style="margin-top:3px"><span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓':'⏳'}</span></div>
       </div>
     </div>`;
   }).join('');
+}
+
+/* ─── DASHBOARD ADMIN ─── */
+function dashAdmin(){
+  const totalEquipos  = listaEquipos.length;
+  const totalUsuarios = listaUsuarios.length;
+  const totalCaps     = listaCapataces.length;
+  const pending       = records.filter(r=>!r.estado?.synced).length;
+  const hoyStr        = new Date().toISOString().slice(0,10);
+  const reportesHoy   = records.filter(r=>r.fecha===hoyStr).length;
+  const totalHMHoy    = records.filter(r=>r.fecha===hoyStr).reduce((s,r)=>s+Number(r.operatividad?.hrsOperativas||0),0);
+
+  return `
+    ${_dashGreeting()}
+
+    <!-- Estado del sistema -->
+    <div class="dv2-section-title">Estado del sistema hoy</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px">
+      <div class="dv2-status-card">
+        <div class="dv2-status-ico">📋</div>
+        <div><div class="dv2-status-val">${reportesHoy}</div><div class="dv2-status-label">Reportes hoy</div></div>
+      </div>
+      <div class="dv2-status-card">
+        <div class="dv2-status-ico">⏱</div>
+        <div><div class="dv2-status-val">${totalHMHoy.toFixed(1)} HM</div><div class="dv2-status-label">Op. hoy</div></div>
+      </div>
+      <div class="dv2-status-card">
+        <div class="dv2-status-ico">${pending>0?'🟡':'✅'}</div>
+        <div><div class="dv2-status-val" style="color:${pending>0?'var(--amber)':'var(--green)'}">${pending}</div><div class="dv2-status-label">Sin sincronizar</div></div>
+      </div>
+      <div class="dv2-status-card">
+        <div class="dv2-status-ico">${isOnline?'📶':'📡'}</div>
+        <div><div class="dv2-status-val" style="color:${isOnline?'var(--green)':'var(--amber)'}">${isOnline?'En línea':'Sin señal'}</div><div class="dv2-status-label">Conectividad</div></div>
+      </div>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="dv2-section-title">Accesos rápidos</div>
+    <div class="dv2-actions-grid">
+      <div class="dv2-action-card ac-blue full-width" onclick="nuevoReporte()">
+        <span class="dv2-ac-ico">📋</span>
+        <div class="dv2-ac-title">Nuevo Reporte</div>
+        <div class="dv2-ac-desc">Ingresar reporte de maquinaria para el turno actual</div>
+      </div>
+      <div class="dv2-action-card ac-purple" onclick="showTab('cuadrilla')">
+        <span class="dv2-ac-ico">👷</span>
+        <div class="dv2-ac-title">Cuadrilla</div>
+        <div class="dv2-ac-desc">Vista consolidada por capataz y equipo</div>
+      </div>
+      <div class="dv2-action-card ac-green" onclick="showTab('records')">
+        <span class="dv2-ac-ico">📁</span>
+        <div class="dv2-ac-title">Registros</div>
+        <div class="dv2-ac-desc">Historial completo de reportes</div>
+        ${pending>0?`<span class="dv2-ac-badge" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3)">${pending} pend.</span>`:''}
+      </div>
+      <div class="dv2-action-card ac-amber" onclick="showTab('sync')">
+        <span class="dv2-ac-ico">🔄</span>
+        <div class="dv2-ac-title">Sincronizar</div>
+        <div class="dv2-ac-desc">Subir pendientes · Exportar Excel</div>
+      </div>
+    </div>
+
+    <!-- Panel admin en tres tarjetas -->
+    <div class="dv2-section-title">Administración</div>
+    <div class="dv2-actions-grid">
+      <div class="dv2-action-card ac-red" onclick="showTab('admin');switchAdminTab('equipos')">
+        <span class="dv2-ac-ico">🚧</span>
+        <div class="dv2-ac-title">Equipos</div>
+        <div class="dv2-ac-desc">${totalEquipos} máquinas registradas</div>
+      </div>
+      <div class="dv2-action-card ac-red" onclick="showTab('admin');switchAdminTab('personas')">
+        <span class="dv2-ac-ico">👷</span>
+        <div class="dv2-ac-title">Capataces</div>
+        <div class="dv2-ac-desc">${totalCaps} activos · Asignación supervisores</div>
+      </div>
+      <div class="dv2-action-card ac-red full-width" onclick="showTab('admin');switchAdminTab('usuarios')">
+        <span class="dv2-ac-ico">👥</span>
+        <div class="dv2-ac-title">Usuarios del Sistema</div>
+        <div class="dv2-ac-desc">${totalUsuarios} usuario(s) registrado(s) · Crear nuevos · Cambiar roles</div>
+      </div>
+    </div>
+
+    <!-- Actividad reciente -->
+    <div class="dv2-section-title">Actividad reciente</div>
+    ${_dashRecientes(4)}
+  `;
+}
+
+/* ─── DASHBOARD SUPERVISOR / JEFE ─── */
+function dashSupervisor(){
+  const hoyStr      = new Date().toISOString().slice(0,10);
+  const reportesHoy = records.filter(r=>r.fecha===hoyStr).length;
+  const pending     = records.filter(r=>!r.estado?.synced).length;
+  const caps        = (currentUser?.capataces||[]);
+
+  return `
+    ${_dashGreeting()}
+
+    ${_dashKPIs('Mis Registros','Pendientes','Sincronizados')}
+
+    <div class="dv2-section-title">Accesos rápidos</div>
+    <div class="dv2-actions-grid">
+      <div class="dv2-action-card ac-purple full-width" onclick="showTab('cuadrilla')">
+        <span class="dv2-ac-ico">👷</span>
+        <div class="dv2-ac-title">Mi Cuadrilla</div>
+        <div class="dv2-ac-desc">${caps.length?caps.length+' capataz(ces) asignado(s) · '+reportesHoy+' reporte(s) hoy':'Ir al módulo de cuadrilla'}</div>
+      </div>
+      <div class="dv2-action-card ac-blue" onclick="showTab('records')">
+        <span class="dv2-ac-ico">📁</span>
+        <div class="dv2-ac-title">Registros</div>
+        <div class="dv2-ac-desc">Ver historial de reportes</div>
+        ${pending>0?`<span class="dv2-ac-badge" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3)">${pending} pend.</span>`:''}
+      </div>
+      <div class="dv2-action-card ac-green" onclick="showTab('sync')">
+        <span class="dv2-ac-ico">📊</span>
+        <div class="dv2-ac-title">Exportar</div>
+        <div class="dv2-ac-desc">Descargar Excel con todos los datos</div>
+      </div>
+    </div>
+
+    <div class="dv2-section-title">Actividad reciente</div>
+    ${_dashRecientes(5)}
+  `;
+}
+
+/* ─── DASHBOARD CAPATAZ ─── */
+function dashCapataz(){
+  const pending = records.filter(r=>!r.estado?.synced).length;
+  return `
+    ${_dashGreeting()}
+    ${_dashKPIs('Mis Registros','Pendientes','Sincronizados')}
+
+    <div class="dv2-section-title">Accesos rápidos</div>
+    <div class="dv2-actions-grid">
+      <div class="dv2-action-card ac-amber full-width" onclick="showTab('cuadrilla')">
+        <span class="dv2-ac-ico">👷</span>
+        <div class="dv2-ac-title">Mi Cuadrilla</div>
+        <div class="dv2-ac-desc">Estado de los equipos bajo tu responsabilidad</div>
+      </div>
+      <div class="dv2-action-card ac-blue" onclick="showTab('records')">
+        <span class="dv2-ac-ico">📁</span>
+        <div class="dv2-ac-title">Registros</div>
+        <div class="dv2-ac-desc">Historial de reportes</div>
+        ${pending>0?`<span class="dv2-ac-badge" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3)">${pending} pend.</span>`:''}
+      </div>
+      <div class="dv2-action-card ac-green" onclick="showTab('sync')">
+        <span class="dv2-ac-ico">🔄</span>
+        <div class="dv2-ac-title">Sincronizar</div>
+        <div class="dv2-ac-desc">Subir reportes pendientes</div>
+      </div>
+    </div>
+
+    <div class="dv2-section-title">Actividad reciente</div>
+    ${_dashRecientes(5)}
+  `;
+}
+
+/* ─── DASHBOARD OPERADOR ─── */
+function dashOperador(){
+  const pending = records.filter(r=>!r.estado?.synced).length;
+  const hoyStr  = new Date().toISOString().slice(0,10);
+  const hoy     = records.filter(r=>r.fecha===hoyStr);
+  return `
+    ${_dashGreeting()}
+    ${_dashKPIs('Total','Pendientes','Sincronizados')}
+
+    <div class="dv2-section-title">¿Qué quieres hacer?</div>
+    <div class="dv2-actions-grid">
+      <div class="dv2-action-card ac-blue full-width" onclick="nuevoReporte()">
+        <span class="dv2-ac-ico">➕</span>
+        <div class="dv2-ac-title">Nuevo Reporte de Turno</div>
+        <div class="dv2-ac-desc">${hoy.length?'Ya tienes '+hoy.length+' reporte(s) hoy · Agregar otro':'Ingresar reporte del turno actual'}</div>
+      </div>
+      <div class="dv2-action-card ac-green" onclick="showTab('records')">
+        <span class="dv2-ac-ico">📁</span>
+        <div class="dv2-ac-title">Mis Registros</div>
+        <div class="dv2-ac-desc">Ver historial de reportes</div>
+      </div>
+      <div class="dv2-action-card ac-amber" onclick="showTab('sync')">
+        <span class="dv2-ac-ico">🔄</span>
+        <div class="dv2-ac-title">Sincronizar</div>
+        <div class="dv2-ac-desc">${pending>0?pending+' reporte(s) pendientes':'Todo al día ✔'}</div>
+        ${pending>0?`<span class="dv2-ac-badge" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3)">${pending}</span>`:''}
+      </div>
+    </div>
+
+    <div class="dv2-section-title">Mis reportes recientes</div>
+    ${_dashRecientes(4)}
+  `;
 }
 
 function nuevoReporte(){
@@ -1999,9 +2277,15 @@ function renderRecords(){
 function updateStats(){
   const pending=records.filter(r=>!r.estado?.synced).length;
   const synced=records.filter(r=>r.estado?.synced).length;
-  ['stat-total','dash-total'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=records.length;});
-  ['stat-pending','dash-pending'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pending;});
-  ['stat-synced','dash-synced'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=synced;});
+  // IDs en pantalla registros
+  ['stat-total'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=records.length;});
+  ['stat-pending'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pending;});
+  ['stat-synced'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=synced;});
+  // IDs en dashboard (generados dinámicamente)
+  const dt=document.getElementById('dash-total');   if(dt) dt.textContent=records.length;
+  const dp=document.getElementById('dash-pending'); if(dp) dp.textContent=pending;
+  const ds=document.getElementById('dash-synced');  if(ds) ds.textContent=synced;
+  // Sync screen
   const sp=document.getElementById('sync-pending'); if(sp) sp.textContent=pending;
   const ss=document.getElementById('sync-synced');  if(ss) ss.textContent=synced;
 }
