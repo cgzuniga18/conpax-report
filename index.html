@@ -458,7 +458,17 @@ label .req { color:var(--red); }
 
 /* Sin equipos placeholder */
 .cq-empty{text-align:center;padding:20px 12px;color:var(--text3);font-size:12px;background:var(--input-bg);border:1px dashed var(--border2);border-radius:var(--r);}
-position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;transition:opacity .3s;}
+
+/* ── ADMIN TABS ── */
+.admin-tabs-bar{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--rr);overflow:hidden;margin-bottom:14px;}
+.admin-tab-btn{flex:1;padding:11px 6px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);border:none;background:none;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;border-bottom:2px solid transparent;line-height:1.3;}
+.admin-tab-btn .atb-ico{display:block;font-size:18px;margin-bottom:3px;}
+.admin-tab-btn.active{color:var(--blue);background:var(--blue-dim);border-bottom-color:var(--blue);}
+.admin-tab-pane{display:none;}
+.admin-tab-pane.active{display:block;}
+
+/* Loading */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;transition:opacity .3s;}
 .loading-screen.hidden{opacity:0;pointer-events:none;}
 .loading-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:var(--blue);letter-spacing:-0.03em;margin-bottom:24px;}
 .loading-logo span{color:var(--text2);font-weight:400;}
@@ -2190,134 +2200,193 @@ function exportExcel(){
 }
 
 /* ── ADMIN PANEL ── */
+let adminTabActiva = 'equipos'; // 'equipos' | 'personas' | 'usuarios'
+
 function renderAdminPanel(){
-  const screen=document.getElementById('screen-admin');
+  const screen = document.getElementById('screen-admin');
   if(!screen) return;
-  const supervisores=listaUsuarios.filter(u=>u.rol==='supervisor');
-  screen.innerHTML=`<div class="screen-inner">
+  const supervisores = listaUsuarios.filter(u => u.rol === 'supervisor');
 
-    <!-- ── GESTIÓN DE EQUIPOS ── -->
-    <div class="admin-section">
-      <div class="admin-section-head"><span class="section-num">🚧</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Gestión de Equipos / Maquinaria</span></div>
-      <div class="admin-section-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Listado de equipos disponibles para los operadores. Ordenado por categoría.</p>
+  screen.innerHTML = `<div class="screen-inner">
 
-        <!-- Formulario agregar equipo -->
-        <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:14px">
-          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">➕ Agregar equipo</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Categoría <span style="color:var(--red)">*</span></label>
-              <input type="text" id="eq-categoria" placeholder="Excavadora, Bulldozer..." list="eq-cat-list" style="margin:0">
-              <datalist id="eq-cat-list">${[...new Set(listaEquipos.map(e=>e.categoria))].sort().map(c=>`<option value="${c}">`).join('')}</datalist>
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Tipo / Capacidad</label>
-              <input type="text" id="eq-tipo" placeholder="45 Toneladas, 20 m3..." style="margin:0">
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Marca</label>
-              <input type="text" id="eq-marca" placeholder="Komatsu, Volvo..." style="margin:0">
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Modelo</label>
-              <input type="text" id="eq-modelo" placeholder="PC-450 LC-8..." style="margin:0">
-            </div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <div style="flex:1"><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Nomenclatura / N° Interno <span style="color:var(--red)">*</span></label>
-              <input type="text" id="eq-nomenclatura" placeholder="RH-94, CT-107, BUL-10..." style="margin:0;text-transform:uppercase">
-            </div>
-            <div style="align-self:flex-end">
-              <button onclick="agregarEquipo()" style="background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px 16px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;white-space:nowrap;height:42px">+ Agregar</button>
-            </div>
-          </div>
-          <div id="eqError" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
-        </div>
-
-        <!-- Tabla de equipos agrupada por categoría -->
-        <div id="listaEquiposAdmin">${renderTablaEquiposAdmin()}</div>
-      </div>
+    <!-- ══ PESTAÑAS ADMIN ══ -->
+    <div class="admin-tabs-bar">
+      <button class="admin-tab-btn ${adminTabActiva==='equipos'?'active':''}" onclick="switchAdminTab('equipos')">
+        <span class="atb-ico">🚧</span>Equipos
+      </button>
+      <button class="admin-tab-btn ${adminTabActiva==='personas'?'active':''}" onclick="switchAdminTab('personas')">
+        <span class="atb-ico">👷</span>Capataces
+      </button>
+      <button class="admin-tab-btn ${adminTabActiva==='usuarios'?'active':''}" onclick="switchAdminTab('usuarios')">
+        <span class="atb-ico">👥</span>Usuarios
+      </button>
     </div>
 
-    <div class="admin-section">
-      <div class="admin-section-head"><span class="section-num">👷</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Gestión de Capataces</span></div>
-      <div class="admin-section-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Lista de capataces disponibles en el formulario.</p>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input type="text" id="nuevoCapataz" placeholder="Nombre completo del capataz" style="flex:1;margin:0">
-          <button onclick="agregarCapataz()" style="background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px 14px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;white-space:nowrap">+ Agregar</button>
+    <!-- ══ TAB 1: EQUIPOS Y MAQUINARIA ══ -->
+    <div class="admin-tab-pane ${adminTabActiva==='equipos'?'active':''}" id="adminPane-equipos">
+
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">🚧</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Gestión de Equipos / Maquinaria</span></div>
+        <div class="admin-section-body">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Listado de equipos disponibles para los operadores. Ordenado por categoría.</p>
+
+          <!-- Formulario agregar equipo -->
+          <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">➕ Agregar equipo</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Categoría <span style="color:var(--red)">*</span></label>
+                <input type="text" id="eq-categoria" placeholder="Excavadora, Bulldozer..." list="eq-cat-list" style="margin:0">
+                <datalist id="eq-cat-list">${[...new Set(listaEquipos.map(e=>e.categoria))].sort().map(c=>`<option value="${c}">`).join('')}</datalist>
+              </div>
+              <div>
+                <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Tipo / Capacidad</label>
+                <input type="text" id="eq-tipo" placeholder="45 Ton, 20 m3..." style="margin:0">
+              </div>
+              <div>
+                <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Marca</label>
+                <input type="text" id="eq-marca" placeholder="Komatsu, Volvo..." style="margin:0">
+              </div>
+              <div>
+                <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Modelo</label>
+                <input type="text" id="eq-modelo" placeholder="PC-450 LC-8..." style="margin:0">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <div style="flex:1">
+                <label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Nomenclatura / N° Interno <span style="color:var(--red)">*</span></label>
+                <input type="text" id="eq-nomenclatura" placeholder="RH-94, CT-107, BUL-10..." style="margin:0;text-transform:uppercase">
+              </div>
+              <div style="align-self:flex-end">
+                <button onclick="agregarEquipo()" style="background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px 16px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;white-space:nowrap;height:42px">+ Agregar</button>
+              </div>
+            </div>
+            <div id="eqError" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
+          </div>
+
+          <!-- Tabla de equipos -->
+          <div id="listaEquiposAdmin">${renderTablaEquiposAdmin()}</div>
         </div>
-        <div id="listaCapatacesAdmin">
-          ${listaCapataces.length===0
-            ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin capataces registrados</div>'
-            :listaCapataces.map((c,i)=>`
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:5px">
-                <span style="font-size:13px">👷 ${c}</span>
-                <button onclick="eliminarCapataz(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
+      </div>
+
+    </div>
+
+    <!-- ══ TAB 2: CAPATACES Y SUPERVISORES ══ -->
+    <div class="admin-tab-pane ${adminTabActiva==='personas'?'active':''}" id="adminPane-personas">
+
+      <!-- Gestión de Capataces -->
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">👷</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Lista de Capataces</span></div>
+        <div class="admin-section-body">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Capataces disponibles para asignar en los reportes y en la cuadrilla.</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <input type="text" id="nuevoCapataz" placeholder="Nombre completo del capataz" style="flex:1;margin:0">
+            <button onclick="agregarCapataz()" style="background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:10px 14px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;white-space:nowrap">+ Agregar</button>
+          </div>
+          <div id="listaCapatacesAdmin">
+            ${listaCapataces.length===0
+              ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin capataces registrados</div>'
+              :listaCapataces.map((c,i)=>`
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:5px">
+                  <span style="font-size:13px">👷 ${c}</span>
+                  <button onclick="eliminarCapataz(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px">✕</button>
+                </div>`).join('')
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Supervisores → Capataces -->
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">🔗</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Supervisores → Capataces asignados</span></div>
+        <div class="admin-section-body">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Define qué capataces puede ver cada supervisor en su módulo de Cuadrilla.</p>
+          ${supervisores.length===0
+            ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">No hay supervisores registrados</div>'
+            :supervisores.map(sup=>`
+              <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--rr);padding:13px;margin-bottom:10px">
+                <div style="font-size:13px;font-weight:600;margin-bottom:8px">👤 ${sup.nombre}
+                  <span style="font-size:10px;color:var(--text3)"> · RUT: ${sup.rut||'—'}</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+                  ${(sup.capataces||[]).map(c=>`
+                    <div style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--purple);display:flex;align-items:center;gap:4px">
+                      ${c}
+                      <button onclick="quitarCapatazSup('${sup.uid}','${c}')" style="background:none;border:none;color:var(--purple);cursor:pointer;font-size:13px;padding:0;line-height:1">×</button>
+                    </div>`).join('')
+                  ||'<span style="font-size:11px;color:var(--text3)">Sin capataces asignados</span>'}
+                </div>
+                <div style="display:flex;gap:8px">
+                  <select id="sel-cap-${sup.uid}" style="flex:1;margin:0;font-size:13px;padding:8px 10px">
+                    <option value="">Agregar capataz...</option>
+                    ${listaCapataces.filter(c=>!(sup.capataces||[]).includes(c)).map(c=>`<option value="${c}">${c}</option>`).join('')}
+                  </select>
+                  <button onclick="asignarCapatazSup('${sup.uid}')" style="background:var(--purple);color:#fff;border:none;border-radius:var(--r);padding:8px 14px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif">Asignar</button>
+                </div>
               </div>`).join('')
           }
         </div>
       </div>
+
     </div>
 
-    <div class="admin-section">
-      <div class="admin-section-head"><span class="section-num">🔗</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Supervisores → Capataces</span></div>
-      <div class="admin-section-body">
-        ${supervisores.length===0
-          ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">No hay supervisores registrados</div>'
-          :supervisores.map(sup=>`
-            <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--rr);padding:13px;margin-bottom:10px">
-              <div style="font-size:13px;font-weight:600;margin-bottom:8px">👤 ${sup.nombre} <span style="font-size:10px;color:var(--text3)">· RUT: ${sup.rut||'—'}</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
-                ${(sup.capataces||[]).map(c=>`<div style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--purple);display:flex;align-items:center;gap:4px">${c}<button onclick="quitarCapatazSup('${sup.uid}','${c}')" style="background:none;border:none;color:var(--purple);cursor:pointer;font-size:13px;padding:0">×</button></div>`).join('')||'<span style="font-size:11px;color:var(--text3)">Sin capataces asignados</span>'}
-              </div>
-              <div style="display:flex;gap:8px">
-                <select id="sel-cap-${sup.uid}" style="flex:1;margin:0;font-size:13px;padding:8px 10px">
-                  <option value="">Agregar capataz...</option>
-                  ${listaCapataces.filter(c=>!(sup.capataces||[]).includes(c)).map(c=>`<option value="${c}">${c}</option>`).join('')}
-                </select>
-                <button onclick="asignarCapatazSup('${sup.uid}')" style="background:var(--purple);color:#fff;border:none;border-radius:var(--r);padding:8px 14px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif">Asignar</button>
-              </div>
-            </div>`).join('')
-        }
-      </div>
-    </div>
+    <!-- ══ TAB 3: USUARIOS ══ -->
+    <div class="admin-tab-pane ${adminTabActiva==='usuarios'?'active':''}" id="adminPane-usuarios">
 
-    <div class="admin-section">
-      <div class="admin-section-head"><span class="section-num">➕</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Crear Nuevo Usuario</span></div>
-      <div class="admin-section-body">
-        <div class="field"><label>Nombre Completo</label><input type="text" id="newUserNombre" placeholder="Juan Pérez González"></div>
-        <div class="field"><label>RUT</label><input type="text" id="newUserRut" placeholder="12.345.678-9" oninput="formatRutInput(this)"></div>
-        <div class="field"><label>Rol</label>
-          <select id="newUserRol">
-            <option value="operador">Operador</option>
-            <option value="capataz">Capataz</option>
-            <option value="jefe">Jefe de Terreno</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="admin">Admin</option>
-          </select>
+      <!-- Crear usuario -->
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">➕</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Crear Nuevo Usuario</span></div>
+        <div class="admin-section-body">
+          <div class="field"><label>Nombre Completo</label><input type="text" id="newUserNombre" placeholder="Juan Pérez González"></div>
+          <div class="field"><label>RUT</label><input type="text" id="newUserRut" placeholder="12.345.678-9" oninput="formatRutInput(this)"></div>
+          <div class="field"><label>Rol</label>
+            <select id="newUserRol">
+              <option value="operador">Operador</option>
+              <option value="capataz">Capataz</option>
+              <option value="jefe">Jefe de Terreno</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="field"><label>Contraseña Temporal</label><input type="text" id="newUserPass" placeholder="Mínimo 6 caracteres"></div>
+          <div id="newUserError" style="display:none;background:var(--red-dim);border:1px solid rgba(239,68,68,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:10px"></div>
+          <div id="newUserOk" style="display:none;background:var(--green-dim);border:1px solid rgba(16,185,129,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:10px"></div>
+          <button onclick="crearUsuario()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Crear Usuario</button>
         </div>
-        <div class="field"><label>Contraseña Temporal</label><input type="text" id="newUserPass" placeholder="Mínimo 6 caracteres"></div>
-        <div id="newUserError" style="display:none;background:var(--red-dim);border:1px solid rgba(239,68,68,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:10px"></div>
-        <div id="newUserOk" style="display:none;background:var(--green-dim);border:1px solid rgba(16,185,129,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--green);margin-bottom:10px"></div>
-        <button onclick="crearUsuario()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Crear Usuario</button>
       </div>
-    </div>
 
-    <div class="admin-section">
-      <div class="admin-section-head"><span class="section-num">👥</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Usuarios del Sistema</span></div>
-      <div class="admin-section-body">
-        ${listaUsuarios.length===0
-          ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin usuarios</div>'
-          :listaUsuarios.map(u=>`
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:5px">
-              <div><div style="font-size:13px;font-weight:600">${u.nombre||'Sin nombre'}</div><div style="font-size:10px;color:var(--text3)">RUT: ${u.rut||'—'}</div></div>
-              <select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="margin:0;font-size:11px;padding:4px 8px;border-radius:6px;width:auto">
-                ${['operador','capataz','jefe','supervisor','admin','pendiente'].map(r=>`<option value="${r}" ${u.rol===r?'selected':''}>${r}</option>`).join('')}
-              </select>
-            </div>`).join('')
-        }
+      <!-- Lista de usuarios -->
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">👥</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Usuarios del Sistema</span></div>
+        <div class="admin-section-body">
+          ${listaUsuarios.length===0
+            ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin usuarios</div>'
+            :listaUsuarios.map(u=>{
+              const rolCfg = ROL_CONFIG[u.rol]||{color:'var(--text3)',bg:'var(--card2)'};
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;gap:10px">
+                <div style="min-width:0">
+                  <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.nombre||'Sin nombre'}</div>
+                  <div style="font-size:10px;color:var(--text3)">RUT: ${u.rut||'—'}</div>
+                </div>
+                <select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="margin:0;font-size:11px;padding:4px 8px;border-radius:6px;width:auto;flex-shrink:0;border-color:${rolCfg.color}33;color:${rolCfg.color};background:${rolCfg.bg}">
+                  ${['operador','capataz','jefe','supervisor','admin','pendiente'].map(r=>`<option value="${r}" ${u.rol===r?'selected':''}>${r}</option>`).join('')}
+                </select>
+              </div>`;
+            }).join('')
+          }
+        </div>
       </div>
+
     </div>
 
   </div>`;
+}
+
+function switchAdminTab(tab){
+  adminTabActiva = tab;
+  renderAdminPanel();
+  // Scroll top
+  document.getElementById('screen-admin')?.scrollTo(0,0);
 }
 
 /* ── ADMIN: GESTIÓN DE EQUIPOS ── */
