@@ -562,8 +562,13 @@ label .req { color:var(--red); }
       <span style="font-size:12px;color:var(--text3)">¿Primera vez? </span>
       <button onclick="showRegister()" style="background:none;border:none;color:var(--blue);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">Solicitar acceso</button>
     </div>
-    <div style="text-align:center;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
-      <button onclick="forzarActualizacion()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">↺ Actualizar app</button>
+    <div style="text-align:center;margin-top:10px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.6">
+        ¿No ves los últimos cambios?<br>
+        <strong style="color:var(--text2)">iOS:</strong> Safari → ⊡ → "Solicitar sitio web de escritorio" y volver<br>
+        <strong style="color:var(--text2)">Android:</strong> Chrome → ⋮ → Recargar
+      </div>
+      <button onclick="forzarActualizacion()" style="background:var(--blue-dim);border:1px solid var(--blue-glow);color:var(--blue);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;border-radius:var(--r);padding:8px 16px;">↺ Forzar actualización — <span style="font-family:'DM Mono',monospace;font-size:10px">v4.7</span></button>
     </div>
   </div>
 </div>
@@ -1014,11 +1019,16 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v4.6-20260505';
+const VERSION = 'v4.7-20260521';
 try {
   const sv = localStorage.getItem('app_version');
-  if(sv && sv !== VERSION) { localStorage.setItem('app_version',VERSION); window.location.reload(true); }
-  else localStorage.setItem('app_version',VERSION);
+  if(sv && sv !== VERSION) {
+    localStorage.setItem('app_version', VERSION);
+    // Forzar recarga ignorando caché (hard reload)
+    window.location.reload(true);
+  } else {
+    localStorage.setItem('app_version', VERSION);
+  }
 } catch(e){}
 
 /* ── CONSTANTES ── */
@@ -2997,7 +3007,13 @@ function toggleCqSection(key){
 }
 
 /* ── UTILS ── */
-function forzarActualizacion(){localStorage.removeItem('app_version');window.location.reload(true);}
+function forzarActualizacion(){
+  try{ localStorage.removeItem('app_version'); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  // Cache-busting: agrega timestamp a la URL para forzar descarga fresca
+  const url = window.location.href.split('?')[0];
+  window.location.replace(url + '?v=' + Date.now());
+}
 
 </script>
 </body>
