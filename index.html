@@ -16,7 +16,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, setDoc, getDocs, doc, query, where, orderBy, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, setDoc, getDocs, doc, query, where, orderBy, updateDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBHr6FuGOUWvAbKUTXPxSAw39MDCXdobnI",
@@ -34,6 +34,7 @@
   window._fsDoc=doc; window._fsCollection=collection;
   window._fsQuery=query; window._fsWhere=where; window._fsOrderBy=orderBy;
   window._fsUpdateDoc=updateDoc;
+  window._fsDeleteDoc=deleteDoc;
   window._signIn=signInWithEmailAndPassword;
   window._createUser=createUserWithEmailAndPassword;
   window._signOut=signOut;
@@ -384,6 +385,39 @@ label .req { color:var(--red); }
 .admin-section-body{padding:14px;}
 
 /* ══════════════════════════════════════
+   FORMULARIO TERRENO — Report Capataz
+══════════════════════════════════════ */
+.tr-chip{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border);border-radius:999px;background:var(--input-bg);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.tr-chip.selected{border-color:var(--amber);color:var(--amber);background:var(--amber-dim);}
+.tr-act-row{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:7px;}
+.tr-act-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);background:var(--blue-dim);padding:2px 7px;border-radius:4px;margin-bottom:8px;display:inline-block;}
+.tr-worker-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;}
+.tr-worker-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.tr-worker-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:4px;}
+.tr-hh-cell{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.tr-hh-cell label{font-size:10px;color:var(--text3);min-width:40px;text-transform:none;letter-spacing:0;margin:0;}
+.tr-hh-cell input{flex:1;padding:5px 8px;font-size:12px;font-family:'DM Mono',monospace;text-align:right;}
+.tr-hh-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.tr-hh-total-box{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:6px;text-align:center;}
+.tr-hh-total-box label{font-size:9px;color:var(--text3);}
+.tr-hh-total-val{font-family:'DM Mono',monospace;font-size:13px;color:var(--green);display:block;margin-top:2px;}
+.tr-maq-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;}
+.tr-maq-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);background:var(--blue-dim);padding:2px 7px;border-radius:4px;}
+.tr-hm-op-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;}
+.tr-hm-op-item label{font-size:10px;color:var(--text3);margin-bottom:3px;display:block;}
+.tr-hm-op-item input{font-size:13px;font-family:'DM Mono',monospace;text-align:right;padding:6px 8px;}
+.tr-prod-row{display:flex;gap:8px;align-items:center;margin-bottom:7px;}
+.tr-prod-row input{flex:1;margin:0;}
+.tr-prod-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 6px;flex-shrink:0;line-height:1;}
+.val-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;font-family:'DM Mono',monospace;}
+.val-pending{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3);}
+.val-approved{background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+.val-rejected{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.val-btn{padding:8px 14px;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.val-btn-approve{background:var(--green);color:#000;}
+.val-btn-reject{background:var(--red-dim);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+
+/* ══════════════════════════════════════
    MÓDULO CUADRILLA — Fase 2
 ══════════════════════════════════════ */
 
@@ -515,6 +549,25 @@ label .req { color:var(--red); }
 /* Barra operatividad micro */
 .dv2-op-bar{height:3px;border-radius:999px;margin-top:5px;background:var(--border);overflow:hidden;}
 .dv2-op-fill{height:100%;border-radius:999px;}
+
+/* ── MODAL EDITAR USUARIO ── */
+.usr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);z-index:400;display:none;align-items:flex-end;justify-content:center;}
+.usr-modal-overlay.show{display:flex;}
+.usr-modal-sheet{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 18px 40px;animation:slideUp .25s ease;}
+.usr-modal-handle{width:36px;height:4px;border-radius:999px;background:var(--border2);margin:0 auto 18px;}
+.usr-modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;margin-bottom:2px;}
+.usr-modal-sub{font-size:12px;color:var(--text2);margin-bottom:18px;}
+.usr-action-row{display:flex;gap:8px;margin-top:14px;}
+.usr-btn-save{flex:1;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+.usr-btn-cancel{padding:13px 18px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.usr-btn-delete{width:100%;padding:12px;background:var(--red-dim);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);color:var(--red);font-size:13px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;margin-top:10px;}
+.usr-btn-delete:hover{background:var(--red);color:#fff;}
+.usr-delete-confirm{background:var(--red-dim);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:12px 14px;margin-top:10px;display:none;}
+.usr-delete-confirm.show{display:block;}
+.usr-delete-confirm p{font-size:12px;color:var(--red);margin-bottom:10px;line-height:1.5;}
+.usr-delete-btns{display:flex;gap:8px;}
+.usr-delete-ok{flex:1;padding:10px;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.usr-delete-no{flex:1;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 
 /* ── ADMIN TABS ── */
 .admin-tabs-wrap{position:sticky;top:54px;z-index:80;background:var(--bg);padding:10px 0 8px;}
@@ -959,11 +1012,87 @@ label .req { color:var(--red); }
         <div class="sync-status-desc" id="syncStatusDesc">Los registros se guardan localmente.</div>
       </div>
       <div class="sync-stats">
-        <div class="sync-stat-box"><div class="ssb-val" style="color:var(--amber)" id="sync-pending">0</div><div class="ssb-label">Pendientes</div></div>
-        <div class="sync-stat-box"><div class="ssb-val" style="color:var(--green)" id="sync-synced">0</div><div class="ssb-label">Sincronizados</div></div>
+        <div class="sync-stat-box"><div class="ssb-val" style="color:var(--amber)" id="sync-pending">0</div><div class="ssb-label">Listos para subir</div></div>
+        <div class="sync-stat-box"><div class="ssb-val" style="color:var(--green)" id="sync-synced">0</div><div class="ssb-label">En Firebase</div></div>
       </div>
       <button class="sync-btn" id="syncBtn" onclick="syncNow()">🔄 Sincronizar ahora</button>
       <button class="export-btn" onclick="exportExcel()">📊 Exportar a Excel (.xlsx)</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: FORMULARIO TERRENO (CAPATAZ) ══ -->
+  <div class="screen" id="screen-form-terreno">
+    <div class="screen-inner" style="padding-bottom:90px">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,var(--amber) 0%,#d97706 100%);border-radius:var(--rr);padding:16px;margin-bottom:12px;position:relative;overflow:hidden">
+        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:rgba(0,0,0,.7);margin-bottom:2px">INFORME DIARIO HH — Report de Terreno</div>
+        <div style="font-size:11px;color:rgba(0,0,0,.5)">CONPAX · Obras Complementarias Habilitación Polo Sur · Jornada Diurna</div>
+      </div>
+
+      <!-- ── SECCIÓN 00: ENCABEZADO ── -->
+      <div class="section-card">
+        <div class="section-head"><span class="section-num">00</span><span class="section-title">Encabezado</span></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div class="field"><label>Fecha <span class="req">*</span></label><input type="date" id="tr-fecha"></div>
+            <div class="field"><label>Turno <span class="req">*</span></label>
+              <div class="turno-options">
+                <button class="turno-btn selected" onclick="selectTurnoTerreno(this,'A')">Turno A</button>
+                <button class="turno-btn" onclick="selectTurnoTerreno(this,'B')">Turno B</button>
+              </div>
+            </div>
+          </div>
+          <div class="field field-critical"><label>Nombre Capataz <span class="req">*</span></label><input type="text" id="tr-capataz" placeholder="Nombre completo"></div>
+          <div class="field"><label>Nombre Supervisor</label><input type="text" id="tr-supervisor" placeholder="Nombre del supervisor"></div>
+          <hr class="divider">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Horarios del turno</div>
+          <div class="field-row">
+            <div class="field"><label>Llegada al Frente</label><input type="time" id="tr-hora-llegada-frente"></div>
+            <div class="field"><label>Salida del Frente</label><input type="time" id="tr-hora-salida-frente"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Salida a Colación</label><input type="time" id="tr-hora-salida-colacion"></div>
+            <div class="field"><label>Llegada de Colación</label><input type="time" id="tr-hora-llegada-colacion"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECCIÓN 01: DISCIPLINA Y FRENTE ── -->
+      <div class="section-card">
+        <div class="section-head"><span class="section-num">01</span><span class="section-title">Disciplina y Frente de Trabajo</span></div>
+        <div class="section-body">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Disciplina</div>
+          <div id="tr-disciplinas" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Frente de Trabajo</div>
+          <div id="tr-frentes-check" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          <div class="field" style="margin-top:10px"><label>Otro frente</label><input type="text" id="tr-frente-otro" placeholder="Especificar si es otro"></div>
+        </div>
+      </div>
+
+      <!-- ── SECCIÓN 02: ACTIVIDADES (unidad central) ── -->
+      <div class="section-card">
+        <div class="section-head"><span class="section-num">02</span><span class="section-title">Actividades del Turno</span></div>
+        <div class="section-body">
+          <div style="background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--blue);margin-bottom:12px;">
+            💡 Cada actividad tiene su propio detalle de <strong>HH por persona</strong>, <strong>HM por equipo</strong> y <strong>cantidades producidas</strong>.
+          </div>
+          <div id="tr-actividades-container"></div>
+          <button class="add-btn" id="tr-add-act-btn" onclick="trAddActividad()">+ Agregar actividad</button>
+        </div>
+      </div>
+
+      <!-- ── OBSERVACIONES ── -->
+      <div class="section-card">
+        <div class="section-head"><span class="section-num">✎</span><span class="section-title">Observaciones</span></div>
+        <div class="section-body">
+          <textarea id="tr-observaciones" placeholder="Informar detenciones o eventos relevantes de la jornada..."></textarea>
+        </div>
+      </div>
+
+      <!-- ── GUARDAR ── -->
+      <button class="wiz-save-btn" onclick="confirmarGuardadoTerreno()" style="margin-bottom:8px">💾 Guardar Report de Terreno</button>
+
     </div>
   </div>
 
@@ -988,6 +1117,60 @@ label .req { color:var(--red); }
   </div>
 
 </div><!-- /app -->
+
+<!-- Modal Editar / Eliminar Usuario -->
+<div class="usr-modal-overlay" id="usrModalOverlay">
+  <div class="usr-modal-sheet">
+    <div class="usr-modal-handle"></div>
+    <div class="usr-modal-title" id="usrModalTitle">Editar Usuario</div>
+    <div class="usr-modal-sub" id="usrModalSub">—</div>
+
+    <div class="field">
+      <label>Nombre Completo</label>
+      <input type="text" id="usrEditNombre" placeholder="Nombre completo">
+    </div>
+    <div class="field">
+      <label>RUT</label>
+      <input type="text" id="usrEditRut" placeholder="12.345.678-9" oninput="formatRutInput(this)" readonly style="opacity:.6">
+    </div>
+    <div class="field">
+      <label>Rol</label>
+      <select id="usrEditRol">
+        <option value="operador">Operador</option>
+        <option value="capataz">Capataz</option>
+        <option value="jefe">Jefe de Terreno</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="admin">Admin</option>
+        <option value="jefe_costos">Jefe de Costos</option>
+        <option value="jefe_oficina">Jefe Oficina Técnica</option>
+        <option value="jefe_prog">Jefe Prog. y Control</option>
+        <option value="pendiente">Pendiente</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Nueva Contraseña <span style="color:var(--text3);font-weight:400;text-transform:none;font-size:10px">(dejar vacío para no cambiar)</span></label>
+      <input type="password" id="usrEditPass" placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <div id="usrEditError" style="display:none;background:var(--red-dim);border:1px solid rgba(239,68,68,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);margin-top:8px"></div>
+    <div id="usrEditOk" style="display:none;background:var(--green-dim);border:1px solid rgba(16,185,129,.25);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--green);margin-top:8px"></div>
+
+    <div class="usr-action-row">
+      <button class="usr-btn-cancel" onclick="cerrarUsrModal()">Cancelar</button>
+      <button class="usr-btn-save" id="usrBtnSave" onclick="guardarEdicionUsuario()">💾 Guardar cambios</button>
+    </div>
+
+    <!-- Zona de eliminación -->
+    <button class="usr-btn-delete" onclick="mostrarConfirmDeleteUser()">🗑 Eliminar este usuario</button>
+    <div class="usr-delete-confirm" id="usrDeleteConfirm">
+      <p>⚠️ Esta acción elimina el registro de Firestore. El acceso quedará bloqueado pero la cuenta de Firebase Auth se mantiene. ¿Confirmar eliminación?</p>
+      <div class="usr-delete-btns">
+        <button class="usr-delete-no" onclick="document.getElementById('usrDeleteConfirm').classList.remove('show')">No, cancelar</button>
+        <button class="usr-delete-ok" onclick="confirmarEliminarUsuario()">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal confirmación guardar -->
 <div class="confirm-overlay" id="confirmOverlay">
@@ -1019,22 +1202,23 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v4.7-20260521';
-try {
-  const sv = localStorage.getItem('app_version');
-  if(sv && sv !== VERSION) {
-    localStorage.setItem('app_version', VERSION);
-    // Forzar recarga ignorando caché (hard reload)
-    window.location.reload(true);
-  } else {
-    localStorage.setItem('app_version', VERSION);
-  }
-} catch(e){}
+const VERSION = 'v6.0-20260528';
 
 /* ── CONSTANTES ── */
-const STORAGE_KEY   = 'conpax_v4_records';
-const DRAFT_KEY     = 'conpax_v4_draft';
-const LASTUSED_KEY  = 'conpax_v4_lastused';
+const STORAGE_KEY         = 'conpax_v4_records';
+const STORAGE_KEY_TERRENO = 'conpax_v4_terreno';
+const DRAFT_KEY           = 'conpax_v4_draft';
+const LASTUSED_KEY        = 'conpax_v4_lastused';
+
+const DISCIPLINAS = ['Movimiento de Tierra','Estructuras','Hormigones','Electricidad','Cañerías','Mecánica'];
+
+const CENTROS_COSTO = [
+  '2.1 Plataforma Inst. Faena','2.2 OA Camino CAEX PS-OXE',
+  '2.3 Cruce C.Min PS-OXE','2.4 OA C.Veh.Livianos PS-OXE',
+  '2.5 Canal Contorno 1','2.6 Canal Contorno 2','2.7 Canal Contorno 3',
+  '2.8 Camino Piscina','2.9 Pisc. Agua de Mar','2.10 Cachimba Mina PS',
+  '2.11 Suministro agua cachimbas','2.12 Recepción agua piscina',
+];
 
 // ── Lista dinámica de equipos (se carga desde Firebase / admin puede editar) ──
 const EQUIPOS_INICIALES = [
@@ -1118,25 +1302,39 @@ const TIEMPO_FIELDS = [
 ];
 
 const ROL_CONFIG = {
-  operador:  {label:'Operador',          color:'var(--blue)',   bg:'var(--blue-dim)',      tabs:['dash','form-maq','records','sync']},
-  capataz:   {label:'Capataz',           color:'var(--amber)',  bg:'var(--amber-dim)',     tabs:['dash','records','cuadrilla','sync']},
-  jefe:      {label:'Jefe de Terreno',   color:'var(--green)',  bg:'var(--green-dim)',     tabs:['dash','records','cuadrilla','sync']},
-  supervisor:{label:'Supervisor',        color:'var(--purple)', bg:'rgba(139,92,246,.1)',  tabs:['dash','records','cuadrilla','sync']},
-  admin:     {label:'Control Producción',color:'var(--red)',    bg:'rgba(239,68,68,.1)',   tabs:['dash','form-maq','records','cuadrilla','sync','admin']},
+  operador:       {label:'Operador',              color:'var(--blue)',   bg:'var(--blue-dim)',      tabs:['dash','form-maq','records','sync']},
+  capataz:        {label:'Capataz',               color:'var(--amber)',  bg:'var(--amber-dim)',     tabs:['dash','form-terreno','records','cuadrilla','sync']},
+  jefe:           {label:'Jefe de Terreno',        color:'var(--green)',  bg:'var(--green-dim)',     tabs:['dash','records','cuadrilla','sync']},
+  supervisor:     {label:'Supervisor',             color:'var(--purple)', bg:'rgba(139,92,246,.1)',  tabs:['dash','records','cuadrilla','sync']},
+  admin:          {label:'Control Producción',     color:'var(--red)',    bg:'rgba(239,68,68,.1)',   tabs:['dash','form-maq','form-terreno','records','cuadrilla','sync','admin']},
+  jefe_costos:    {label:'Jefe de Costos',         color:'var(--blue)',   bg:'var(--blue-dim)',      tabs:['dash','records','sync']},
+  jefe_oficina:   {label:'Jefe Oficina Técnica',   color:'var(--blue)',   bg:'var(--blue-dim)',      tabs:['dash','records','sync']},
+  jefe_prog:      {label:'Jefe Prog. y Control',   color:'var(--blue)',   bg:'var(--blue-dim)',      tabs:['dash','records','sync']},
 };
 
 const TAB_DEF = [
-  {id:'dash',      label:'Inicio',      ico:'🏠'},
-  {id:'form-maq',  label:'Formulario',  ico:'📋'},
-  {id:'records',   label:'Registros',   ico:'📁'},
-  {id:'cuadrilla', label:'Cuadrilla',   ico:'👷'},
-  {id:'sync',      label:'Sincronizar', ico:'🔄'},
-  {id:'admin',     label:'Admin',       ico:'⚙️'},
+  {id:'dash',         label:'Inicio',      ico:'🏠'},
+  {id:'form-maq',     label:'Rep.Máquina', ico:'🚧'},
+  {id:'form-terreno', label:'Rep.Terreno', ico:'👷'},
+  {id:'records',      label:'Registros',   ico:'📁'},
+  {id:'cuadrilla',    label:'Cuadrilla',   ico:'📊'},
+  {id:'sync',         label:'Sync',        ico:'🔄'},
+  {id:'admin',        label:'Admin',       ico:'⚙️'},
 ];
 
+/* ── AUTO-UPDATE ── */
+try {
+  const sv = localStorage.getItem('app_version');
+  if(sv && sv !== VERSION) { localStorage.setItem('app_version',VERSION); window.location.replace(window.location.href.split('?')[0]+'?v='+Date.now()); }
+  else localStorage.setItem('app_version',VERSION);
+} catch(e){}
+
 /* ── ESTADO GLOBAL ── */
-let currentUser      = null;
-let records          = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+let currentUser       = null;
+let records           = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+let recordsTerreno    = JSON.parse(localStorage.getItem(STORAGE_KEY_TERRENO)||'[]');
+let listaCuadrilla    = []; // trabajadores de la cuadrilla del capataz
+let listaPersonalCapataces = {}; // { "Nombre Capataz": [{nombre, rut, cargo}, ...] }
 let isOnline         = navigator.onLine;
 let selectedTurno    = 'A';
 let selectedEquipo   = '';   // nomenclatura interna, ej: "RH-94"
@@ -1191,7 +1389,7 @@ document.addEventListener('firebaseReady',()=>{
         if(snap.exists()){
           const d=snap.data();
           if(d.rol==='pendiente'){await window._signOut(window._auth);const e=document.getElementById('loginError');e.textContent='⏳ Cuenta pendiente de aprobación.';e.classList.add('show');showLoginScreen();return;}
-          currentUser={uid:fbUser.uid,rut:d.rut||'',nombre:d.nombre||fbUser.email,rol:d.rol||'operador',capataces:d.capataces||[]};
+          currentUser={uid:fbUser.uid,rut:d.rut||'',nombre:d.nombre||fbUser.email,rol:d.rol||'operador',capataces:d.capataces||[],turno:d.turno||'A',supervisores:d.supervisores||[]};
         } else currentUser={uid:fbUser.uid,rut:'',nombre:fbUser.email.split('@')[0],rol:'operador',capataces:[]};
       } catch(e){currentUser={uid:fbUser.uid,rut:'',nombre:fbUser.email.split('@')[0],rol:'operador',capataces:[]};}
       showApp();
@@ -1260,7 +1458,7 @@ function showApp(){
   wizardInit();
   renderRecords();updateStats();updateSyncUI();
   showTab('dash');
-  setTimeout(async()=>{await cargarCapataces();await cargarEquipos();await cargarDesdeFirebase();if(currentUser.rol==='admin')await cargarUsuarios();},1500);
+  setTimeout(async()=>{await cargarCapataces();await cargarEquipos();await cargarPersonalCapataces();await cargarDesdeFirebase();await cargarTerrenoDesdeFirebase();if(currentUser.rol==='admin')await cargarUsuarios();},1500);
 }
 
 function buildTabs(){
@@ -1281,6 +1479,7 @@ function showTab(id){
   if(id==='admin') renderAdminPanel();
   if(id==='dash') initDashboard();
   if(id==='cuadrilla') renderCuadrilla();
+  if(id==='form-terreno') initFormTerreno();
 }
 
 function updateUserHeader(){
@@ -2181,6 +2380,11 @@ function guardarMaquinaria(){
     },
     tiempos,datosEspecificos,
     observaciones:document.getElementById('maq-observaciones').value.trim(),
+    validacion:{
+      capataz:  {estado:'pendiente', nombre:'', fecha:''},
+      supervisor:{estado:'pendiente', nombre:'', fecha:''},
+      jefe:     {estado:'pendiente', nombre:'', fecha:''},
+    },
     estado:{synced:false,syncedAt:null},
   };
 
@@ -2209,9 +2413,7 @@ function guardarMaquinaria(){
   renderRecords();updateStats();updateSyncUI();initDashboard();
   resetForm();
   showTab('dash');
-
-  // Intentar sync inmediato
-  if(isOnline) setTimeout(syncNow,500);
+  // El sync a Firebase ocurre solo cuando el Jefe de Terreno aprueba — no aquí
 }
 
 function resetForm(){
@@ -2250,53 +2452,110 @@ function renderRecords(){
   const list=document.getElementById('recordsList');
   if(!list) return;
   const fechaFil=document.getElementById('filterFecha')?.value;
-  let filtered=records;
+
+  // Combinar maquinaria + terreno
+  const all=[...records,...recordsTerreno].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  let filtered=all;
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
   if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
   if(activeFilter==='synced')  filtered=filtered.filter(r=> r.estado?.synced);
+
   if(!filtered.length){
     list.innerHTML=`<div class="no-records"><div class="no-records-ico">📋</div><div class="no-records-txt">Sin registros${fechaFil?' para esta fecha':''}.</div></div>`;
     return;
   }
+
   list.innerHTML=filtered.map(r=>{
-    const synced=r.estado?.synced??false;
-    const hrsOp=r.operatividad?.hrsOperativas??0;
-    const tipoEq=r.equipo?.tipo??'Equipo';
-    const nEquipo=r.equipo?.numero??'';
-    const operador=r.operador?.nombre??'—';
-    const acts=(r.actividades||[]).map(a=>typeof a==='string'?a:a?.descripcion).filter(Boolean);
-    const primeraAct=r.actividades?.[0];
-    const frente=(typeof primeraAct==='object'?primeraAct?.frente:null)??'—';
-    return `<div class="record-card ${synced?'synced':'pending'}" onclick="openModal('${r.id}')">
-      <div class="rc-top">
-        <div><div class="rc-equipo">${tipoEq}${nEquipo?' · '+nEquipo:''}</div><div class="rc-operador">👷 ${operador}</div></div>
-        <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓ sync':'⏳'}</span>
-      </div>
-      <div class="rc-meta">
-        <span>📅 ${r.fecha||'—'}</span>
-        <span>Turno ${r.turno||'—'}</span>
-        <span>📍 ${frente.length>20?frente.slice(0,20)+'…':frente}</span>
-        <span>⏱ ${Number(hrsOp).toFixed(1)} HM</span>
-      </div>
-      ${acts.length?`<div class="rc-acts">${acts.slice(0,2).map(a=>`· ${a}`).join('<br>')}${acts.length>2?`<br>· +${acts.length-2} más...`:''}</div>`:''}
-    </div>`;
+    // Compatibilidad: records sin campo 'tipo' son de maquinaria
+    const esTerreno = r.tipo === 'terreno';
+    const synced = r.estado?.synced ?? false;
+    const val = r.validacion || {};
+
+    // Badge de validación
+    const valJefe = val.jefe?.estado || 'pendiente';
+    const valSup  = val.supervisor?.estado || 'pendiente';
+    let valLabel = '';
+    if(valJefe==='aprobado')     valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Jefe</span>';
+    else if(valSup==='aprobado') valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
+    else if(val.capataz?.estado==='aprobado') valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Sup.</span>';
+    else valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Cap.</span>';
+
+    if(esTerreno){
+      const totalHH  = (r.horasHombre||[]).reduce((s,w)=>s+(w.totalHH||0),0);
+      const totalMaq = r.horasMaquina?.length||0;
+      return `<div class="record-card ${synced?'synced':'pending'}" onclick="openModalTerreno('${r.id}')">
+        <div class="rc-top">
+          <div>
+            <div class="rc-equipo" style="display:flex;align-items:center;gap:6px">
+              <span style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">TERRENO</span>
+              ${r.capataz||'—'}
+            </div>
+            <div class="rc-operador">📐 ${r.disciplina||'—'}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+            <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓':'⏳'}</span>
+            ${valLabel}
+          </div>
+        </div>
+        <div class="rc-meta">
+          <span>📅 ${r.fecha||'—'}</span>
+          <span>Turno ${r.turno||'—'}</span>
+          <span>👷 ${r.horasHombre?.length||0} trab.</span>
+          <span>⏱ ${totalHH.toFixed(1)} HH</span>
+          ${totalMaq?`<span>🚧 ${totalMaq} eq.</span>`:''}
+        </div>
+        ${r.frentes?.length?`<div class="rc-acts">${r.frentes.slice(0,2).map(f=>`· ${f}`).join('<br>')}${r.frentes.length>2?`<br>· +${r.frentes.length-2} más...`:''}</div>`:''}
+      </div>`;
+
+    } else {
+      // Maquinaria (incluyendo records viejos sin campo tipo)
+      const hrsOp    = r.operatividad?.hrsOperativas ?? 0;
+      const tipoEq   = r.equipo?.tipo ?? 'Equipo';
+      const nEquipo  = r.equipo?.numero ?? '';
+      const operador = r.operador?.nombre ?? '—';
+      const acts     = (r.actividades||[]).map(a=>typeof a==='string'?a:a?.descripcion).filter(Boolean);
+      const frente   = (typeof r.actividades?.[0]==='object' ? r.actividades[0]?.frente : null) ?? '—';
+      return `<div class="record-card ${synced?'synced':'pending'}" onclick="openModal('${r.id}')">
+        <div class="rc-top">
+          <div>
+            <div class="rc-equipo" style="display:flex;align-items:center;gap:6px">
+              <span style="background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-glow);border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">MÁQUINA</span>
+              ${tipoEq}${nEquipo?' · '+nEquipo:''}
+            </div>
+            <div class="rc-operador">👷 ${operador}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+            <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓':'⏳'}</span>
+            ${valLabel}
+          </div>
+        </div>
+        <div class="rc-meta">
+          <span>📅 ${r.fecha||'—'}</span>
+          <span>Turno ${r.turno||'—'}</span>
+          <span>📍 ${frente.length>22?frente.slice(0,22)+'…':frente}</span>
+          <span>⏱ ${Number(hrsOp).toFixed(1)} HM</span>
+        </div>
+        ${acts.length?`<div class="rc-acts">${acts.slice(0,2).map(a=>`· ${a}`).join('<br>')}${acts.length>2?`<br>· +${acts.length-2} más...`:''}</div>`:''}
+      </div>`;
+    }
   }).join('');
 }
 
 /* ── STATS ── */
 function updateStats(){
-  const pending=records.filter(r=>!r.estado?.synced).length;
-  const synced=records.filter(r=>r.estado?.synced).length;
-  // IDs en pantalla registros
-  ['stat-total'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=records.length;});
-  ['stat-pending'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pending;});
+  const allRec=[...records,...recordsTerreno];
+  const synced   = allRec.filter(r=>r.estado?.synced).length;
+  const readySync= allRec.filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado==='aprobado').length;
+  const enVal    = allRec.filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado!=='aprobado').length;
+  const total    = allRec.length;
+
+  ['stat-total'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=total;});
+  ['stat-pending'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=enVal;});
   ['stat-synced'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=synced;});
-  // IDs en dashboard (generados dinámicamente)
-  const dt=document.getElementById('dash-total');   if(dt) dt.textContent=records.length;
-  const dp=document.getElementById('dash-pending'); if(dp) dp.textContent=pending;
+  const dt=document.getElementById('dash-total');   if(dt) dt.textContent=total;
+  const dp=document.getElementById('dash-pending'); if(dp) dp.textContent=enVal;
   const ds=document.getElementById('dash-synced');  if(ds) ds.textContent=synced;
-  // Sync screen
-  const sp=document.getElementById('sync-pending'); if(sp) sp.textContent=pending;
+  const sp=document.getElementById('sync-pending'); if(sp) sp.textContent=readySync;
   const ss=document.getElementById('sync-synced');  if(ss) ss.textContent=synced;
 }
 
@@ -2306,11 +2565,26 @@ function openModal(id){
   const synced=r.estado?.synced??false;
   const horoTot=((r.horometro?.final||0)-(r.horometro?.inicial||0)).toFixed(1);
   const op=r.operatividad||{};
+  const val=r.validacion||{};
+  const esAdmin=currentUser?.rol==='admin';
   const content=document.getElementById('modalContent');
   content.innerHTML=`
     <div class="modal-title">${r.equipo?.tipo||'Equipo'}${r.equipo?.numero?' · '+r.equipo.numero:''}</div>
     <div class="modal-subtitle">📅 ${r.fecha} · Turno ${r.turno} · <span class="status-pill ${synced?'pill-synced':'pill-pending'}">${synced?'✓ sync':'⏳ pendiente'}</span></div>
-    <button class="edit-btn" onclick="editarRegistro('${r.id}')">✏️ Editar este registro</button>
+
+    <!-- Badges validación -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px">
+      <span style="font-size:11px;color:var(--text3)">Capataz ${_valBadge(val.capataz)}</span>
+      <span style="font-size:11px;color:var(--text3)">Supervisor ${_valBadge(val.supervisor)}</span>
+      <span style="font-size:11px;color:var(--text3)">Jefe ${_valBadge(val.jefe)}</span>
+    </div>
+    ${_valButtons(r,'maquinaria')}
+
+    <div style="display:flex;gap:8px;margin:10px 0 2px">
+      <button class="edit-btn" onclick="editarRegistro('${r.id}')">✏️ Editar</button>
+      ${esAdmin?`<button class="edit-btn" onclick="confirmarBorrarReport('${r.id}','maquinaria')" style="background:var(--red-dim);border-color:rgba(239,68,68,.3);color:var(--red)">🗑 Eliminar</button>`:''}
+    </div>
+
     <div class="modal-section-title">Operador / Equipo</div>
     ${dr('Operador',r.operador?.nombre)}${dr('Patente',r.equipo?.patente||'—')}
     <div class="modal-section-title">Horómetro</div>
@@ -2336,31 +2610,199 @@ function openModal(id){
     <div class="modal-section-title">Metadata</div>
     ${dr('Creado por',r.creadoPor?.nombre||'—')}${dr('Timestamp',new Date(r.timestamp).toLocaleString('es-CL'))}
     ${synced?dr('Sincronizado',new Date(r.estado.syncedAt).toLocaleString('es-CL')):''}
+
+    <!-- Zona confirmación borrar (oculta por defecto) -->
+    <div id="deleteConfirmZone" style="display:none;margin-top:14px;background:var(--red-dim);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:13px 14px">
+      <div style="font-size:12px;color:var(--red);font-weight:600;margin-bottom:4px">⚠️ Confirmar eliminación</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+        Esta acción elimina el report localmente${synced?' y de Firebase':' (aún no estaba en Firebase)'}. No se puede deshacer.
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('deleteConfirmZone').style.display='none'" style="flex:1;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+        <button onclick="ejecutarBorrarReport('${r.id}','maquinaria')" style="flex:1;padding:10px;background:var(--red);border:none;border-radius:var(--r);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif">Sí, eliminar</button>
+      </div>
+    </div>
   `;
   document.getElementById('modalOverlay').classList.add('show');
 }
 function dr(label,val){return `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-val">${val??'—'}</span></div>`;}
 function closeModal(e){if(e.target===document.getElementById('modalOverlay'))document.getElementById('modalOverlay').classList.remove('show');}
 
+function openModalTerreno(id){
+  const r=recordsTerreno.find(x=>String(x.id)===String(id));if(!r)return;
+  const val=r.validacion||{};
+  const synced=r.estado?.synced??false;
+  const esAdmin=currentUser?.rol==='admin';
+
+  // Calcular total HH compatible con ambos formatos
+  const totalHH=(r.horasHombre||[]).reduce((s,w)=>{
+    // Nuevo formato: campo "hh" directo
+    // Viejo formato: campo "totalHH"
+    return s + (w.hh ?? w.totalHH ?? 0);
+  },0);
+
+  const content=document.getElementById('modalContent');
+  content.innerHTML=`
+    <div class="modal-title">Report Terreno · ${r.capataz||'—'}</div>
+    <div class="modal-subtitle">📅 ${r.fecha} · Turno ${r.turno} · ${r.jornada||''}</div>
+
+    <!-- Badges de validación -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 10px">
+      <div style="font-size:11px;color:var(--text3)">Capataz ${_valBadge(val.capataz)}</div>
+      <div style="font-size:11px;color:var(--text3)">Supervisor ${_valBadge(val.supervisor)}</div>
+      <div style="font-size:11px;color:var(--text3)">Jefe Terreno ${_valBadge(val.jefe)}</div>
+    </div>
+    ${_valButtons(r,'terreno')}
+
+    ${esAdmin?`<button onclick="confirmarBorrarReport('${r.id}','terreno')" class="edit-btn" style="background:var(--red-dim);border-color:rgba(239,68,68,.3);color:var(--red);margin:8px 0 2px">🗑 Eliminar report</button>`:''}
+
+    <div class="modal-section-title">Encabezado</div>
+    ${dr('Supervisor',r.supervisor||'—')}${dr('Disciplina',r.disciplina||'—')}
+    ${dr('Frentes',r.frentes?.join(', ')||'—')}
+    ${dr('Llegada frente',r.horarios?.llegadaFrente||'—')}${dr('Salida frente',r.horarios?.salidaFrente||'—')}
+
+    <!-- Actividades con HH y HM por actividad (nuevo formato) -->
+    ${(r.actividades||[]).length ? `
+    <div class="modal-section-title">Actividades · Total ${totalHH.toFixed(1)} HH</div>
+    ${(r.actividades||[]).map((a,i)=>`
+      <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 8px;border-radius:4px;font-weight:700">${a.codigo||'ACT.'+(i+1)}</span>
+          <span style="font-size:12px;font-weight:600">${a.descripcion||'—'}</span>
+        </div>
+        ${(a.personal||[]).length?`
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">👷 Personal</div>
+          ${a.personal.map(p=>`
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+              <span>${p.nombre||'—'} <span style="color:var(--text3);font-size:10px">${p.cargo||''}</span></span>
+              <span style="font-family:'DM Mono',monospace;color:var(--green)">${(p.hh??p.totalHH??0).toFixed(1)} HH</span>
+            </div>`).join('')}`:''}
+        ${(a.equipos||[]).length?`
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px">🚧 Equipos</div>
+          ${a.equipos.map(e=>`
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+              <span>${e.equipo||'—'}</span>
+              <span style="font-family:'DM Mono',monospace;color:var(--blue)">${(e.hmOperativas||0).toFixed(1)} HM Op.</span>
+            </div>`).join('')}`:''}
+        ${(a.produccion||[]).length?`
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px">📦 Producción</div>
+          ${deduplicarProduccion(a.produccion).map(p=>`
+            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px">
+              <span>${p.tipo||'—'}</span>
+              <span style="font-family:'DM Mono',monospace">${p.cantidad||0} ${p.unidad||''}</span>
+            </div>`).join('')}`:''}
+      </div>`).join('')}
+    ` : `
+    <!-- Formato viejo: horasHombre flat -->
+    <div class="modal-section-title">HH por Trabajador · Total ${totalHH.toFixed(1)} HH</div>
+    ${(r.horasHombre||[]).map(w=>`
+      <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 11px;margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span><strong>${w.nombre||'—'}</strong> <span style="color:var(--text3);font-size:10px">${w.cargo||''}</span></span>
+          <span style="font-family:'DM Mono',monospace;color:var(--green)">${(w.hh??w.hhProducidas??w.totalHH??0).toFixed(1)} HH</span>
+        </div>
+        ${w.actividad?`<div style="font-size:10px;color:var(--text3)">${w.actividad}</div>`:''}
+      </div>`).join('')}
+    `}
+
+    ${r.observaciones?`<div class="modal-section-title">Observaciones</div><div style="font-size:13px;color:var(--text2);padding:8px 0;line-height:1.6">${r.observaciones}</div>`:''}
+    <div class="modal-section-title">Metadata</div>
+    ${dr('Creado por',r.creadoPor?.nombre||'—')}${dr('Timestamp',new Date(r.timestamp).toLocaleString('es-CL'))}
+
+    <!-- Zona confirmación borrar -->
+    <div id="deleteConfirmZone" style="display:none;margin-top:14px;background:var(--red-dim);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:13px 14px">
+      <div style="font-size:12px;color:var(--red);font-weight:600;margin-bottom:4px">⚠️ Confirmar eliminación</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+        Esta acción elimina el report localmente${synced?' y de Firebase':' (aún no estaba en Firebase)'}. No se puede deshacer.
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('deleteConfirmZone').style.display='none'" style="flex:1;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+        <button onclick="ejecutarBorrarReport('${r.id}','terreno')" style="flex:1;padding:10px;background:var(--red);border:none;border-radius:var(--r);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif">Sí, eliminar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+/* ── BORRAR REPORT (solo admin) ── */
+function confirmarBorrarReport(id, tipo){
+  if(currentUser?.rol !== 'admin'){ showToast('⚠️ Solo el administrador puede eliminar reports','warn'); return; }
+  const zone = document.getElementById('deleteConfirmZone');
+  if(zone) zone.style.display = 'block';
+  // Scroll hasta la zona de confirmación
+  zone?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+async function ejecutarBorrarReport(id, tipo){
+  if(currentUser?.rol !== 'admin'){ showToast('⚠️ Acción no permitida','warn'); return; }
+
+  const arr      = tipo === 'terreno' ? recordsTerreno : records;
+  const storKey  = tipo === 'terreno' ? STORAGE_KEY_TERRENO : STORAGE_KEY;
+  const colName  = tipo === 'terreno' ? 'reportes_terreno' : 'reportes_maquinaria';
+  const r        = arr.find(x => String(x.id) === String(id));
+  if(!r){ showToast('⚠️ Report no encontrado','warn'); return; }
+
+  const synced = r.estado?.synced;
+
+  // 1. Eliminar de array local
+  if(tipo === 'terreno'){
+    recordsTerreno = recordsTerreno.filter(x => String(x.id) !== String(id));
+    localStorage.setItem(STORAGE_KEY_TERRENO, JSON.stringify(recordsTerreno));
+  } else {
+    records = records.filter(x => String(x.id) !== String(id));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }
+
+  // 2. Si estaba en Firebase, eliminarlo también
+  if(synced && isOnline && window._firebaseReady){
+    try{
+      await window._fsDeleteDoc(window._fsDoc(window._db, colName, String(id)));
+      showToast('🗑 Report eliminado local y de Firebase');
+    } catch(e){
+      showToast('🗑 Eliminado local — error en Firebase: '+e.message,'warn');
+    }
+  } else {
+    showToast('🗑 Report eliminado localmente');
+  }
+
+  // 3. Cerrar modal y refrescar
+  document.getElementById('modalOverlay').classList.remove('show');
+  renderRecords();
+  updateStats();
+  updateSyncUI();
+  initDashboard();
+}
+
 /* ── SYNC ── */
 async function syncNow(){
   if(!isOnline||!window._firebaseReady) return;
-  const pending=records.filter(r=>!r.estado?.synced);
   const btn=document.getElementById('syncBtn');
   if(btn){btn.textContent='⏳ Sincronizando...';btn.disabled=true;}
   let ok=0,err=0;
-  for(const record of pending){
+
+  // Solo sincronizar records aprobados por jefe que quedaron pendientes sin conexión
+  const pendingMaq = records.filter(r=>!r.estado?.synced && r.estado?.readyToSync && r.validacion?.jefe?.estado==='aprobado');
+  for(const r of pendingMaq){
     try{
-      await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(record.id)),{...record,estado:{synced:true,syncedAt:new Date().toISOString()}});
-      record.estado={synced:true,syncedAt:new Date().toISOString()};ok++;
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(r.id)),{...r,estado:{synced:true,syncedAt:new Date().toISOString()}});
+      r.estado={synced:true,syncedAt:new Date().toISOString()};ok++;
     }catch(e){console.error(e);err++;}
   }
-  if(ok>0||err>0){
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
-    renderRecords();updateStats();initDashboard();
+  if(pendingMaq.length) localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
+
+  const pendingTer = recordsTerreno.filter(r=>!r.estado?.synced && r.estado?.readyToSync && r.validacion?.jefe?.estado==='aprobado');
+  for(const r of pendingTer){
+    try{
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(r.id)),{...r,estado:{synced:true,syncedAt:new Date().toISOString()}});
+      r.estado={synced:true,syncedAt:new Date().toISOString()};ok++;
+    }catch(e){console.error(e);err++;}
   }
-  if(btn){btn.textContent='🔄 Sincronizar ahora';btn.disabled=records.filter(r=>!r.estado?.synced).length===0;}
-  if(ok>0) showToast(`✔ ${ok} report(s) sincronizados`);
+  if(pendingTer.length) localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
+
+  if(ok>0||err>0){renderRecords();updateStats();initDashboard();}
+  if(btn){btn.textContent='🔄 Sincronizar ahora';btn.disabled=false;}
+  if(ok>0) showToast(`✔ ${ok} report(s) aprobados sincronizados`);
+  else if(!err) showToast('Sin pendientes aprobados por Jefe de Terreno','warn');
   if(err>0) showToast(`⚠️ ${err} con error`,'warn');
   updateSyncUI();
 }
@@ -2370,18 +2812,97 @@ async function cargarDesdeFirebase(){
   try{
     const snap=await window._fsGetDocs(window._fsCollection(window._db,'reportes_maquinaria'));
     const remote=[];snap.forEach(doc=>remote.push(doc.data()));
+
+    const rol=currentUser.rol;
     let filtered=remote;
-    if(currentUser.rol==='operador'||currentUser.rol==='capataz'){filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);}
-    else if(currentUser.rol==='supervisor'){const mc=currentUser.capataces||[];filtered=remote.filter(r=>(r.actividades||[]).some(a=>mc.includes(typeof a==='object'?a?.capataz:'')));}
-    const localIds=new Set(records.map(r=>String(r.id)));
+
+    if(rol==='operador'){
+      filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);
+    } else if(rol==='capataz'){
+      filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);
+    } else if(rol==='supervisor'){
+      const mc=currentUser.capataces||[];
+      filtered=remote.filter(r=>
+        (r.actividades||[]).some(a=>mc.includes(typeof a==='object'?a?.capataz:''))
+      );
+    } else if(rol==='jefe'){
+      const turnoJefe = currentUser.turno||'A';
+      filtered=remote.filter(r=>r.turno===turnoJefe);
+    }
+    // admin, jefe_costos, jefe_oficina, jefe_prog ven todo — filtered = remote sin cambios
+
+    // Purgar registros eliminados: quitar del local los que ya no están en Firebase
+    const remoteIds=new Set(remote.map(r=>String(r.id)));
+    const localIds =new Set(records.map(r=>String(r.id)));
+    // Solo purgar los que estaban synced (significan que sí estuvieron en Firebase)
+    const eliminados = records.filter(r=>r.estado?.synced && !remoteIds.has(String(r.id)));
+    if(eliminados.length){
+      eliminados.forEach(r=>{ const i=records.indexOf(r); if(i>-1) records.splice(i,1); });
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
+    }
+
     let added=0;
     filtered.forEach(r=>{
       if(!localIds.has(String(r.id))){records.push(r);added++;}
-      else{const local=records.find(lr=>String(lr.id)===String(r.id));if(local&&!local.estado?.synced&&r.estado?.synced)local.estado=r.estado;}
+      else{
+        const local=records.find(lr=>String(lr.id)===String(r.id));
+        if(local){
+          if(!local.estado?.synced&&r.estado?.synced) local.estado=r.estado;
+          if(r.validacion) local.validacion=r.validacion;
+        }
+      }
     });
     records.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
-    if(added>0){renderRecords();updateStats();initDashboard();showToast(`📥 ${added} registro(s) descargados`);}
+    if(added>0||eliminados.length>0){renderRecords();updateStats();initDashboard();}
+    if(added>0) showToast(`📥 ${added} registro(s) descargados`);
+  }catch(e){console.error(e);}
+}
+
+async function cargarTerrenoDesdeFirebase(){
+  if(!isOnline||!window._firebaseReady)return;
+  try{
+    const snap=await window._fsGetDocs(window._fsCollection(window._db,'reportes_terreno'));
+    const remote=[];snap.forEach(doc=>remote.push(doc.data()));
+
+    const rol=currentUser.rol;
+    let filtered=remote;
+
+    if(rol==='operador'){
+      filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);
+    } else if(rol==='capataz'){
+      filtered=remote.filter(r=>
+        r.creadoPor?.uid===currentUser.uid || r.capataz===currentUser.nombre
+      );
+    } else if(rol==='supervisor'){
+      filtered=remote.filter(r=>r.supervisor===currentUser.nombre);
+    } else if(rol==='jefe'){
+      const turnoJefe=currentUser.turno||'A';
+      filtered=remote.filter(r=>r.turno===turnoJefe);
+    }
+    // admin, jefe_costos, jefe_oficina, jefe_prog ven todo
+
+    // Purgar eliminados del localStorage
+    const remoteIds=new Set(remote.map(r=>String(r.id)));
+    const eliminados=recordsTerreno.filter(r=>r.estado?.synced && !remoteIds.has(String(r.id)));
+    if(eliminados.length){
+      eliminados.forEach(r=>{ const i=recordsTerreno.indexOf(r); if(i>-1) recordsTerreno.splice(i,1); });
+      localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
+    }
+
+    const localIds=new Set(recordsTerreno.map(r=>String(r.id)));
+    let added=0;
+    filtered.forEach(r=>{
+      if(!localIds.has(String(r.id))){recordsTerreno.push(r);added++;}
+      else{
+        const local=recordsTerreno.find(lr=>String(lr.id)===String(r.id));
+        if(local&&r.validacion) local.validacion=r.validacion;
+      }
+    });
+    recordsTerreno.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
+    if(added>0||eliminados.length>0){renderRecords();updateStats();initDashboard();}
+    if(added>0) showToast(`📥 ${added} report(s) terreno descargados`);
   }catch(e){console.error(e);}
 }
 
@@ -2389,6 +2910,20 @@ async function cargarCapataces(){
   if(!isOnline||!window._firebaseReady) return;
   try{const snap=await window._fsGetDoc(window._fsDoc(window._db,'configuracion','capataces'));if(snap.exists())listaCapataces=snap.data().lista||[];}
   catch(e){}
+}
+
+async function cargarPersonalCapataces(){
+  if(!isOnline||!window._firebaseReady) return;
+  try{
+    const snap=await window._fsGetDoc(window._fsDoc(window._db,'configuracion','personal_capataces'));
+    if(snap.exists()) listaPersonalCapataces=snap.data().personal||{};
+  }catch(e){}
+}
+
+async function guardarPersonalCapataces(){
+  try{
+    await window._fsSetDoc(window._fsDoc(window._db,'configuracion','personal_capataces'),{personal:listaPersonalCapataces});
+  }catch(e){console.error(e);}
 }
 
 async function cargarUsuarios(){
@@ -2403,96 +2938,279 @@ function updateSyncUI(){
   const title=document.getElementById('syncStatusTitle');
   const desc=document.getElementById('syncStatusDesc');
   const btn=document.getElementById('syncBtn');
-  const pending=records.filter(r=>!r.estado?.synced).length;
+
+  // "Pendiente de Firebase" = aprobados por jefe pero aún no subidos
+  const readyMaq = records.filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado==='aprobado').length;
+  const readyTer = recordsTerreno.filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado==='aprobado').length;
+  const readyTotal = readyMaq + readyTer;
+
+  // "En validación" = aún no llegan al jefe
+  const enVal = [...records,...recordsTerreno].filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado!=='aprobado').length;
+
+  const synced=[...records,...recordsTerreno].filter(r=>r.estado?.synced).length;
+
   if(dot) dot.className='sync-dot'+(isOnline?' online':'');
+  const sp=document.getElementById('sync-pending'); if(sp) sp.textContent=readyTotal;
+  const ss=document.getElementById('sync-synced');  if(ss) ss.textContent=synced;
+
   if(!ico) return;
-  if(isOnline){ico.textContent=pending===0?'✅':'🔄';title.textContent=pending===0?'Todo sincronizado':`${pending} pendiente(s)`;desc.textContent='Conectado. Puedes sincronizar los registros pendientes.';if(btn)btn.disabled=pending===0;}
-  else{ico.textContent='📡';title.textContent='Sin conexión';desc.textContent='Los reports se guardan localmente y se subirán al recuperar señal.';if(btn)btn.disabled=true;}
+  if(isOnline){
+    if(readyTotal===0){
+      ico.textContent='✅';title.textContent='Todo sincronizado';
+      desc.textContent=`${synced} report(s) en Firebase · ${enVal} en proceso de validación.`;
+    } else {
+      ico.textContent='🔄';title.textContent=`${readyTotal} listo(s) para subir`;
+      desc.textContent=`Aprobados por Jefe de Terreno · pendientes de subir a Firebase.`;
+    }
+    if(btn) btn.disabled=readyTotal===0;
+  } else {
+    ico.textContent='📡';title.textContent='Sin conexión';
+    desc.textContent='Los reports se guardan localmente y se subirán al recuperar señal una vez aprobados.';
+    if(btn) btn.disabled=true;
+  }
 }
 
 function checkOnline(){isOnline=navigator.onLine;updateOnlineUI();showToast(isOnline?'📶 En línea':'📡 Sin señal',isOnline?'':'warn');}
 
 /* ── EXPORT EXCEL — SheetJS simple ── */
 function exportExcel(){
-  if(!records.length){showToast('⚠️ No hay registros para exportar','warn');return;}
+  // Roles autorizados para exportar
+  const rolesExport=['admin','jefe_costos','jefe_oficina','jefe_prog','jefe','supervisor'];
+  if(!rolesExport.includes(currentUser?.rol)){
+    showToast('⚠️ No tienes permiso para exportar','warn'); return;
+  }
+
+  const allRecords=[...records,...recordsTerreno];
+  if(!allRecords.length){showToast('⚠️ No hay registros para exportar','warn');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Error cargando librería','err');return;}
 
   const wb=XLSX.utils.book_new();
-  const sorted=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
   const fecha=new Date().toISOString().slice(0,10);
 
-  // Hoja 1: Control Maquinaria
-  const h1=['Correlativo','N° Daily Report','Fecha','Turno','Equipo','N° Interno','Patente','Operador',
-    'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva','Fuera de Servicio','En Espera','Sin Operador',
-    'Horómetro Ini','Horómetro Fin','Total Horómetro','HM Parcial','HM Acum',
-    'Frente Principal','Capataz Principal','Actividades','Observaciones'];
-  const acumEq={};
-  const r1=sorted.map((r,i)=>{
-    const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
-    if(!acumEq[key])acumEq[key]=0;
-    const hm=Number(r.operatividad?.hrsOperativas||0);acumEq[key]+=hm;
-    const pa=r.actividades?.[0];
-    const frente=typeof pa==='object'?pa?.frente||'':pa||'';
-    const capataz=typeof pa==='object'?pa?.capataz||'':'';
-    const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
-    return [i+1,r.nDailyReport||i+1,r.fecha||'','Turno '+(r.turno||''),
-      r.equipo?.tipo||'',r.equipo?.numero||'',r.equipo?.patente||'',r.operador?.nombre||'',
-      Number(r.operatividad?.hmJornada||0),Number(r.operatividad?.hrsOperativas||0),
-      Number(r.operatividad?.mantCorrectiva||0),Number(r.operatividad?.mantPreventiva||0),
-      Number(r.operatividad?.fueraServicio||0),Number(r.operatividad?.enEspera||0),Number(r.operatividad?.sinOperador||0),
-      Number(r.horometro?.inicial||0),Number(r.horometro?.final||0),
-      Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),hm,acumEq[key],
-      frente,capataz,acts,r.observaciones||''];
-  });
-  const ws1=XLSX.utils.aoa_to_sheet([h1,...r1]);
-  ws1['!cols']=[{wch:8},{wch:8},{wch:11},{wch:8},{wch:22},{wch:10},{wch:10},{wch:22},
-    {wch:10},{wch:12},{wch:13},{wch:13},{wch:13},{wch:11},{wch:11},
-    {wch:13},{wch:13},{wch:13},{wch:10},{wch:10},{wch:30},{wch:22},{wch:45},{wch:30}];
-  XLSX.utils.book_append_sheet(wb,ws1,'Control Maquinaria');
+  // ── Hoja 1: Control Maquinaria ──
+  const recsMaq=[...records].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  if(recsMaq.length){
+    const h1=['Correlativo','N° Daily Report','Fecha','Turno','Equipo','N° Interno','Patente','Operador',
+      'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva','Fuera de Servicio','En Espera','Sin Operador',
+      'Horómetro Ini','Horómetro Fin','Total Horómetro','HM Parcial','HM Acum',
+      'Frente Principal','Capataz Principal','Actividades','Observaciones',
+      'Val. Capataz','Val. Supervisor','Val. Jefe'];
+    const acumEq={};
+    const r1=recsMaq.map((r,i)=>{
+      const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
+      if(!acumEq[key])acumEq[key]=0;
+      const hm=Number(r.operatividad?.hrsOperativas||0);acumEq[key]+=hm;
+      const pa=r.actividades?.[0];
+      const frente=typeof pa==='object'?pa?.frente||'':pa||'';
+      const capataz=typeof pa==='object'?pa?.capataz||'':'';
+      const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
+      const val=r.validacion||{};
+      return [i+1,r.nDailyReport||i+1,r.fecha||'','Turno '+(r.turno||''),
+        r.equipo?.tipo||'',r.equipo?.numero||'',r.equipo?.patente||'',r.operador?.nombre||'',
+        Number(r.operatividad?.hmJornada||0),Number(r.operatividad?.hrsOperativas||0),
+        Number(r.operatividad?.mantCorrectiva||0),Number(r.operatividad?.mantPreventiva||0),
+        Number(r.operatividad?.fueraServicio||0),Number(r.operatividad?.enEspera||0),Number(r.operatividad?.sinOperador||0),
+        Number(r.horometro?.inicial||0),Number(r.horometro?.final||0),
+        Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),hm,acumEq[key],
+        frente,capataz,acts,r.observaciones||'',
+        val.capataz?.estado||'pendiente',val.supervisor?.estado||'pendiente',val.jefe?.estado||'pendiente'];
+    });
+    const ws1=XLSX.utils.aoa_to_sheet([h1,...r1]);
+    ws1['!cols']=[{wch:8},{wch:8},{wch:11},{wch:8},{wch:22},{wch:10},{wch:10},{wch:22},
+      {wch:10},{wch:12},{wch:13},{wch:13},{wch:13},{wch:11},{wch:11},
+      {wch:13},{wch:13},{wch:13},{wch:10},{wch:10},{wch:30},{wch:22},{wch:45},{wch:30},
+      {wch:12},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,ws1,'Control Maquinaria');
+  }
 
-  // Hoja 2: Control Rellenos
-  const rellenos=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
-  const h2=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. Vueltas','M3 Relleno','M3 Parcial','M3 Acum'];
+  // ── Hoja 2: Control Terreno (HH) ──
+  const recsTer=[...recordsTerreno].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  if(recsTer.length){
+    const h2=['N°','Fecha','Turno','Capataz','Supervisor','Disciplina','Frentes',
+      'Código Actividad','Actividad','Trabajador','RUT','Cargo','HH','Observaciones',
+      'Val. Supervisor','Val. Jefe'];
+    const r2=[];
+    recsTer.forEach((r,i)=>{
+      const val=r.validacion||{};
+      const frentes=(r.frentes||[]).join(', ');
+      if((r.actividades||[]).length===0){
+        r2.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+          r.disciplina||'',frentes,'','','','','',0,r.observaciones||'',
+          val.supervisor?.estado||'pendiente',val.jefe?.estado||'pendiente']);
+      } else {
+        (r.actividades||[]).forEach(act=>{
+          if((act.personal||[]).length===0){
+            r2.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+              r.disciplina||'',frentes,act.codigo||'',act.descripcion||'','','','',0,r.observaciones||'',
+              val.supervisor?.estado||'pendiente',val.jefe?.estado||'pendiente']);
+          } else {
+            (act.personal||[]).forEach(p=>{
+              r2.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+                r.disciplina||'',frentes,act.codigo||'',act.descripcion||'',
+                p.nombre||'',p.rut||'',p.cargo||'',p.hh||0,r.observaciones||'',
+                val.supervisor?.estado||'pendiente',val.jefe?.estado||'pendiente']);
+            });
+          }
+        });
+      }
+    });
+    const ws2=XLSX.utils.aoa_to_sheet([h2,...r2]);
+    ws2['!cols']=[{wch:6},{wch:11},{wch:8},{wch:22},{wch:22},{wch:20},{wch:40},
+      {wch:10},{wch:35},{wch:24},{wch:13},{wch:10},{wch:8},{wch:30},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,ws2,'Control Terreno HH');
+  }
+
+  // ── Hoja 3: Control Terreno (HM) ──
+  if(recsTer.length){
+    const h3=['N°','Fecha','Turno','Capataz','Código Actividad','Actividad',
+      'Equipo','HM Operativas','HM No Operativas','HM Mantención','HM Fuera Servicio'];
+    const r3=[];
+    recsTer.forEach((r,i)=>{
+      (r.actividades||[]).forEach(act=>{
+        (act.equipos||[]).forEach(eq=>{
+          r3.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',
+            act.codigo||'',act.descripcion||'',eq.equipo||'',
+            eq.hmOperativas||0,eq.hmNoOperativas||0,eq.hmMantenimiento||0,eq.hmFueraServicio||0]);
+        });
+      });
+    });
+    if(r3.length){
+      const ws3=XLSX.utils.aoa_to_sheet([h3,...r3]);
+      ws3['!cols']=[{wch:6},{wch:11},{wch:8},{wch:22},{wch:10},{wch:35},{wch:22},{wch:14},{wch:16},{wch:14},{wch:16}];
+      XLSX.utils.book_append_sheet(wb,ws3,'Control Terreno HM');
+    }
+  }
+
+  // ── Hoja 4: Control Terreno Producción ──
+  if(recsTer.length){
+    const h4prod=['N°','Fecha','Turno','Capataz','Supervisor','Código Actividad','Actividad',
+      'Tipo de Producción','Unidad','Cantidad'];
+    const r4prod=[];
+    recsTer.forEach((r,i)=>{
+      const val=r.validacion||{};
+      const acts = r.actividades||[];
+
+      if(acts.length===0){
+        // Sin actividades — usar produccion global si existe
+        deduplicarProduccion(r.produccion||[]).forEach(p=>{
+          r4prod.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+            '','',p.tipo||'',p.unidad||'',p.cantidad||0]);
+        });
+      } else {
+        acts.forEach(act=>{
+          // Primero intentar act.produccion; si vacío, proporcional desde r.produccion filtrado
+          const prodAct = (act.produccion||[]).length > 0
+            ? act.produccion
+            : (r.produccion||[]).filter(p=>p.actividad===act.descripcion || p.actividad===act.codigo);
+
+          const prodDedup = deduplicarProduccion(prodAct);
+
+          if(prodDedup.length===0 && acts.length===1){
+            // Si solo hay una actividad y no encontramos prod por actividad, usar produccion global
+            deduplicarProduccion(r.produccion||[]).forEach(p=>{
+              r4prod.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+                act.codigo||'',act.descripcion||'',p.tipo||'',p.unidad||'',p.cantidad||0]);
+            });
+          } else {
+            prodDedup.forEach(p=>{
+              r4prod.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+                act.codigo||'',act.descripcion||'',p.tipo||'',p.unidad||'',p.cantidad||0]);
+            });
+          }
+        });
+
+        // Si ninguna actividad tenía producción, volcar r.produccion sin filtro
+        if(r4prod.length === 0 || r4prod[r4prod.length-1][0] !== i+1){
+          if((r.produccion||[]).length>0 && !r4prod.some(row=>row[0]===i+1)){
+            deduplicarProduccion(r.produccion||[]).forEach(p=>{
+              r4prod.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',r.supervisor||'',
+                '','(Global)',p.tipo||'',p.unidad||'',p.cantidad||0]);
+            });
+          }
+        }
+      }
+    });
+
+    if(r4prod.length){
+      const ws4prod=XLSX.utils.aoa_to_sheet([h4prod,...r4prod]);
+      ws4prod['!cols']=[{wch:6},{wch:11},{wch:8},{wch:22},{wch:22},{wch:10},{wch:35},{wch:25},{wch:10},{wch:12}];
+      XLSX.utils.book_append_sheet(wb,ws4prod,'Control Terreno Producción');
+    } else if((recsTer.flatMap(r=>r.produccion||[])).length > 0){
+      // Último recurso: volcar toda la producción global de todos los reportes
+      const hFallback=['N°','Fecha','Turno','Capataz','Tipo de Producción','Unidad','Cantidad'];
+      const rFallback=[];
+      recsTer.forEach((r,i)=>{
+        deduplicarProduccion(r.produccion||[]).forEach(p=>{
+          rFallback.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.capataz||'',
+            p.tipo||'',p.unidad||'',p.cantidad||0]);
+        });
+      });
+      if(rFallback.length){
+        const wsFallback=XLSX.utils.aoa_to_sheet([hFallback,...rFallback]);
+        wsFallback['!cols']=[{wch:6},{wch:11},{wch:8},{wch:22},{wch:25},{wch:10},{wch:12}];
+        XLSX.utils.book_append_sheet(wb,wsFallback,'Control Terreno Producción');
+      }
+    }
+  }
+
+  // ── Hojas existentes: Rellenos, Agua, Tiempos ──
+  const rellenos=recsMaq.filter(r=>r.datosEspecificos?.tipo==='Camión Tolva'&&r.datosEspecificos?.material==='Relleno');
+  const h4=['Reporte N°','Fecha','Turno','Operador','N° Interno','Pozo de Extracción','Cant. Vueltas','M3 Relleno','M3 Parcial','M3 Acum'];
   const ar={};
-  const r2=rellenos.map((r,i)=>{
+  const r4=rellenos.map((r,i)=>{
     const p=r.datosEspecificos?.pozo||'Sin nombre';if(!ar[p])ar[p]=0;
     const m=Number(r.datosEspecificos?.m3||0);ar[p]+=m;
     return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',p,Number(r.datosEspecificos?.vueltas||0),m,m,ar[p]];
   });
-  const ws2=XLSX.utils.aoa_to_sheet([h2,...r2]);
-  ws2['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:12},{wch:12},{wch:12}];
-  XLSX.utils.book_append_sheet(wb,ws2,'Control Rellenos');
+  if(r4.length){const ws4=XLSX.utils.aoa_to_sheet([h4,...r4]);XLSX.utils.book_append_sheet(wb,ws4,'Control Rellenos');}
 
-  // Hoja 3: Control Agua Industrial
-  const aljibes=sorted.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
-  const h3=['Reporte N°','Fecha','Turno','Operador','N° Interno','Cachimba','Cant. Vueltas','M3','M3 Parcial','M3 Acum'];
+  const aljibes=recsMaq.filter(r=>r.datosEspecificos?.tipo==='Camión Aljibe');
+  const h5=['Reporte N°','Fecha','Turno','Operador','N° Interno','Cachimba','Cant. Vueltas','M3','M3 Parcial','M3 Acum'];
   const aa={};
-  const r3=aljibes.map((r,i)=>{
+  const r5=aljibes.map((r,i)=>{
     const c=r.datosEspecificos?.cachimba||'Sin nombre';if(!aa[c])aa[c]=0;
     const m=Number(r.datosEspecificos?.m3||0);aa[c]+=m;
     return[i+1,r.fecha||'','Turno '+(r.turno||''),r.operador?.nombre||'',r.equipo?.numero||'',c,Number(r.datosEspecificos?.vueltas||0),m,m,aa[c]];
   });
-  const ws3=XLSX.utils.aoa_to_sheet([h3,...r3]);
-  ws3['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:30},{wch:14},{wch:12},{wch:12},{wch:12}];
-  XLSX.utils.book_append_sheet(wb,ws3,'Control Agua Industrial');
+  if(r5.length){const ws5=XLSX.utils.aoa_to_sheet([h5,...r5]);XLSX.utils.book_append_sheet(wb,ws5,'Control Agua Industrial');}
 
-  // Hoja 4: Detalle de Tiempos
-  const h4=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción','Horas'];
-  const r4=[];
-  sorted.forEach((r,i)=>{
-    TIEMPO_FIELDS.forEach(f=>{
+  const TIEMPO_FIELDS_EXP=[
+    {id:'t-mp-traslado',grupo:'Mantención Programada',label:'Traslado a área mantención programada'},
+    {id:'t-mp-predictiva',grupo:'Mantención Programada',label:'Mantención predictiva'},
+    {id:'t-mp-planificada',grupo:'Mantención Programada',label:'Mantención planificada'},
+    {id:'t-mnp-alerta',grupo:'Mantención No Programada',label:'Equipo con alerta o falla'},
+    {id:'t-mnp-tiempo',grupo:'Mantención No Programada',label:'Tiempo en mantención'},
+    {id:'t-mnp-incidentes',grupo:'Mantención No Programada',label:'Incidentes operacionales'},
+    {id:'t-res-sinop',grupo:'Reservas',label:'Equipo sin operador'},
+    {id:'t-res-sinprog',grupo:'Reservas',label:'Sin programa de trabajo'},
+    {id:'t-res-clima',grupo:'Reservas',label:'Mala condición climática'},
+    {id:'t-dp-colacion',grupo:'Demoras Programadas',label:'Colación'},
+    {id:'t-dp-cambioturno',grupo:'Demoras Programadas',label:'Cambio de turno día'},
+    {id:'t-dp-charla',grupo:'Demoras Programadas',label:'Charla de seguridad'},
+    {id:'t-dp-petroleo',grupo:'Demoras Programadas',label:'Abastecimiento de petróleo'},
+    {id:'t-po-esperas',grupo:'Pérdidas Operacionales',label:'Esperas por equipos/condiciones'},
+    {id:'t-po-cargar',grupo:'Pérdidas Operacionales',label:'Espera para cargar'},
+    {id:'t-po-descargar',grupo:'Pérdidas Operacionales',label:'Espera para descargar'},
+    {id:'t-te-efectivo',grupo:'Tiempo Efectivo',label:'Equipo cumpliendo su función'},
+  ];
+  const h6=['N° Reporte','Fecha','Turno','Equipo','N° Interno','Operador','Grupo','Descripción','Horas'];
+  const r6=[];
+  recsMaq.forEach((r,i)=>{
+    TIEMPO_FIELDS_EXP.forEach(f=>{
       const h=Number(r.tiempos?.[f.id]||0);
-      if(h>0) r4.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
+      if(h>0) r6.push([i+1,r.fecha||'','Turno '+(r.turno||''),r.equipo?.tipo||'',r.equipo?.numero||'',r.operador?.nombre||'',f.grupo,f.label,h]);
     });
   });
-  if(!r4.length) r4.push(['Sin datos de tiempos','','','','','','','',0]);
-  const ws4=XLSX.utils.aoa_to_sheet([h4,...r4]);
-  ws4['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:22},{wch:26},{wch:48},{wch:10}];
-  XLSX.utils.book_append_sheet(wb,ws4,'Detalle de Tiempos');
+  if(r6.length){
+    const ws6=XLSX.utils.aoa_to_sheet([h6,...r6]);
+    ws6['!cols']=[{wch:10},{wch:12},{wch:8},{wch:22},{wch:10},{wch:22},{wch:26},{wch:48},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws6,'Detalle de Tiempos');
+  }
 
   XLSX.writeFile(wb,`CONPAX_Report_${fecha}.xlsx`);
-  showToast(`📊 Excel exportado con ${records.length} reporte(s)`);
+  showToast(`📊 Excel exportado — ${recsMaq.length} máquina(s) · ${recsTer.length} terreno(s)`);
 }
+
 
 /* ── ADMIN PANEL ── */
 let adminTabActiva = 'equipos'; // 'equipos' | 'personas' | 'usuarios'
@@ -2583,6 +3301,28 @@ function renderAdminPanel(){
           </div>
         </div>
       </div>
+
+      <!-- Personal por Capataz -->
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">👥</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Personal por Capataz</span></div>
+        <div class="admin-section-body">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Define el personal de cada capataz. Aparecerá como lista desplegable en el Report de Terreno.</p>
+
+          <!-- Selector de capataz -->
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <select id="personalCapSel" style="flex:1;margin:0" onchange="renderPersonalCapataz()">
+              <option value="">Seleccionar capataz...</option>
+              ${listaCapataces.map(c=>`<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>
+
+          <!-- Lista y formulario de personal del capataz seleccionado -->
+          <div id="personalCapContainer">
+            <div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Selecciona un capataz para ver o agregar su personal</div>
+          </div>
+        </div>
+      </div>
+
       <div class="admin-section">
         <div class="admin-section-head"><span class="section-num">🔗</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Supervisores → Capataces</span></div>
         <div class="admin-section-body">
@@ -2610,6 +3350,44 @@ function renderAdminPanel(){
               </div>`).join('')}
         </div>
       </div>
+
+      <!-- Jefes de Terreno → Supervisores + Turno -->
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="section-num">🔑</span><span class="section-title" style="font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Jefes de Terreno → Turno y Supervisores</span></div>
+        <div class="admin-section-body">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Asigna el turno a cada Jefe de Terreno y los supervisores bajo su cargo.</p>
+          ${listaUsuarios.filter(u=>u.rol==='jefe').length===0
+            ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">No hay Jefes de Terreno registrados</div>'
+            :listaUsuarios.filter(u=>u.rol==='jefe').map(jefe=>`
+              <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--rr);padding:13px;margin-bottom:10px">
+                <div style="font-size:13px;font-weight:600;margin-bottom:10px">🔑 ${jefe.nombre}
+                  <span style="font-size:10px;color:var(--text3)"> · ${jefe.rut||'—'}</span>
+                </div>
+                <!-- Turno -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                  <span style="font-size:11px;color:var(--text2);white-space:nowrap">Turno asignado:</span>
+                  <button onclick="asignarTurnoJefe('${jefe.uid}','A')" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:var(--r);background:${(jefe.turno||'A')==='A'?'var(--green)':'var(--input-bg)'};color:${(jefe.turno||'A')==='A'?'#000':'var(--text2)'};font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Turno A</button>
+                  <button onclick="asignarTurnoJefe('${jefe.uid}','B')" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:var(--r);background:${(jefe.turno||'A')==='B'?'var(--green)':'var(--input-bg)'};color:${(jefe.turno||'A')==='B'?'#000':'var(--text2)'};font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Turno B</button>
+                </div>
+                <!-- Supervisores asignados -->
+                <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Supervisores bajo su cargo</div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+                  ${(jefe.supervisores||[]).map(s=>`
+                    <div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px">
+                      ${s}<button onclick="quitarSupJefe('${jefe.uid}','${s}')" style="background:none;border:none;color:var(--green);cursor:pointer;font-size:13px;padding:0;line-height:1">×</button>
+                    </div>`).join('')||'<span style="font-size:11px;color:var(--text3)">Sin supervisores asignados</span>'}
+                </div>
+                <div style="display:flex;gap:8px">
+                  <select id="sel-sup-${jefe.uid}" style="flex:1;margin:0;font-size:13px;padding:8px 10px">
+                    <option value="">Agregar supervisor...</option>
+                    ${listaUsuarios.filter(u=>u.rol==='supervisor'&&!(jefe.supervisores||[]).includes(u.nombre)).map(s=>`<option value="${s.nombre}">${s.nombre}</option>`).join('')}
+                  </select>
+                  <button onclick="asignarSupJefe('${jefe.uid}')" style="background:var(--green);color:#000;border:none;border-radius:var(--r);padding:8px 14px;cursor:pointer;font-weight:700;font-family:'DM Sans',sans-serif">Asignar</button>
+                </div>
+              </div>`).join('')}
+        </div>
+      </div>
+
     </div>
 
     <!-- ══ TAB 3: USUARIOS ══ -->
@@ -2626,6 +3404,9 @@ function renderAdminPanel(){
               <option value="jefe">Jefe de Terreno</option>
               <option value="supervisor">Supervisor</option>
               <option value="admin">Admin</option>
+              <option value="jefe_costos">Jefe de Costos</option>
+              <option value="jefe_oficina">Jefe Oficina Técnica</option>
+              <option value="jefe_prog">Jefe Prog. y Control</option>
             </select>
           </div>
           <div class="field"><label>Contraseña Temporal</label><input type="text" id="newUserPass" placeholder="Mínimo 6 caracteres"></div>
@@ -2641,14 +3422,14 @@ function renderAdminPanel(){
             ?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin usuarios</div>'
             :listaUsuarios.map(u=>{
               const rolCfg=ROL_CONFIG[u.rol]||{color:'var(--text3)',bg:'var(--card2)'};
-              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;gap:10px">
-                <div style="min-width:0">
-                  <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.nombre||'Sin nombre'}</div>
-                  <div style="font-size:10px;color:var(--text3)">RUT: ${u.rut||'—'}</div>
+              const esSelf = u.uid === currentUser?.uid;
+              return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;">
+                <div style="min-width:0;flex:1">
+                  <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.nombre||'Sin nombre'}${esSelf?` <span style="font-size:9px;color:var(--text3);font-weight:400">(tú)</span>`:''}</div>
+                  <div style="font-size:10px;color:var(--text3);margin-top:1px">RUT: ${u.rut||'—'}${u.rol==='jefe'?` · Turno ${u.turno||'A'}`:''}</div>
                 </div>
-                <select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="margin:0;font-size:11px;padding:4px 8px;border-radius:6px;width:auto;flex-shrink:0;border-color:${rolCfg.color}33;color:${rolCfg.color};background:${rolCfg.bg}">
-                  ${['operador','capataz','jefe','supervisor','admin','pendiente'].map(r=>`<option value="${r}" ${u.rol===r?'selected':''}>${r}</option>`).join('')}
-                </select>
+                <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;background:${rolCfg.bg};color:${rolCfg.color};border:1px solid ${rolCfg.color}33;flex-shrink:0">${u.rol||'—'}</span>
+                <button onclick="abrirEditorUsuario('${u.uid}')" style="flex-shrink:0;background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:6px;color:var(--blue);font-size:12px;font-weight:600;padding:6px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;">✏️</button>
               </div>`;
             }).join('')}
         </div>
@@ -2745,6 +3526,155 @@ async function eliminarEquipo(idx){
   }catch(e){showToast('⚠️ Error','err');listaEquipos.splice(idx,0,eq);}
 }
 
+/* ── ADMIN: PERSONAL POR CAPATAZ ── */
+function renderPersonalCapataz(){
+  const cap = document.getElementById('personalCapSel')?.value;
+  const container = document.getElementById('personalCapContainer');
+  if(!container) return;
+
+  if(!cap){
+    container.innerHTML='<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Selecciona un capataz</div>';
+    return;
+  }
+
+  const personal = listaPersonalCapataces[cap] || [];
+
+  container.innerHTML=`
+    <!-- Lista de personal actual -->
+    <div id="personalCapLista" style="margin-bottom:12px">
+      ${personal.length===0
+        ?'<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px;background:var(--input-bg);border:1px dashed var(--border);border-radius:var(--r)">Sin personal registrado</div>'
+        :personal.map((p,i)=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:5px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">${p.nombre}</div>
+              <div style="font-size:10px;color:var(--text3)">RUT: ${p.rut||'—'} · ${p.cargo||'—'}</div>
+            </div>
+            <button onclick="eliminarPersonalCap('${cap.replace(/'/g,"\\'")}',${i})"
+              style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;flex-shrink:0;padding:0 4px">✕</button>
+          </div>`).join('')}
+    </div>
+
+    <!-- Formulario agregar persona -->
+    <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">➕ Agregar persona</div>
+      <div class="field"><label>Nombre Completo <span class="req">*</span></label>
+        <input type="text" id="newPersonaNombre" placeholder="Nombre completo del trabajador">
+      </div>
+      <div class="field-row">
+        <div class="field"><label>RUT</label>
+          <input type="text" id="newPersonaRut" placeholder="12.345.678-9" oninput="formatRutInput(this)">
+        </div>
+        <div class="field"><label>Cargo</label>
+          <select id="newPersonaCargo">
+            <option value="M1">M1</option>
+            <option value="M2">M2</option>
+            <option value="M3">M3</option>
+            <option value="Jornal">Jornal</option>
+            <option value="Ayudante">Ayudante</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div id="newPersonaError" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px"></div>
+      <button onclick="agregarPersonalCapDesdeForm()"
+        style="width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+        + Agregar a la cuadrilla de ${cap}
+      </button>
+    </div>`;
+
+  // Guardar el capataz activo como referencia para el botón
+  container.dataset.capActivo = cap;
+}
+
+async function agregarPersonalCapDesdeForm(){
+  const cap = document.getElementById('personalCapContainer')?.dataset.capActivo;
+  if(!cap){ showToast('⚠️ Selecciona un capataz primero','warn'); return; }
+  await agregarPersonalCap(cap);
+}
+
+async function agregarPersonalCap(cap){
+  const nombre = document.getElementById('newPersonaNombre')?.value.trim();
+  const rut    = document.getElementById('newPersonaRut')?.value.trim();
+  const cargo  = document.getElementById('newPersonaCargo')?.value;
+  const errEl  = document.getElementById('newPersonaError');
+  if(errEl) errEl.style.display='none';
+
+  if(!nombre){
+    if(errEl){errEl.textContent='El nombre es obligatorio.';errEl.style.display='block';}
+    return;
+  }
+
+  if(!listaPersonalCapataces[cap]) listaPersonalCapataces[cap]=[];
+  if(listaPersonalCapataces[cap].some(p=>p.nombre===nombre)){
+    if(errEl){errEl.textContent='Ese trabajador ya está en la lista.';errEl.style.display='block';}
+    return;
+  }
+
+  listaPersonalCapataces[cap].push({nombre, rut, cargo});
+
+  try{
+    await guardarPersonalCapataces();
+    showToast(`✔ ${nombre} agregado a cuadrilla de ${cap}`);
+    renderPersonalCapataz();
+    // Limpiar campos
+    const nEl=document.getElementById('newPersonaNombre'); if(nEl) nEl.value='';
+    const rEl=document.getElementById('newPersonaRut');    if(rEl) rEl.value='';
+  }catch(e){
+    showToast('⚠️ Error guardando','err');
+    listaPersonalCapataces[cap].pop();
+  }
+}
+
+async function eliminarPersonalCap(cap, idx){
+  const p = listaPersonalCapataces[cap]?.[idx];
+  if(!p) return;
+  listaPersonalCapataces[cap].splice(idx,1);
+  try{
+    await guardarPersonalCapataces();
+    showToast(`✔ ${p.nombre} eliminado`);
+    renderPersonalCapataz();
+  }catch(e){
+    showToast('⚠️ Error','err');
+    listaPersonalCapataces[cap].splice(idx,0,p);
+  }
+}
+
+/* ── ADMIN: JEFES DE TERRENO ── */
+async function asignarTurnoJefe(uid, turno){
+  const jefe=listaUsuarios.find(u=>u.uid===uid); if(!jefe) return;
+  jefe.turno=turno;
+  try{
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{turno});
+    showToast(`✔ Turno ${turno} asignado a ${jefe.nombre}`);
+    renderAdminPanel();
+  }catch(e){showToast('⚠️ Error','err');}
+}
+
+async function asignarSupJefe(uid){
+  const sel=document.getElementById(`sel-sup-${uid}`);
+  const supNombre=sel?.value; if(!supNombre){showToast('⚠️ Selecciona un supervisor','warn');return;}
+  const jefe=listaUsuarios.find(u=>u.uid===uid); if(!jefe) return;
+  if(!jefe.supervisores) jefe.supervisores=[];
+  if(jefe.supervisores.includes(supNombre)){showToast('⚠️ Ya está asignado','warn');return;}
+  jefe.supervisores.push(supNombre);
+  try{
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{supervisores:jefe.supervisores});
+    showToast(`✔ Supervisor asignado`);
+    renderAdminPanel();
+  }catch(e){showToast('⚠️ Error','err');jefe.supervisores.pop();}
+}
+
+async function quitarSupJefe(uid, supNombre){
+  const jefe=listaUsuarios.find(u=>u.uid===uid); if(!jefe) return;
+  jefe.supervisores=(jefe.supervisores||[]).filter(s=>s!==supNombre);
+  try{
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{supervisores:jefe.supervisores});
+    showToast('✔ Supervisor quitado');
+    renderAdminPanel();
+  }catch(e){showToast('⚠️ Error','err');}
+}
+
 /* ── ADMIN: CAPATACES ── */
 async function agregarCapataz(){
   const input=document.getElementById('nuevoCapataz');
@@ -2803,11 +3733,741 @@ async function crearUsuario(){
   }catch(e){errEl.textContent=traducirErrorAuth(e.code);errEl.style.display='block';}
 }
 
+/* ── ADMIN: EDITAR / ELIMINAR USUARIO ── */
+let usrEditandoUid = null;
+
+function abrirEditorUsuario(uid){
+  const u = listaUsuarios.find(x => x.uid === uid);
+  if(!u) return;
+  usrEditandoUid = uid;
+
+  // Rellenar campos
+  document.getElementById('usrModalTitle').textContent = 'Editar Usuario';
+  document.getElementById('usrModalSub').textContent   = `UID: ${uid.slice(0,10)}…`;
+  document.getElementById('usrEditNombre').value = u.nombre||'';
+  document.getElementById('usrEditRut').value    = u.rut||'';
+  document.getElementById('usrEditRol').value    = u.rol||'operador';
+  document.getElementById('usrEditPass').value   = '';
+  document.getElementById('usrEditError').style.display = 'none';
+  document.getElementById('usrEditOk').style.display   = 'none';
+  document.getElementById('usrDeleteConfirm').classList.remove('show');
+
+  // Bloquear auto-eliminación
+  const btnDel = document.querySelector('.usr-btn-delete');
+  if(btnDel) btnDel.style.display = uid === currentUser?.uid ? 'none' : 'block';
+
+  document.getElementById('usrModalOverlay').classList.add('show');
+  document.getElementById('usrEditNombre').focus();
+}
+
+function cerrarUsrModal(){
+  document.getElementById('usrModalOverlay').classList.remove('show');
+  document.getElementById('usrDeleteConfirm').classList.remove('show');
+  usrEditandoUid = null;
+}
+
+async function guardarEdicionUsuario(){
+  const uid    = usrEditandoUid; if(!uid) return;
+  const nombre = document.getElementById('usrEditNombre').value.trim();
+  const rol    = document.getElementById('usrEditRol').value;
+  const pass   = document.getElementById('usrEditPass').value;
+  const errEl  = document.getElementById('usrEditError');
+  const okEl   = document.getElementById('usrEditOk');
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if(!nombre){ errEl.textContent='El nombre es obligatorio.'; errEl.style.display='block'; return; }
+  if(pass && pass.length < 6){ errEl.textContent='La contraseña debe tener mínimo 6 caracteres.'; errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('usrBtnSave');
+  btn.textContent='Guardando…'; btn.disabled=true;
+
+  try{
+    // Actualizar Firestore
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid), {nombre, rol});
+
+    // Actualizar en memoria local
+    const u = listaUsuarios.find(x=>x.uid===uid);
+    if(u){ u.nombre=nombre; u.rol=rol; }
+
+    okEl.textContent = `✅ Usuario "${nombre}" actualizado correctamente.`;
+    okEl.style.display = 'block';
+    showToast(`✔ ${nombre} actualizado`);
+    renderAdminPanel();
+
+    // Cerrar modal tras 1.2s
+    setTimeout(()=>cerrarUsrModal(), 1200);
+  } catch(e){
+    errEl.textContent = 'Error al guardar: '+e.message;
+    errEl.style.display='block';
+  }
+  btn.textContent='💾 Guardar cambios'; btn.disabled=false;
+}
+
+function mostrarConfirmDeleteUser(){
+  document.getElementById('usrDeleteConfirm').classList.add('show');
+}
+
+async function confirmarEliminarUsuario(){
+  const uid = usrEditandoUid; if(!uid) return;
+  if(uid === currentUser?.uid){ showToast('⚠️ No puedes eliminarte a ti mismo','warn'); return; }
+
+  const u = listaUsuarios.find(x=>x.uid===uid);
+  const nombre = u?.nombre||'este usuario';
+
+  try{
+    // Eliminar de Firestore (la cuenta Firebase Auth se mantiene pero sin acceso)
+    await window._fsDoc(window._db,'Usuarios',uid);
+    // Usamos deleteDoc si está disponible, sino marcamos como eliminado
+    if(window._fsDeleteDoc){
+      await window._fsDeleteDoc(window._fsDoc(window._db,'Usuarios',uid));
+    } else {
+      await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{rol:'eliminado',eliminadoEn:new Date().toISOString()});
+    }
+    // Quitar de lista local
+    listaUsuarios = listaUsuarios.filter(x=>x.uid!==uid);
+    showToast(`✔ Usuario "${nombre}" eliminado`);
+    cerrarUsrModal();
+    await cargarUsuarios();
+    renderAdminPanel();
+  } catch(e){
+    showToast('⚠️ Error al eliminar: '+e.message,'err');
+  }
+}
+
 /* ── TOAST ── */
 function showToast(msg,type){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast'+(type==='warn'?' warn':type==='err'?' err':'');
   t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+
+/* ══════════════════════════════════════
+   FORMULARIO TERRENO — Report Capataz
+   v2 — Estructura por Actividad
+══════════════════════════════════════ */
+
+const ACTIVIDADES_TERRENO = [
+  {cod:'101010', desc:'INSTALACIÓN DE FAENAS'},
+  {cod:'101020', desc:'MOVILIZACIÓN'},
+  {cod:'101030', desc:'DESMOVILIZACIÓN'},
+  {cod:'101040', desc:'MANTENCIÓN I. DE FAENAS'},
+  {cod:'101050', desc:'MUROS DE MAMPOSTERÍA'},
+  {cod:'101060', desc:'ENROCADO CONSOLIDADO'},
+  {cod:'101070', desc:'CAMA DE APOYO'},
+  {cod:'101080', desc:'RELLENO ESTRUCTURAL'},
+  {cod:'101090', desc:'RELLENOS MASIVOS'},
+  {cod:'101100', desc:'BADÉN TIPO FUSIBLE'},
+  {cod:'101110', desc:'TUBERÍAS'},
+  {cod:'101120', desc:'HORMIGÓN G30'},
+  {cod:'101130', desc:'EXCAVACIÓN EN ZANJA'},
+  {cod:'101140', desc:'EXCAVACIÓN EN ROCA'},
+  {cod:'101150', desc:'EXCAVACIÓN S. RIPIABLE'},
+  {cod:'101160', desc:'EXCAVACIÓN SUELO COMÚN'},
+  {cod:'101170', desc:'EXCAVACIÓN MASIVA'},
+  {cod:'101180', desc:'HUELLA DE ACCESO'},
+  {cod:'101190', desc:'CERCADO PERIMETRAL'},
+  {cod:'101200', desc:'CARPETA DE RODADO'},
+  {cod:'101210', desc:'BASE GRANULAR'},
+  {cod:'101220', desc:'ESCARPE Y SUBRASANTE'},
+  {cod:'101230', desc:'SEÑALÉTICA'},
+  {cod:'101240', desc:'GEOMEMBRANA'},
+  {cod:'101250', desc:'LUMINARIA'},
+  {cod:'101260', desc:'CACHIMBA'},
+  {cod:'101270', desc:'AGUA A CACHIMBAS'},
+  {cod:'101280', desc:'AGUA EN PISCINAS'},
+];
+
+const ACT_OPTS_HTML = ACTIVIDADES_TERRENO.map(a =>
+  `<option value="${a.cod}">${a.cod} — ${a.desc}</option>`
+).join('');
+
+let trTurno     = 'A';
+let trActCount  = 0;
+let trDisciplinaSel = '';
+let trFrentesSel    = [];
+
+const FRENTES_TERRENO = [
+  'OA Camino CAEX PS-OXE','Cruce C Min PS-OXE-c contorno sur',
+  'OA C Vehículos Livianos PS-OXE','Canal de Contorno 1 (largo 3,3 km)',
+  'Canal de Contorno 2 (largo 2,3 km)','Canal de Contorno 3 (largo 3,2 km)',
+  'Pisc. Agua de Mar/plataforma','Cachimba Mina Polo Sur',
+  'Suministro agua a cachimbas','Recepción agua en Piscina',
+];
+
+function initFormTerreno(){
+  trActCount=0; trTurno='A'; trDisciplinaSel=''; trFrentesSel=[];
+
+  const fEl=document.getElementById('tr-fecha');
+  if(fEl) fEl.valueAsDate=new Date();
+
+  const cEl=document.getElementById('tr-capataz');
+  if(cEl && currentUser?.rol==='capataz') cEl.value=currentUser.nombre;
+  else if(cEl) cEl.value='';
+
+  // Turno buttons reset
+  document.querySelectorAll('#screen-form-terreno .turno-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
+
+  // Disciplinas
+  const dC=document.getElementById('tr-disciplinas');
+  if(dC) dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d}')">${d}</div>`).join('');
+
+  // Frentes
+  const fC=document.getElementById('tr-frentes-check');
+  if(fC) fC.innerHTML=FRENTES_TERRENO.map(f=>`<div class="tr-chip" onclick="trToggleFrente(this,'${f.replace(/'/g,"\\'")}')">${f}</div>`).join('');
+
+  // Limpiar campos
+  ['tr-supervisor','tr-hora-llegada-frente','tr-hora-salida-frente',
+   'tr-hora-salida-colacion','tr-hora-llegada-colacion','tr-frente-otro','tr-observaciones']
+  .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+
+  const ac=document.getElementById('tr-actividades-container');
+  if(ac) ac.innerHTML='';
+
+  // Primera actividad por defecto
+  trAddActividad();
+}
+
+function selectTurnoTerreno(btn,val){
+  document.querySelectorAll('#screen-form-terreno .turno-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected'); trTurno=val;
+}
+function trSelectDisciplina(chip,disc){
+  document.querySelectorAll('#tr-disciplinas .tr-chip').forEach(c=>c.classList.remove('selected'));
+  chip.classList.add('selected'); trDisciplinaSel=disc;
+}
+function trToggleFrente(chip,frente){
+  chip.classList.toggle('selected');
+  if(chip.classList.contains('selected')){ if(!trFrentesSel.includes(frente)) trFrentesSel.push(frente); }
+  else trFrentesSel=trFrentesSel.filter(f=>f!==frente);
+}
+
+/* ── ACTIVIDAD (unidad central) ── */
+function trAddActividad(){
+  if(trActCount>=8){ showToast('Máximo 8 actividades','warn'); return; }
+  trActCount++;
+  const n=trActCount;
+
+  const eqOpts=listaEquipos.map(e=>`<option value="${e.equipo}">${e.categoria} · ${e.equipo}</option>`).join('');
+  const cargoOpts=['M1','M2','M3','Jornal','Ayudante','Otro'].map(c=>`<option>${c}</option>`).join('');
+
+  const div=document.createElement('div');
+  div.id=`tr-act-block-${n}`;
+  div.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:var(--rr);margin-bottom:12px;overflow:hidden';
+  div.innerHTML=`
+    <!-- Cabecera de actividad -->
+    <div style="background:var(--amber-dim);border-bottom:1px solid rgba(245,158,11,.25);padding:11px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);background:rgba(245,158,11,.2);padding:2px 8px;border-radius:4px;font-weight:700">ACTIVIDAD ${n}</span>
+        <select id="tr-act-sel-${n}" onchange="trOnActChange(${n})" style="margin:0;font-size:12px;font-weight:700;background:transparent;border:none;color:var(--text);padding:0;flex:1;min-width:0">
+          <option value="">Seleccionar actividad...</option>
+          ${ACT_OPTS_HTML}
+        </select>
+      </div>
+      ${n>1?`<button onclick="trRemoveActBlock(${n})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;flex-shrink:0;padding:0 4px">✕</button>`:''}
+    </div>
+
+    <!-- Cuerpo expandible -->
+    <div id="tr-act-body-${n}" style="padding:14px">
+
+      <!-- HH: Personal -->
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        👷 Personal (HH)
+      </div>
+      <div id="tr-hh-list-${n}"></div>
+      <button class="add-btn" onclick="trAddPersona(${n})" style="margin-bottom:14px">+ Agregar persona</button>
+
+      <!-- HM: Equipos -->
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        🚧 Equipos (HM)
+      </div>
+      <div id="tr-hm-list-${n}"></div>
+      <button class="add-btn" onclick="trAddEquipoAct(${n})" style="margin-bottom:14px">+ Agregar equipo</button>
+
+      <!-- Producción -->
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
+        📦 Cantidades Producidas
+      </div>
+      <div id="tr-prod-list-${n}"></div>
+      <button class="add-btn" onclick="trAddProdAct(${n})">+ Agregar ítem producido</button>
+    </div>`;
+
+  document.getElementById('tr-actividades-container').appendChild(div);
+  // Primera persona y primer equipo por defecto
+  trAddPersona(n);
+
+  if(trActCount>=8) document.getElementById('tr-add-act-btn').style.opacity='.4';
+}
+
+function trOnActChange(n){
+  // Mostrar el código seleccionado junto al select
+  const sel=document.getElementById(`tr-act-sel-${n}`);
+  const opt=sel?.options[sel.selectedIndex];
+  // Resaltar si tiene valor
+  if(sel) sel.style.color = sel.value ? 'var(--amber)' : 'var(--text3)';
+}
+
+function trRemoveActBlock(n){
+  document.getElementById(`tr-act-block-${n}`)?.remove();
+  document.getElementById('tr-add-act-btn').style.opacity='1';
+}
+
+/* ── PERSONA POR ACTIVIDAD ── */
+let trPersonaCount=0;
+
+// Devuelve el personal del capataz que AÚN NO está asignado en esta actividad
+function trGetPersonasDisponibles(actN){
+  const capNombre = document.getElementById('tr-capataz')?.value.trim() || currentUser?.nombre || '';
+  const todos = listaPersonalCapataces[capNombre] || [];
+  if(!todos.length) return [];
+
+  // Nombres ya seleccionados en esta actividad
+  const usados = new Set();
+  document.querySelectorAll(`[id^="tr-p-sel-${actN}-"]`).forEach(sel=>{
+    if(sel.value) usados.add(sel.value);
+  });
+
+  return todos.filter(p => !usados.has(p.nombre));
+}
+
+// Reconstruye las opciones de TODOS los selects de una actividad
+// para reflejar quién ya fue asignado
+function trRefreshPersonaDropdowns(actN){
+  const capNombre = document.getElementById('tr-capataz')?.value.trim() || currentUser?.nombre || '';
+  const todos = listaPersonalCapataces[capNombre] || [];
+  if(!todos.length) return;
+
+  document.querySelectorAll(`[id^="tr-p-sel-${actN}-"]`).forEach(sel=>{
+    const seleccionado = sel.value; // guardar el valor actual
+
+    // Nombres usados por OTROS selects de esta actividad
+    const usados = new Set();
+    document.querySelectorAll(`[id^="tr-p-sel-${actN}-"]`).forEach(otro=>{
+      if(otro !== sel && otro.value) usados.add(otro.value);
+    });
+
+    // Reconstruir opciones
+    sel.innerHTML = '<option value="">Seleccionar trabajador...</option>'
+      + todos
+          .filter(p => !usados.has(p.nombre) || p.nombre === seleccionado)
+          .map(p => `<option value="${p.nombre}" data-rut="${p.rut||''}" data-cargo="${p.cargo||''}"
+            ${p.nombre===seleccionado?'selected':''}>${p.nombre} · ${p.cargo||'—'}</option>`)
+          .join('');
+  });
+}
+
+function trAddPersona(actN){
+  trPersonaCount++;
+  const pn = trPersonaCount;
+  const cargoOpts = ['M1','M2','M3','Jornal','Ayudante','Otro'].map(c=>`<option>${c}</option>`).join('');
+  const container = document.getElementById(`tr-hh-list-${actN}`);
+  if(!container) return;
+
+  const capNombre = document.getElementById('tr-capataz')?.value.trim() || currentUser?.nombre || '';
+  const personalCap = listaPersonalCapataces[capNombre] || [];
+
+  const div = document.createElement('div');
+  div.id = `tr-persona-${actN}-${pn}`;
+  div.style.cssText = 'background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px';
+
+  if(personalCap.length > 0){
+    // Solo mostrar los disponibles (no asignados aún en esta actividad)
+    const disponibles = trGetPersonasDisponibles(actN);
+    const personaOpts = disponibles.map(p =>
+      `<option value="${p.nombre}" data-rut="${p.rut||''}" data-cargo="${p.cargo||''}">${p.nombre} · ${p.cargo||'—'}</option>`
+    ).join('');
+
+    div.innerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+        <select id="tr-p-sel-${actN}-${pn}" style="flex:1;margin:0"
+          onchange="trOnPersonaSelect(${actN},${pn})">
+          <option value="">Seleccionar trabajador...</option>
+          ${personaOpts}
+        </select>
+        <button onclick="trEliminarPersona(${actN},${pn})"
+          style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="tr-p-rut-${actN}-${pn}" placeholder="RUT (auto)" style="flex:1;margin:0;opacity:.7" readonly>
+        <select id="tr-p-cargo-${actN}-${pn}" style="flex:1;margin:0">${cargoOpts}</select>
+        <div style="flex:none;display:flex;align-items:center;gap:4px">
+          <label style="font-size:10px;color:var(--text3);margin:0;white-space:nowrap">HH:</label>
+          <input type="number" id="tr-p-hh-${actN}-${pn}" placeholder="0" min="0" step="0.5"
+            style="width:64px;margin:0;text-align:right;font-family:'DM Mono',monospace">
+        </div>
+      </div>
+      <input type="hidden" id="tr-p-nombre-${actN}-${pn}" value="">
+      ${disponibles.length===0?'<div style="font-size:10px;color:var(--amber);margin-top:5px">⚠️ Todo el personal ya fue asignado en esta actividad</div>':''}`;
+  } else {
+    // Modo texto libre
+    div.innerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <input type="text" id="tr-p-nombre-${actN}-${pn}" placeholder="Nombre completo" style="flex:1;margin:0">
+        <button onclick="trEliminarPersona(${actN},${pn})"
+          style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="tr-p-rut-${actN}-${pn}" placeholder="RUT" style="flex:1;margin:0" oninput="formatRutInput(this)">
+        <select id="tr-p-cargo-${actN}-${pn}" style="flex:1;margin:0">${cargoOpts}</select>
+        <div style="flex:none;display:flex;align-items:center;gap:4px">
+          <label style="font-size:10px;color:var(--text3);margin:0;white-space:nowrap">HH:</label>
+          <input type="number" id="tr-p-hh-${actN}-${pn}" placeholder="0" min="0" step="0.5"
+            style="width:64px;margin:0;text-align:right;font-family:'DM Mono',monospace">
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--amber);margin-top:5px">
+        ⚠️ Sin personal configurado — contacta al admin para agregar tu cuadrilla
+      </div>`;
+  }
+
+  container.appendChild(div);
+}
+
+// Al seleccionar una persona: auto-rellena campos y refresca todos los dropdowns de la actividad
+function trOnPersonaSelect(actN, pn){
+  const sel     = document.getElementById(`tr-p-sel-${actN}-${pn}`);
+  const opt     = sel?.options[sel.selectedIndex];
+  const rutEl   = document.getElementById(`tr-p-rut-${actN}-${pn}`);
+  const cargoEl = document.getElementById(`tr-p-cargo-${actN}-${pn}`);
+  const nomEl   = document.getElementById(`tr-p-nombre-${actN}-${pn}`);
+
+  if(nomEl)   nomEl.value   = opt?.value || '';
+  if(rutEl)   rutEl.value   = opt?.dataset.rut   || '';
+  if(cargoEl && opt?.dataset.cargo) cargoEl.value = opt.dataset.cargo;
+
+  // Refrescar todos los dropdowns de esta actividad para quitar la persona recién asignada
+  trRefreshPersonaDropdowns(actN);
+}
+
+// Al eliminar una fila: refrescar dropdowns para que reaparezca la persona liberada
+function trEliminarPersona(actN, pn){
+  document.getElementById(`tr-persona-${actN}-${pn}`)?.remove();
+  trRefreshPersonaDropdowns(actN);
+}
+
+/* ── EQUIPO POR ACTIVIDAD ── */
+let trEquipoActCount=0;
+function trAddEquipoAct(actN){
+  trEquipoActCount++;
+  const en=trEquipoActCount;
+  const eqOpts=listaEquipos.map(e=>`<option value="${e.equipo}">${e.categoria} · ${e.equipo}</option>`).join('');
+  const container=document.getElementById(`tr-hm-list-${actN}`);
+  if(!container) return;
+  const div=document.createElement('div');
+  div.id=`tr-equipo-${actN}-${en}`;
+  div.style.cssText='background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px';
+  div.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="tr-e-sel-${actN}-${en}" style="flex:1;margin:0">
+        <option value="">Seleccionar equipo...</option>${eqOpts}
+      </select>
+      <button onclick="document.getElementById('tr-equipo-${actN}-${en}').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div>
+        <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM Operativas</label>
+        <input type="number" id="tr-e-op-${actN}-${en}" placeholder="0" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM No Operativas</label>
+        <input type="number" id="tr-e-nop-${actN}-${en}" placeholder="0" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM Mantención</label>
+        <input type="number" id="tr-e-mant-${actN}-${en}" placeholder="0" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM Fuera Servicio</label>
+        <input type="number" id="tr-e-fs-${actN}-${en}" placeholder="0" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right">
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+/* ── PRODUCCIÓN POR ACTIVIDAD ── */
+let trProdActCount=0;
+function trAddProdAct(actN){
+  trProdActCount++;
+  const pn=trProdActCount;
+  const container=document.getElementById(`tr-prod-list-${actN}`);
+  if(!container) return;
+  const div=document.createElement('div');
+  div.id=`tr-prod-${actN}-${pn}`;
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  div.innerHTML=`
+    <input type="text" placeholder="Tipo (m³, m², ton...)" id="tr-prod-tipo-${actN}-${pn}" style="flex:1;margin:0">
+    <input type="text" placeholder="UM" id="tr-prod-um-${actN}-${pn}" style="width:60px;flex:none;margin:0">
+    <input type="number" placeholder="Cant." id="tr-prod-qty-${actN}-${pn}" style="width:72px;flex:none;margin:0;font-family:'DM Mono',monospace;text-align:right" step="0.01">
+    <button onclick="document.getElementById('tr-prod-${actN}-${pn}').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>`;
+  container.appendChild(div);
+}
+
+/* ── GUARDAR ── */
+function confirmarGuardadoTerreno(){
+  const capataz=document.getElementById('tr-capataz')?.value.trim();
+  const fecha=document.getElementById('tr-fecha')?.value;
+  if(!capataz||!fecha){ showToast('⚠️ Capataz y fecha son obligatorios','warn'); return; }
+
+  const actividades=[];
+  document.querySelectorAll('[id^="tr-act-block-"]').forEach(block=>{
+    const actN=block.id.replace('tr-act-block-','');
+    const sel=document.getElementById(`tr-act-sel-${actN}`);
+    const codOpt=ACTIVIDADES_TERRENO.find(a=>a.cod===sel?.value);
+    if(!sel?.value) return; // actividad sin seleccionar se omite
+
+    // Personal — solo los de esta actividad
+    const personal=[];
+    const hhContainer = block.querySelector(`#tr-hh-list-${actN}`);
+    if(hhContainer){
+      hhContainer.querySelectorAll('[id^="tr-persona-"]').forEach(pEl=>{
+        if(pEl.tagName !== 'DIV') return;
+        const parts=pEl.id.split('-');
+        const pn=parts[parts.length-1];
+        const pActN=parts[parts.length-2];
+        if(String(pActN) !== String(actN)) return;
+        const nomHidden = pEl.querySelector(`[id="tr-p-nombre-${actN}-${pn}"]`);
+        const nomSel    = pEl.querySelector(`[id="tr-p-sel-${actN}-${pn}"]`);
+        const nombre = nomHidden?.value.trim() || nomSel?.value.trim() || '';
+        if(!nombre) return;
+        personal.push({
+          nombre,
+          rut:   pEl.querySelector(`[id="tr-p-rut-${actN}-${pn}"]`)?.value||'',
+          cargo: pEl.querySelector(`[id="tr-p-cargo-${actN}-${pn}"]`)?.value||'',
+          hh:    parseFloat(pEl.querySelector(`[id="tr-p-hh-${actN}-${pn}"]`)?.value)||0,
+        });
+      });
+    }
+
+    // Equipos — solo los de esta actividad
+    const equipos=[];
+    const hmContainer = block.querySelector(`#tr-hm-list-${actN}`);
+    if(hmContainer){
+      hmContainer.querySelectorAll('[id^="tr-equipo-"]').forEach(eEl=>{
+        if(eEl.tagName !== 'DIV') return;
+        const parts=eEl.id.split('-');
+        const en=parts[parts.length-1];
+        const eActN=parts[parts.length-2];
+        if(String(eActN) !== String(actN)) return;
+        const eq = eEl.querySelector(`[id="tr-e-sel-${actN}-${en}"]`)?.value;
+        if(!eq) return;
+        equipos.push({
+          equipo: eq,
+          hmOperativas:    parseFloat(eEl.querySelector(`[id="tr-e-op-${actN}-${en}"]`)?.value)||0,
+          hmNoOperativas:  parseFloat(eEl.querySelector(`[id="tr-e-nop-${actN}-${en}"]`)?.value)||0,
+          hmMantenimiento: parseFloat(eEl.querySelector(`[id="tr-e-mant-${actN}-${en}"]`)?.value)||0,
+          hmFueraServicio: parseFloat(eEl.querySelector(`[id="tr-e-fs-${actN}-${en}"]`)?.value)||0,
+        });
+      });
+    }
+
+    // Producción — leer directamente desde el contenedor de esta actividad
+    const produccion=[];
+    const prodContainer = block.querySelector(`#tr-prod-list-${actN}`);
+    if(prodContainer){
+      prodContainer.querySelectorAll('[id^="tr-prod-"]').forEach(pEl=>{
+        // Solo procesar divs raíz (las filas), no inputs hijos
+        if(pEl.tagName !== 'DIV') return;
+        const parts=pEl.id.split('-');
+        const pn=parts[parts.length-1];
+        const pActN=parts[parts.length-2];
+        // Verificar que pertenece a esta actividad
+        if(String(pActN) !== String(actN)) return;
+        const tipoEl = pEl.querySelector(`[id="tr-prod-tipo-${actN}-${pn}"]`);
+        const umEl   = pEl.querySelector(`[id="tr-prod-um-${actN}-${pn}"]`);
+        const qtyEl  = pEl.querySelector(`[id="tr-prod-qty-${actN}-${pn}"]`);
+        const tipo   = tipoEl?.value.trim();
+        if(!tipo) return;
+        produccion.push({
+          tipo,
+          unidad:   umEl?.value||'',
+          cantidad: parseFloat(qtyEl?.value)||0,
+        });
+      });
+    }
+
+    actividades.push({
+      n:      parseInt(actN),
+      codigo: sel.value,
+      descripcion: codOpt?.desc||sel.options[sel.selectedIndex]?.text||'',
+      totalHH: personal.reduce((s,p)=>s+p.hh,0),
+      totalHMOp: equipos.reduce((s,e)=>s+e.hmOperativas,0),
+      personal, equipos, produccion,
+    });
+  });
+
+  if(!actividades.length){ showToast('⚠️ Agrega al menos una actividad con actividad seleccionada','warn'); return; }
+
+  const record={
+    id:'T'+Date.now(), tipo:'terreno', timestamp:new Date().toISOString(),
+    fecha, turno:trTurno, jornada:'Diurna',
+    capataz, supervisor:document.getElementById('tr-supervisor')?.value.trim()||'',
+    horarios:{
+      llegadaFrente:   document.getElementById('tr-hora-llegada-frente')?.value||'',
+      salidaFrente:    document.getElementById('tr-hora-salida-frente')?.value||'',
+      salidaColacion:  document.getElementById('tr-hora-salida-colacion')?.value||'',
+      llegadaColacion: document.getElementById('tr-hora-llegada-colacion')?.value||'',
+    },
+    disciplina: trDisciplinaSel,
+    frentes: [...trFrentesSel, document.getElementById('tr-frente-otro')?.value.trim()||''].filter(Boolean),
+    actividades,
+    // Resúmenes globales para el modal
+    horasHombre: actividades.flatMap(a=>a.personal.map(p=>({...p, actividad:a.descripcion}))),
+    horasMaquina: actividades.flatMap(a=>a.equipos.map(e=>({...e, actividad:a.descripcion}))),
+    produccion:  actividades.flatMap(a=>a.produccion.map(p=>({...p, actividad:a.descripcion}))),
+    observaciones: document.getElementById('tr-observaciones')?.value.trim()||'',
+    creadoPor: {uid:currentUser.uid, nombre:currentUser.nombre, rol:currentUser.rol},
+    validacion:{
+      capataz:  {estado:'aprobado', nombre:currentUser.nombre, fecha:new Date().toISOString()},
+      supervisor:{estado:'pendiente', nombre:'', fecha:''},
+      jefe:     {estado:'pendiente', nombre:'', fecha:''},
+    },
+    estado:{synced:false, syncedAt:null},
+  };
+
+  recordsTerreno.unshift(record);
+  localStorage.setItem(STORAGE_KEY_TERRENO, JSON.stringify(recordsTerreno));
+  showToast('✅ Report de terreno guardado — pendiente validación supervisor');
+  renderRecords(); initDashboard(); showTab('records');
+}
+
+async function syncTerreno(){
+  if(!isOnline||!window._firebaseReady) return;
+  const pending=recordsTerreno.filter(r=>!r.estado?.synced);
+  for(const r of pending){
+    try{
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(r.id)),{...r,estado:{synced:true,syncedAt:new Date().toISOString()}});
+      r.estado={synced:true,syncedAt:new Date().toISOString()};
+    }catch(e){console.error(e);}
+  }
+  localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
+}
+
+async function validarReport(id,tipo,nivel,accion){
+  const arr  = tipo==='terreno' ? recordsTerreno : records;
+  const r    = arr.find(x=>String(x.id)===String(id));
+  if(!r) return;
+
+  // Inicializar validacion si no existe
+  if(!r.validacion) r.validacion={
+    capataz:  {estado:'pendiente',nombre:'',fecha:''},
+    supervisor:{estado:'pendiente',nombre:'',fecha:''},
+    jefe:     {estado:'pendiente',nombre:'',fecha:''},
+  };
+
+  // Registrar la acción
+  r.validacion[nivel]={estado:accion,nombre:currentUser.nombre,fecha:new Date().toISOString()};
+
+  // Guardar localmente
+  const storKey = tipo==='terreno' ? STORAGE_KEY_TERRENO : STORAGE_KEY;
+  localStorage.setItem(storKey, JSON.stringify(arr));
+
+  // ── SYNC A FIREBASE: solo cuando el Jefe aprueba ──
+  if(accion==='aprobado' && nivel==='jefe' && isOnline && window._firebaseReady){
+    const col = tipo==='terreno' ? 'reportes_terreno' : 'reportes_maquinaria';
+    r.estado = {synced:true, syncedAt:new Date().toISOString()};
+    try{
+      await window._fsSetDoc(window._fsDoc(window._db,col,String(r.id)),{...r});
+      localStorage.setItem(storKey, JSON.stringify(arr));
+      showToast('✅ Report aprobado y subido a Firebase');
+    } catch(e){
+      r.estado={synced:false,syncedAt:null};
+      showToast('⚠️ Aprobado localmente — sin conexión para subir','warn');
+    }
+  } else if(accion==='aprobado' && nivel==='jefe' && !isOnline){
+    // Marcar listo para sync cuando haya conexión
+    r.estado = {synced:false, syncedAt:null, readyToSync:true};
+    localStorage.setItem(storKey, JSON.stringify(arr));
+    showToast('✅ Aprobado — se subirá al recuperar conexión','warn');
+  } else if(accion==='rechazado'){
+    showToast(`✕ Report rechazado por ${nivel}`,'warn');
+  } else {
+    showToast(`✔ Aprobado por ${nivel} — pendiente siguiente nivel`);
+  }
+
+  renderRecords(); updateStats();
+  document.getElementById('modalOverlay')?.classList.remove('show');
+}
+
+function _valBadge(v){
+  if(!v || v.estado==='pendiente') return '<span class="val-badge val-pending">⏳ Pendiente</span>';
+  if(v.estado==='aprobado')        return '<span class="val-badge val-approved">✔ Aprobado</span>';
+  return '<span class="val-badge val-rejected">✕ Rechazado</span>';
+}
+
+function _puedeValidar(r,nivel){
+  const rol = currentUser?.rol;
+  const val = r.validacion || {};
+
+  if(nivel==='capataz'){
+    if(rol!=='capataz'&&rol!=='admin') return false;
+    if(r.tipo!=='maquinaria') return false;
+    if(val.capataz?.estado!=='pendiente') return false;
+    return true;
+  }
+  if(nivel==='supervisor'){
+    if(rol!=='supervisor'&&rol!=='admin') return false;
+    // El capataz debe haber aprobado primero
+    if(val.capataz?.estado!=='aprobado') return false;
+    // Solo si aún está pendiente
+    if(val.supervisor?.estado!=='pendiente') return false;
+    // Si el supervisor tiene nombre declarado en el report, verificar con tolerancia
+    // (comparación case-insensitive y trim para evitar errores de tipeo)
+    if(rol==='supervisor' && r.supervisor){
+      const supRep  = r.supervisor.trim().toLowerCase();
+      const supUser = currentUser.nombre.trim().toLowerCase();
+      // Permitir si el nombre del report contiene el del usuario o viceversa
+      if(!supRep.includes(supUser) && !supUser.includes(supRep)) return false;
+    }
+    return true;
+  }
+  if(nivel==='jefe'){
+    if(rol!=='jefe'&&rol!=='admin') return false;
+    if(val.supervisor?.estado!=='aprobado') return false;
+    if(val.jefe?.estado!=='pendiente') return false;
+    // Jefe solo valida reportes de su turno asignado
+    if(rol==='jefe' && r.turno && r.turno !== (currentUser.turno||'A')) return false;
+    return true;
+  }
+  return false;
+}
+
+function _valButtons(r,tipo){
+  const html=[];
+  const niveles = r.tipo==='maquinaria'
+    ? ['capataz','supervisor','jefe']
+    : ['supervisor','jefe'];
+
+  niveles.forEach(nivel=>{
+    if(_puedeValidar(r,nivel)){
+      const label = nivel==='capataz'?'Capataz':nivel==='supervisor'?'Supervisor':'Jefe de Terreno';
+      html.push(`
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-top:8px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tu turno de validar como <strong style="color:var(--text)">${label}</strong></div>
+          <div style="display:flex;gap:8px">
+            <button class="val-btn val-btn-approve" onclick="validarReport('${r.id}','${tipo}','${nivel}','aprobado')" style="flex:1">✔ Aprobar</button>
+            <button class="val-btn val-btn-reject"  onclick="validarReport('${r.id}','${tipo}','${nivel}','rechazado')" style="flex:1">✕ Rechazar</button>
+          </div>
+        </div>`);
+    }
+  });
+  return html.join('');
+}
+
+// Deduplica producción: un ítem por tipo+unidad, conserva el valor máximo
+// (no suma — la cantidad es el total de la actividad, no por persona)
+function deduplicarProduccion(lista){
+  const mapa = {};
+  (lista||[]).forEach(p=>{
+    const key = (p.tipo||'').trim().toUpperCase() + '|' + (p.unidad||'').trim();
+    const cant = parseFloat(p.cantidad)||0;
+    if(mapa[key]){
+      // Conservar el valor máximo (en caso de duplicados por bug anterior)
+      if(cant > mapa[key].cantidad) mapa[key].cantidad = cant;
+    } else {
+      mapa[key] = {...p, cantidad: cant};
+    }
+  });
+  return Object.values(mapa);
 }
 
 
@@ -2828,22 +4488,32 @@ function getCapatacesVisibles(){
   return [];
 }
 
-// Filtra los records según los criterios de cuadrilla
+// Filtra los records según los criterios de cuadrilla (maquinaria + terreno)
 function getCuadrillaRecords(){
   const caps = getCapatacesVisibles();
-  return records.filter(r => {
-    // filtro fecha
+
+  // Helper: obtener capataces de un record según su tipo
+  const getCapsDeRecord = r => {
+    if(r.tipo === 'terreno'){
+      // Terreno: campo directo r.capataz
+      return r.capataz ? [r.capataz] : [];
+    } else {
+      // Maquinaria: dentro de actividades
+      return (r.actividades||[]).map(a => typeof a==='object' ? a?.capataz : '').filter(Boolean);
+    }
+  };
+
+  const filtrar = r => {
     if(cqFechaFil && r.fecha !== cqFechaFil) return false;
-    // filtro turno
     if(cqTurnoFil !== 'ambos' && r.turno !== cqTurnoFil) return false;
-    // filtro capataz asignado al rol
-    const recCaps = (r.actividades || []).map(a => typeof a === 'object' ? a?.capataz : '').filter(Boolean);
+    const recCaps = getCapsDeRecord(r);
     const tieneCap = caps.length === 0 || recCaps.some(c => caps.includes(c));
     if(!tieneCap) return false;
-    // filtro capataz específico seleccionado
     if(cqCapFil && !recCaps.includes(cqCapFil)) return false;
     return true;
-  });
+  };
+
+  return [...records, ...recordsTerreno].filter(filtrar);
 }
 
 function renderCuadrilla(){
@@ -2854,22 +4524,37 @@ function renderCuadrilla(){
   const recsAll = getCuadrillaRecords();
   const today   = new Date().toISOString().slice(0,10);
 
+  // Helper capataz por tipo de record
+  const getCapsDeRecord = r => {
+    if(r.tipo === 'terreno') return r.capataz ? [r.capataz] : [];
+    return (r.actividades||[]).map(a => typeof a==='object' ? a?.capataz : '').filter(Boolean);
+  };
+
   // ── KPIs globales ──
-  const totalEquipos  = recsAll.length;
+  const totalReportes = recsAll.length;
   const totalHMOp     = recsAll.reduce((s,r) => s + Number(r.operatividad?.hrsOperativas||0), 0);
   const totalHMJor    = recsAll.reduce((s,r) => s + Number(r.operatividad?.hmJornada||0), 0);
   const pctOp         = totalHMJor > 0 ? Math.round((totalHMOp/totalHMJor)*100) : 0;
-  const sinReporte    = cqFechaFil === today
-    ? caps.filter(c => !recsAll.some(r => (r.actividades||[]).some(a => (typeof a==='object' ? a?.capataz : '') === c)))
+
+  // Capataces sin reporte hoy — usando el helper correcto
+  const sinReporte = cqFechaFil === today
+    ? caps.filter(c => !recsAll.some(r => getCapsDeRecord(r).includes(c)))
     : [];
 
   // ── Agrupar por capataz ──
   const grupos = {};
   caps.forEach(c => { grupos[c] = []; });
   recsAll.forEach(r => {
-    const recCaps = [...new Set((r.actividades||[]).map(a => typeof a==='object' ? a?.capataz : '').filter(Boolean))];
-    if(!recCaps.length){ if(grupos['__sin_capataz__']) grupos['__sin_capataz__'].push(r); else grupos['__sin_capataz__']=[r]; }
-    else recCaps.forEach(c => { if(grupos[c]) grupos[c].push(r); else grupos[c]=[r]; });
+    const recCaps = [...new Set(getCapsDeRecord(r))];
+    if(!recCaps.length){
+      if(!grupos['__sin_capataz__']) grupos['__sin_capataz__'] = [];
+      grupos['__sin_capataz__'].push(r);
+    } else {
+      recCaps.forEach(c => {
+        if(grupos[c]) grupos[c].push(r);
+        else grupos[c] = [r];
+      });
+    }
   });
 
   // ── Opciones capataz para el select ──
@@ -2901,7 +4586,7 @@ function renderCuadrilla(){
     <!-- KPI strip -->
     <div class="cq-kpi-strip">
       <div class="cq-kpi">
-        <div class="cq-kpi-val" style="color:var(--blue)">${totalEquipos}</div>
+        <div class="cq-kpi-val" style="color:var(--blue)">${totalReportes}</div>
         <div class="cq-kpi-label">Reportes del turno</div>
       </div>
       <div class="cq-kpi">
@@ -2964,6 +4649,44 @@ function renderGruposHTML(grupos){
 }
 
 function renderEquipoCardHTML(r){
+  const esTerreno = r.tipo === 'terreno';
+  const sinced    = r.estado?.synced;
+  const modalFn   = esTerreno ? `openModalTerreno('${r.id}')` : `openModal('${r.id}')`;
+
+  if(esTerreno){
+    // Tarjeta para report de terreno
+    const totalHH = (r.actividades||[]).reduce((s,a)=>s+(a.totalHH||0),0);
+    const frentes = r.frentes || [];
+    const val     = r.validacion||{};
+    const valSup  = val.supervisor?.estado||'pendiente';
+    const valJefe = val.jefe?.estado||'pendiente';
+    return `
+    <div class="cq-equipo-card op-media" onclick="${modalFn}">
+      <div class="cq-eq-top">
+        <div>
+          <div class="cq-eq-nombre" style="display:flex;align-items:center;gap:6px">
+            <span style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.3);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">TERRENO</span>
+            ${r.capataz||'—'}
+          </div>
+          <div class="cq-eq-operador">📐 ${r.disciplina||'—'} · Turno ${r.turno||'—'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <span class="cq-badge ${sinced?'cq-badge-green':'cq-badge-amber'}">${sinced?'✓':'⏳'}</span>
+          <span class="cq-badge ${valJefe==='aprobado'?'cq-badge-green':valSup==='aprobado'?'cq-badge-blue':'cq-badge-amber'}" style="font-size:9px">
+            ${valJefe==='aprobado'?'✔ Jefe':valSup==='aprobado'?'✔ Sup.':'⏳ Val.'}
+          </span>
+        </div>
+      </div>
+      <div class="cq-eq-kpis">
+        <span>⏱ ${totalHH.toFixed(1)} HH</span>
+        <span>👷 ${(r.horasHombre||[]).length} pers.</span>
+        <span>🚧 ${(r.horasMaquina||[]).length} equipo(s)</span>
+      </div>
+      ${frentes.length?`<div style="margin-top:6px">${frentes.slice(0,2).map(f=>`<span class="cq-frente-tag">${f.length>28?f.slice(0,28)+'…':f}</span>`).join('')}</div>`:''}
+    </div>`;
+  }
+
+  // Tarjeta para report de maquinaria
   const op    = r.operatividad || {};
   const hmOp  = Number(op.hrsOperativas||0);
   const hmJor = Number(op.hmJornada||0);
@@ -2972,13 +4695,15 @@ function renderEquipoCardHTML(r){
   const barCls= pct >= 75 ? 'high' : pct >= 50 ? 'mid' : 'low';
   const eq    = r.equipo || {};
   const frentes = [...new Set((r.actividades||[]).map(a => typeof a==='object' ? a?.frente : '').filter(Boolean))];
-  const sinced  = r.estado?.synced;
 
   return `
-  <div class="cq-equipo-card ${cls}" onclick="openModal('${r.id}')">
+  <div class="cq-equipo-card ${cls}" onclick="${modalFn}">
     <div class="cq-eq-top">
       <div>
-        <div class="cq-eq-nombre">${eq.tipo||'Equipo'}${eq.numero?' · '+eq.numero:''}</div>
+        <div class="cq-eq-nombre" style="display:flex;align-items:center;gap:6px">
+          <span style="background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-glow);border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">MÁQUINA</span>
+          ${eq.tipo||'Equipo'}${eq.numero?' · '+eq.numero:''}
+        </div>
         <div class="cq-eq-operador">👤 ${r.operador?.nombre||'—'} · Turno ${r.turno||'—'}</div>
       </div>
       <span class="cq-badge ${sinced?'cq-badge-green':'cq-badge-amber'}">${sinced?'✓':'⏳'}</span>
