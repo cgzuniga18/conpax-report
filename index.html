@@ -1208,7 +1208,7 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v6.2-20260528';
+const VERSION = 'v6.3-20260601';
 
 /* ── CONSTANTES ── */
 const STORAGE_KEY         = 'conpax_v4_records';
@@ -4099,38 +4099,46 @@ function trRemoveActBlock(n){
 /* ── PERSONA POR ACTIVIDAD ── */
 let trPersonaCount=0;
 
-// Devuelve el personal del capataz que AÚN NO está asignado en esta actividad
-function trGetPersonasDisponibles(actN){
-  const capNombre = document.getElementById('tr-capataz')?.value.trim() || currentUser?.nombre || '';
-  const todos = listaPersonalCapataces[capNombre] || [];
-  if(!todos.length) return [];
+// Busca la lista de personal del capataz con tolerancia a mayúsculas/espacios
+function getPersonalDelCapataz(){
+  // Prioridad: campo del formulario → nombre del usuario logueado
+  const capCampo  = document.getElementById('tr-capataz')?.value.trim() || '';
+  const capUsuario = currentUser?.nombre?.trim() || '';
+  const candidatos = [capCampo, capUsuario].filter(Boolean);
 
-  // Nombres ya seleccionados en esta actividad
+  for(const cand of candidatos){
+    // Búsqueda exacta primero
+    if(listaPersonalCapataces[cand]) return listaPersonalCapataces[cand];
+    // Búsqueda case-insensitive
+    const match = Object.keys(listaPersonalCapataces).find(
+      k => k.trim().toLowerCase() === cand.toLowerCase()
+    );
+    if(match) return listaPersonalCapataces[match];
+  }
+  return [];
+}
+
+// Devuelve el personal que AÚN NO está asignado en esta actividad
+function trGetPersonasDisponibles(actN){
+  const todos = getPersonalDelCapataz();
+  if(!todos.length) return [];
   const usados = new Set();
   document.querySelectorAll(`[id^="tr-p-sel-${actN}-"]`).forEach(sel=>{
     if(sel.value) usados.add(sel.value);
   });
-
   return todos.filter(p => !usados.has(p.nombre));
 }
 
-// Reconstruye las opciones de TODOS los selects de una actividad
-// para reflejar quién ya fue asignado
+// Reconstruye opciones de todos los selects de una actividad
 function trRefreshPersonaDropdowns(actN){
-  const capNombre = document.getElementById('tr-capataz')?.value.trim() || currentUser?.nombre || '';
-  const todos = listaPersonalCapataces[capNombre] || [];
+  const todos = getPersonalDelCapataz();
   if(!todos.length) return;
-
   document.querySelectorAll(`[id^="tr-p-sel-${actN}-"]`).forEach(sel=>{
-    const seleccionado = sel.value; // guardar el valor actual
-
-    // Nombres usados por OTROS selects de esta actividad
+    const seleccionado = sel.value;
     const usados = new Set();
     document.querySelectorAll(`[id^="tr-p-sel-${actN}-"]`).forEach(otro=>{
       if(otro !== sel && otro.value) usados.add(otro.value);
     });
-
-    // Reconstruir opciones
     sel.innerHTML = '<option value="">Seleccionar trabajador...</option>'
       + todos
           .filter(p => !usados.has(p.nombre) || p.nombre === seleccionado)
@@ -4147,8 +4155,7 @@ function trAddPersona(actN){
   const container = document.getElementById(`tr-hh-list-${actN}`);
   if(!container) return;
 
-  const capNombre = document.getElementById('tr-capataz')?.value.trim() || currentUser?.nombre || '';
-  const personalCap = listaPersonalCapataces[capNombre] || [];
+  const personalCap = getPersonalDelCapataz();
 
   const div = document.createElement('div');
   div.id = `tr-persona-${actN}-${pn}`;
@@ -4199,8 +4206,10 @@ function trAddPersona(actN){
             style="width:64px;margin:0;text-align:right;font-family:'DM Mono',monospace">
         </div>
       </div>
-      <div style="font-size:10px;color:var(--amber);margin-top:5px">
-        ⚠️ Sin personal configurado — contacta al admin para agregar tu cuadrilla
+      <div style="font-size:11px;color:var(--amber);margin-top:6px;background:var(--amber-dim);border:1px solid rgba(245,158,11,.3);border-radius:var(--r);padding:8px 10px;line-height:1.5">
+        ⚠️ Sin personal configurado para este capataz.<br>
+        <span style="font-size:10px;color:var(--text3)">Si ya fue configurado por el admin, toca recargar:</span><br>
+        <button onclick="cargarPersonalCapataces().then(()=>showToast('✔ Personal recargado'))" style="margin-top:5px;background:var(--amber);color:#000;border:none;border-radius:5px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">↺ Recargar personal</button>
       </div>`;
   }
 
