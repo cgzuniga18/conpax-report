@@ -781,6 +781,7 @@ label .req { color:var(--red); }
           <div class="section-body">
             <div id="actividadesContainer"></div>
             <button class="add-btn" onclick="addActividad()">+ Agregar actividad</button>
+            <div id="act-hrsOp-total" style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'DM Mono',monospace;text-align:right"></div>
           </div>
         </div>
       </div>
@@ -2242,11 +2243,17 @@ function addActividad(desc=''){
         <option value="">Seleccionar frente primero...</option>
       </select>
     </div>
-    <div class="field" style="margin:0"><label>Capataz Responsable</label>
+    <div class="field"><label>Capataz Responsable</label>
       <select id="act-capataz-${idx}">
         <option value="">Seleccionar capataz...</option>
         ${capOpts}
       </select>
+    </div>
+    <div class="field" style="margin:0">
+      <label>Horas Operativas <span style="color:var(--text3);font-weight:400;font-size:11px">(HM asignados a esta actividad)</span></label>
+      <input type="number" id="act-hrsOp-${idx}" placeholder="0.0" step="0.5" min="0"
+        style="font-family:'DM Mono',monospace;text-align:right"
+        oninput="calcHrsOpActTotal()">
     </div>`;
   c.appendChild(div);
 }
@@ -2270,7 +2277,23 @@ function maqOnFrenteChange(idx){
   else if(subSel) subSel.innerHTML = '<option value="">Sin sub-frente</option>';
 }
 
-function removeActividad(idx){document.getElementById(`act-card-${idx}`)?.remove();}
+function removeActividad(idx){
+  document.getElementById(`act-card-${idx}`)?.remove();
+  calcHrsOpActTotal();
+}
+
+function calcHrsOpActTotal(){
+  let total=0;
+  document.querySelectorAll('[id^="act-hrsOp-"]').forEach(el=>{
+    total+=parseFloat(el.value)||0;
+  });
+  const ref=document.getElementById('act-hrsOp-total');
+  if(ref){
+    const hrsOp=parseFloat(document.getElementById('maq-hrsOp')?.value)||0;
+    ref.textContent='Total asignado: '+total.toFixed(1)+' hrs'+(hrsOp?' / '+hrsOp.toFixed(1)+' HM Operativos':'');
+    ref.style.color = hrsOp && Math.abs(total-hrsOp)>0.05 ? 'var(--amber)' : 'var(--green)';
+  }
+}
 
 function duplicarActividad(idx){
   const desc=document.getElementById(`act-desc-${idx}`)?.value||'';
@@ -2404,6 +2427,7 @@ function editarRegistro(id){
       setTimeout(()=>{
         const fEl=document.getElementById(`act-frente-${idx}`);if(fEl&&a.frente)fEl.value=a.frente;
         const cEl=document.getElementById(`act-capataz-${idx}`);if(cEl&&a.capataz)cEl.value=a.capataz;
+        const hEl=document.getElementById(`act-hrsOp-${idx}`);if(hEl&&a.hrsOp)hEl.value=a.hrsOp;calcHrsOpActTotal();
       },100);
     });
     // Operatividad
@@ -2456,13 +2480,22 @@ function guardarMaquinaria(){
     const tipoDat = ACTIVIDADES_DATA.find(a=>a.cod===tipo);
     const desc    = document.getElementById(`act-desc-${idx}`)?.value.trim()||tipoDat?.desc||'';
     if(!tipo && !desc) return;
+    const frenteSel = document.getElementById(`act-frente-${idx}`)?.value||'';
+    const subSel    = document.getElementById(`act-subfrente-${idx}`)?.value||'';
+    // Obtener código de ítem de contrato (cuenta de costo) según frente seleccionado
+    const frenteDat = tipoDat?.frentes?.[frenteSel];
+    const itemCod   = Array.isArray(frenteDat) && frenteDat.length ? frenteDat[0].cod : '';
+    const itemUn    = Array.isArray(frenteDat) && frenteDat.length ? frenteDat[0].un  : '';
     actividades.push({
-      descripcion: desc,
-      codigo:      tipo,
+      descripcion:     desc,
+      codigo:          tipo,
       actividadNombre: tipoDat?.desc||'',
-      frente:      document.getElementById(`act-frente-${idx}`)?.value||'',
-      subfrente:   document.getElementById(`act-subfrente-${idx}`)?.value||'',
-      capataz:     document.getElementById(`act-capataz-${idx}`)?.value||'',
+      itemCodigo:      itemCod,
+      itemUnidad:      itemUn,
+      frente:          frenteSel,
+      subfrente:       subSel,
+      capataz:         document.getElementById(`act-capataz-${idx}`)?.value||'',
+      hrsOp:           parseFloat(document.getElementById(`act-hrsOp-${idx}`)?.value)||0,
     });
   });
 
@@ -3166,33 +3199,49 @@ function exportExcel(){
     const h1=['Correlativo','N° Daily Report','Fecha','Turno','Equipo','N° Interno','Patente','Operador',
       'HM Jornada','HM Operativos','Mant. Correctiva','Mant. Preventiva','Fuera de Servicio','En Espera','Sin Operador',
       'Horómetro Ini','Horómetro Fin','Total Horómetro','HM Parcial','HM Acum',
-      'Frente Principal','Capataz Principal','Actividades','Observaciones',
-      'Val. Capataz','Val. Supervisor','Val. Jefe'];
+      'N° Actividad','Código Actividad','Actividad','Código Ítem Contrato','Unidad','Frente','Sub-frente','Capataz','HM Actividad',
+      'Observaciones','Val. Capataz','Val. Supervisor','Val. Jefe'];
     const acumEq={};
-    const r1=recsMaq.map((r,i)=>{
+    const r1=[];
+    let corrMaq=0;
+    recsMaq.forEach(r=>{
+      corrMaq++;
       const key=(r.equipo?.tipo||'')+'_'+(r.equipo?.numero||'');
       if(!acumEq[key])acumEq[key]=0;
       const hm=Number(r.operatividad?.hrsOperativas||0);acumEq[key]+=hm;
-      const pa=r.actividades?.[0];
-      const frente=typeof pa==='object'?pa?.frente||'':pa||'';
-      const capataz=typeof pa==='object'?pa?.capataz||'':'';
-      const acts=(r.actividades||[]).map((a,j)=>`${j+1}. ${typeof a==='string'?a:a?.descripcion||''}`).join(' | ');
       const val=r.validacion||{};
-      return [i+1,r.nDailyReport||i+1,r.fecha||'','Turno '+(r.turno||''),
-        r.equipo?.tipo||'',r.equipo?.numero||'',r.equipo?.patente||'',r.operador?.nombre||'',
-        Number(r.operatividad?.hmJornada||0),Number(r.operatividad?.hrsOperativas||0),
-        Number(r.operatividad?.mantCorrectiva||0),Number(r.operatividad?.mantPreventiva||0),
-        Number(r.operatividad?.fueraServicio||0),Number(r.operatividad?.enEspera||0),Number(r.operatividad?.sinOperador||0),
-        Number(r.horometro?.inicial||0),Number(r.horometro?.final||0),
-        Number((r.horometro?.final||0)-(r.horometro?.inicial||0)),hm,acumEq[key],
-        frente,capataz,acts,r.observaciones||'',
-        val.capataz?.estado||'pendiente',val.supervisor?.estado||'pendiente',val.jefe?.estado||'pendiente'];
+      const acts=r.actividades||[];
+      const actRows=acts.length?acts:[null];
+      actRows.forEach((a,j)=>{
+        const aObj=typeof a==='object'?a:null;
+        r1.push([
+          corrMaq, r.nDailyReport||corrMaq, r.fecha||'', 'Turno '+(r.turno||''),
+          r.equipo?.tipo||'', r.equipo?.numero||'', r.equipo?.patente||'', r.operador?.nombre||'',
+          Number(r.operatividad?.hmJornada||0), Number(r.operatividad?.hrsOperativas||0),
+          Number(r.operatividad?.mantCorrectiva||0), Number(r.operatividad?.mantPreventiva||0),
+          Number(r.operatividad?.fueraServicio||0), Number(r.operatividad?.enEspera||0), Number(r.operatividad?.sinOperador||0),
+          Number(r.horometro?.inicial||0), Number(r.horometro?.final||0),
+          Number((r.horometro?.final||0)-(r.horometro?.inicial||0)), hm, acumEq[key],
+          a ? j+1 : '',
+          aObj?.codigo||'',
+          aObj?.descripcion||(typeof a==='string'?a:'')||'',
+          aObj?.itemCodigo||'',
+          aObj?.itemUnidad||'',
+          aObj?.frente||'',
+          aObj?.subfrente||'',
+          aObj?.capataz||'',
+          aObj?.hrsOp||'',
+          r.observaciones||'',
+          val.capataz?.estado||'pendiente', val.supervisor?.estado||'pendiente', val.jefe?.estado||'pendiente'
+        ]);
+      });
     });
     const ws1=XLSX.utils.aoa_to_sheet([h1,...r1]);
     ws1['!cols']=[{wch:8},{wch:8},{wch:11},{wch:8},{wch:22},{wch:10},{wch:10},{wch:22},
       {wch:10},{wch:12},{wch:13},{wch:13},{wch:13},{wch:11},{wch:11},
-      {wch:13},{wch:13},{wch:13},{wch:10},{wch:10},{wch:30},{wch:22},{wch:45},{wch:30},
-      {wch:12},{wch:14},{wch:12}];
+      {wch:13},{wch:13},{wch:13},{wch:10},{wch:10},
+      {wch:6},{wch:14},{wch:28},{wch:16},{wch:8},{wch:28},{wch:26},{wch:22},{wch:8},
+      {wch:30},{wch:12},{wch:14},{wch:12}];
     XLSX.utils.book_append_sheet(wb,ws1,'Control Maquinaria');
   }
 
