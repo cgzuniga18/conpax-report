@@ -1221,43 +1221,81 @@ const CENTROS_COSTO = [
 
 // ── Lista dinámica de equipos (se carga desde Firebase / admin puede editar) ──
 const EQUIPOS_INICIALES = [
-  {categoria:'Excavadora',    tipo:'30 Toneladas', marca:'Volvo',         modelo:'EC360FL5',    equipo:'RH-94'},
-  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450 LC-8', equipo:'RH-73'},
-  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450 LC-8', equipo:'RH-78'},
-  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450 LC-8', equipo:'RH-88'},
-  {categoria:'Excavadora',    tipo:'38 Toneladas', marca:'Volvo',         modelo:'EC380EL',     equipo:'RH-84'},
-  {categoria:'Excavadora',    tipo:'48 Toneladas', marca:'Volvo',         modelo:'EC480DL',     equipo:'RH-85'},
-  {categoria:'Excavadora',    tipo:'45 Toneladas', marca:'Komatsu',       modelo:'PC-450',      equipo:'RH-72'},
-  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-107'},
-  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-122'},
-  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-118'},
-  {categoria:'Camión Tolva',  tipo:'20 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-102'},
-  {categoria:'Camión Tolva',  tipo:'21 m3',        marca:'Mercedes Benz', modelo:'Actros 4848K',equipo:'CT-114'},
-  {categoria:'Camión Aljibe', tipo:'30 m3',        marca:'Mercedes Benz', modelo:'Arocs 4144K', equipo:'CA-12'},
-  {categoria:'Camión Aljibe', tipo:'30 m3',        marca:'Mercedes Benz', modelo:'Arocs 4144K', equipo:'CA-14'},
-  {categoria:'Camión Aljibe', tipo:'30 m3',        marca:'Mercedes Benz', modelo:'Arocs 4144K', equipo:'CA-10'},
-  {categoria:'Camión Pluma',  tipo:'12 Ton',       marca:'',              modelo:'',            equipo:'Arriendo Externo'},
-  {categoria:'Bulldozer',     tipo:'',             marca:'Komatsu',       modelo:'D275AX-5E0',  equipo:'BUL-10'},
-  {categoria:'Bulldozer',     tipo:'',             marca:'Caterpillar',   modelo:'D8T',         equipo:'BUL-9'},
-  {categoria:'Bulldozer',     tipo:'',             marca:'Caterpillar',   modelo:'D8T',         equipo:'BUL-16'},
-  {categoria:'Motoniveladora',tipo:'',             marca:'John Deere',    modelo:'670P',        equipo:'M-20'},
-  {categoria:'Rodillo Vibrador',tipo:'12 Ton',     marca:'HAMM',          modelo:'HC110i',      equipo:'RA-32'},
-  {categoria:'Retroexcavadora',tipo:'',            marca:'John Deere',    modelo:'310P 4x4',    equipo:'REX-02'},
-  {categoria:'Cargador Frontal',tipo:'',           marca:'John Deere',    modelo:'644P',        equipo:'CF-19'},
-  {categoria:'Martillo Excavadora 45',tipo:'',     marca:'',              modelo:'',            equipo:'Arriendo Externo'},
-  {categoria:'Camión Petróleo',tipo:'5000 lts',    marca:'',              modelo:'',            equipo:'Arriendo Externo'},
-  {categoria:'Camión Lubricador',tipo:'',          marca:'',              modelo:'',            equipo:'Arriendo Externo'},
+  {categoria:'Excavadora',      tipo:'',          marca:'',              modelo:'',             equipo:'RH-72',  patente:'KVWW-97'},
+  {categoria:'Excavadora',      tipo:'',          marca:'',              modelo:'',             equipo:'RH-73',  patente:'KVWV-70'},
+  {categoria:'Excavadora',      tipo:'',          marca:'',              modelo:'',             equipo:'RH-78',  patente:'LRTK-75'},
+  {categoria:'Excavadora',      tipo:'',          marca:'',              modelo:'',             equipo:'RH-84',  patente:'RCXS-16'},
+  {categoria:'Excavadora',      tipo:'',          marca:'',              modelo:'',             equipo:'RH-94',  patente:'VPCT-77'},
+  {categoria:'Camión Tolva',    tipo:'',          marca:'',              modelo:'',             equipo:'CT-107', patente:'RRSD-75'},
+  {categoria:'Camión Tolva',    tipo:'',          marca:'',              modelo:'',             equipo:'CT-114', patente:'RXDX-71'},
+  {categoria:'Camión Tolva',    tipo:'',          marca:'',              modelo:'',             equipo:'CT-118', patente:'RXDX-80'},
+  {categoria:'Camión Tolva',    tipo:'',          marca:'',              modelo:'',             equipo:'CT-138', patente:'SJRG-57'},
+  {categoria:'Camión Aljibe',   tipo:'',          marca:'',              modelo:'',             equipo:'CA-09',  patente:'KWKK-68'},
+  {categoria:'Bulldozer',       tipo:'',          marca:'',              modelo:'',             equipo:'BUL-16', patente:'RSRC-54'},
+  {categoria:'Motoniveladora',  tipo:'',          marca:'John Deere',    modelo:'670P',         equipo:'M-20',   patente:'VPHR-31'},
+  {categoria:'Rodillo Vibrador',tipo:'',          marca:'',              modelo:'',             equipo:'RA-32',  patente:'VPKB-52'},
+  {categoria:'Retroexcavadora', tipo:'',          marca:'John Deere',    modelo:'310P 4x4',     equipo:'REX-02', patente:'VPHV-20'},
+  {categoria:'Cargador Frontal',tipo:'',          marca:'John Deere',    modelo:'644P',         equipo:'CF-19',  patente:'VPHZ'},
+  {categoria:'Camión Combustible',tipo:'',        marca:'',              modelo:'',             equipo:'CMB-01', patente:'TYDK-64'},
+  {categoria:'Camión Pluma',    tipo:'',          marca:'',              modelo:'',             equipo:'CP-01',  patente:'SFSD-39'},
 ];
 
 let listaEquipos = []; // se llena desde Firebase o con los iniciales
 
 const FRENTES = [
-  'OA Camino CAEX PS-OXE','Cruce C Min PS-OXE-c contorno sur',
-  'OA Cam Vehículos Livianos PS-OXE','Canal de Contorno 1 (largo 3,3 km)',
-  'Canal de Contorno 2 (largo 2,3 km)','Canal de Contorno 3 (largo 3,2 km)',
-  'Pisc. Agua de Mar/Plataforma','Cachimba Mina Polo Sur',
-  'Suministro agua Cachimbas','Recepción agua en Cachimbas','Recepción agua en Piscina',
+  'Instalación de Faenas',
+  'OA Camino CAEX PS-OXE',
+  'Cruce C Min PS-OXE-c contorno sur',
+  'OA C Vehículos Livianos PS-OXE',
+  'Canal de Contorno 1 (largo 3,3 km)',
+  'Canal de Contorno 2 (largo 2,3 km)',
+  'Canal de Contorno 3 (largo 3,2 km)',
+  'Piscina Agua de Mar/plataforma anexa',
+  'Cachimba Mina Polo Sur',
+  'Suministro Agua a Cachimbas',
+  'Recepción Agua en Piscina',
 ];
+
+// Sub-frentes por frente de trabajo
+const SUBFRENTES = {
+  'Instalación de Faenas': ['No Aplica'],
+  'OA Camino CAEX PS-OXE': [
+    'OA CAEX PS-OXE (pk 6+470)',
+    'OA CAEX PS-OXE (pk 6+146)',
+    'OA CAEX PS-OXE (pk 6+882)',
+    'OA CAEX PS-OXE (pk 11+653)',
+    'OA CAEX PS-OXE (pk 13+835)',
+    'OA CAEX PS-OXE (Sección Quebrada)',
+  ],
+  'Cruce C Min PS-OXE-c contorno sur': ['No Aplica'],
+  'OA C Vehículos Livianos PS-OXE': [
+    'CVL PS-OXE (pk 5+900) Cuenta Baden',
+    'CVL PS-OXE (pk 3+700) Cuneta Baden',
+    'CVL PS-OXE (pk 14+120) Cuneta Baden',
+    'CVL PS-OXE (pk 22+100) Cuenta Baden',
+    'CVL PS-OXE (pk 1+300) Atravieso',
+    'CVL PS-OXE (pk 3+200) Atravieso',
+    'CVL PS-OXE (pk 5+700) Atravieso',
+    'CVL PS-OXE (pk 10+400) Atravieso',
+  ],
+  'Canal de Contorno 1 (largo 3,3 km)': [
+    'CC1 (pk 0+000 al pk 1+641,5)',
+    'CC1 (pk 1+641,5 al pk 2+285)',
+    'CC1 (pk 2+285,5 al 3+301,2)',
+  ],
+  'Canal de Contorno 2 (largo 2,3 km)': [
+    'CC2 (pk 0+000 al pk 1+100)',
+    'CC2 (pk 1+100 al pk 2+269)',
+  ],
+  'Canal de Contorno 3 (largo 3,2 km)': [
+    'CC3 (pk 0+000 al 1+600)',
+    'CC3 (pk 1+600 al 3+104)',
+  ],
+  'Piscina Agua de Mar/plataforma anexa': ['No Aplica'],
+  'Cachimba Mina Polo Sur': ['No Aplica'],
+  'Suministro Agua a Cachimbas': ['No Aplica'],
+  'Recepción Agua en Piscina': ['No Aplica'],
+};
 
 const TIEMPO_FIELDS = [
   {id:'t-mp-traslado',    grupo:'Mantención Programada',    label:'Traslado a área mantención programada'},
@@ -1700,9 +1738,22 @@ function dashSupervisor(){
 /* ─── DASHBOARD CAPATAZ ─── */
 function dashCapataz(){
   const pending = records.filter(r=>!r.estado?.synced).length;
+  const hoyStr  = new Date().toISOString().slice(0,10);
+  const hoy     = records.filter(r=>r.fecha===hoyStr);
   return `
     ${_dashGreeting()}
     ${_dashKPIs('Mis Registros','Pendientes','Sincronizados')}
+
+    <div class="dv2-section-title">Acción principal</div>
+    <div class="dv2-actions-grid">
+      <div class="dv2-action-card full-width" onclick="showTab('form-terreno')"
+        style="background:linear-gradient(135deg,rgba(34,197,94,.18) 0%,rgba(34,197,94,.08) 100%);
+               border:2.5px solid var(--green);padding:20px 18px;box-shadow:0 0 18px rgba(34,197,94,.15)">
+        <span class="dv2-ac-ico" style="font-size:32px">📋</span>
+        <div class="dv2-ac-title" style="font-size:16px;color:var(--green)">Nuevo Reporte de Terreno</div>
+        <div class="dv2-ac-desc">${hoy.length?'Ya tienes '+hoy.length+' reporte(s) hoy · Crear otro':'Registrar jornada de trabajo de la cuadrilla'}</div>
+      </div>
+    </div>
 
     <div class="dv2-section-title">Accesos rápidos</div>
     <div class="dv2-actions-grid">
@@ -1922,8 +1973,11 @@ function autorellenar(){
         }
       },300);
     }
+    // Auto-rellenar nombre del operador desde el perfil del usuario
+    const opEl = document.getElementById('maq-operador');
+    if(opEl && !opEl.value && currentUser?.nombre) opEl.value = currentUser.nombre;
     if(last.uid && last.uid===currentUser?.uid && last.operador){
-      const el=document.getElementById('maq-operador');if(el&&!el.value)el.value=last.operador;
+      if(opEl&&!opEl.value)opEl.value=last.operador;
     }
     if(last.turno){
       selectedTurno=last.turno;
@@ -1994,6 +2048,9 @@ function onNomenclaturaChange(){
   // Auto-rellenar N° interno
   const nEqEl = document.getElementById('maq-nEquipo');
   if(nEqEl) nEqEl.value = obj.equipo;
+  // Auto-rellenar patente
+  const patEl = document.getElementById('maq-patente');
+  if(patEl && obj.patente) patEl.value = obj.patente.toUpperCase();
   // Limpiar error si había
   document.getElementById('equipoCategoria')?.classList.remove('error');
   document.getElementById('equipoNomenclatura')?.classList.remove('error');
@@ -2013,6 +2070,8 @@ function clearEquipo(){
   if(info) info.style.display='none';
   const nEqEl = document.getElementById('maq-nEquipo');
   if(nEqEl) nEqEl.value='';
+  const patEl2 = document.getElementById('maq-patente');
+  if(patEl2) patEl2.value='';
 }
 
 // Carga equipos desde Firebase; si no hay, precarga los iniciales
@@ -2021,7 +2080,12 @@ async function cargarEquipos(){
     if(isOnline && window._firebaseReady){
       const snap = await window._fsGetDoc(window._fsDoc(window._db,'configuracion','equipos'));
       if(snap.exists() && (snap.data().lista||[]).length){
-        listaEquipos = snap.data().lista;
+        const fromFB = snap.data().lista;
+        // Fusionar con EQUIPOS_INICIALES para completar campos faltantes (ej: patente)
+        listaEquipos = fromFB.map(eq => {
+          const base = EQUIPOS_INICIALES.find(e => e.equipo === eq.equipo && e.categoria === eq.categoria);
+          return base ? Object.assign({}, base, eq, {patente: eq.patente || base.patente || ''}) : eq;
+        });
       } else {
         // Primera vez: subir los iniciales
         listaEquipos = [...EQUIPOS_INICIALES];
@@ -3983,12 +4047,12 @@ function getActFrentesOpts(cod){
   return '<option value="">Seleccionar frente...</option>'+Object.keys(act.frentes).map(f=>`<option value="${f}">${f}</option>`).join('');
 }
 function getActSubfrentesOpts(cod,frente){
-  const act=ACTIVIDADES_DATA.find(a=>a.cod===cod);
-  if(!act||!frente||!act.frentes[frente]||!act.frentes[frente].length) return '<option value="">Sin sub-frente</option>';
-  return '<option value="">Seleccionar sub-frente (ítem)...</option>'+act.frentes[frente].map(sf=>{
-    const item = typeof sf==='object' ? sf : {cod:sf,un:''};
-    return `<option value="${item.cod}" data-un="${item.un}">${item.cod}${item.un?' ('+item.un+')':''}</option>`;
-  }).join('');
+  if(!frente) return '<option value="">Sin sub-frente</option>';
+  // Usar SUBFRENTES geográficos (tramos) según frente seleccionado
+  const subs = SUBFRENTES[frente];
+  if(!subs||!subs.length) return '<option value="">Sin sub-frente</option>';
+  if(subs.length===1 && subs[0]==='No Aplica') return '<option value="No Aplica">No Aplica</option>';
+  return '<option value="">Seleccionar sub-frente...</option>'+subs.map(sf=>'<option value="'+sf+'">'+sf+'</option>').join('');
 }
 
 let trTurno     = 'A';
