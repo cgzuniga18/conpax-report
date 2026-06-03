@@ -779,13 +779,6 @@ label .req { color:var(--red); }
         <div class="section-card">
           <div class="section-head"><span class="section-num">03</span><span class="section-title">Actividades</span></div>
           <div class="section-body">
-            <div class="plantillas-row">
-              <span style="font-size:10px;color:var(--text3);align-self:center;">Plantillas:</span>
-              <button class="plantilla-btn" onclick="usarPlantilla('Carga de material')">🪨 Carga</button>
-              <button class="plantilla-btn" onclick="usarPlantilla('Transporte de material')">🚛 Transporte</button>
-              <button class="plantilla-btn" onclick="usarPlantilla('Excavación de terreno')">⛏ Excavación</button>
-              <button class="plantilla-btn" onclick="usarPlantilla('Compactación de relleno')">🔄 Compactación</button>
-            </div>
             <div id="actividadesContainer"></div>
             <button class="add-btn" onclick="addActividad()">+ Agregar actividad</button>
           </div>
@@ -1208,7 +1201,7 @@ label .req { color:var(--red); }
 // ══════════════════════════════════════
 
 /* ── AUTO-UPDATE ── */
-const VERSION = 'v6.3-20260601';
+const VERSION = 'v6.4-20260602';
 
 /* ── CONSTANTES ── */
 const STORAGE_KEY         = 'conpax_v4_records';
@@ -2149,13 +2142,27 @@ function addActividad(desc=''){
         ${idx>1?`<button class="actividad-del" onclick="removeActividad(${idx})">✕</button>`:''}
       </div>
     </div>
-    <div class="field"><label>Descripción</label>
-      <input type="text" id="act-desc-${idx}" placeholder="Describe la actividad..." value="${desc}">
+    <div class="field">
+      <label>Tipo de Actividad</label>
+      <select id="act-tipo-${idx}" onchange="maqOnActChange(${idx})" style="font-size:14px;font-weight:600;border-color:var(--border2)">
+        <option value="">Seleccionar actividad...</option>
+        ${ACT_OPTS_HTML}
+      </select>
     </div>
-    <div class="field"><label>Frente de Trabajo</label>
-      <select id="act-frente-${idx}">
-        <option value="">Seleccionar frente...</option>
-        ${FRENTES.map(f=>`<option value="${f}">${f}</option>`).join('')}
+    <div class="field">
+      <label>Descripción adicional</label>
+      <input type="text" id="act-desc-${idx}" placeholder="Detalle específico (opcional)..." value="${desc}">
+    </div>
+    <div class="field">
+      <label>Frente de Trabajo</label>
+      <select id="act-frente-${idx}" onchange="maqOnFrenteChange(${idx})">
+        <option value="">Seleccionar actividad primero...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Sub-frente (Ítem)</label>
+      <select id="act-subfrente-${idx}">
+        <option value="">Seleccionar frente primero...</option>
       </select>
     </div>
     <div class="field" style="margin:0"><label>Capataz Responsable</label>
@@ -2167,17 +2174,47 @@ function addActividad(desc=''){
   c.appendChild(div);
 }
 
+function maqOnActChange(idx){
+  const sel = document.getElementById(`act-tipo-${idx}`);
+  const frenteSel = document.getElementById(`act-frente-${idx}`);
+  const subSel    = document.getElementById(`act-subfrente-${idx}`);
+  const cod = sel?.value;
+  if(frenteSel) frenteSel.innerHTML = getActFrentesOpts(cod);
+  if(subSel)    subSel.innerHTML    = '<option value="">Seleccionar frente primero...</option>';
+}
+
+function maqOnFrenteChange(idx){
+  const actSel    = document.getElementById(`act-tipo-${idx}`);
+  const frenteSel = document.getElementById(`act-frente-${idx}`);
+  const subSel    = document.getElementById(`act-subfrente-${idx}`);
+  const cod    = actSel?.value;
+  const frente = frenteSel?.value;
+  if(subSel && cod && frente) subSel.innerHTML = getActSubfrentesOpts(cod, frente);
+  else if(subSel) subSel.innerHTML = '<option value="">Sin sub-frente</option>';
+}
+
 function removeActividad(idx){document.getElementById(`act-card-${idx}`)?.remove();}
 
 function duplicarActividad(idx){
   const desc=document.getElementById(`act-desc-${idx}`)?.value||'';
   addActividad(desc);
-  // Copiar frente y capataz
   const newIdx=actividadCount;
   setTimeout(()=>{
-    const frente=document.getElementById(`act-frente-${idx}`)?.value;
-    const capataz=document.getElementById(`act-capataz-${idx}`)?.value;
-    if(frente){const el=document.getElementById(`act-frente-${newIdx}`);if(el)el.value=frente;}
+    const tipo    = document.getElementById(`act-tipo-${idx}`)?.value;
+    const frente  = document.getElementById(`act-frente-${idx}`)?.value;
+    const sub     = document.getElementById(`act-subfrente-${idx}`)?.value;
+    const capataz = document.getElementById(`act-capataz-${idx}`)?.value;
+    if(tipo){
+      const elT=document.getElementById(`act-tipo-${newIdx}`);
+      if(elT){elT.value=tipo;maqOnActChange(newIdx);}
+    }
+    if(frente){
+      setTimeout(()=>{
+        const elF=document.getElementById(`act-frente-${newIdx}`);
+        if(elF){elF.value=frente;maqOnFrenteChange(newIdx);}
+        if(sub){setTimeout(()=>{const elS=document.getElementById(`act-subfrente-${newIdx}`);if(elS)elS.value=sub;},50);}
+      },50);
+    }
     if(capataz){const el=document.getElementById(`act-capataz-${newIdx}`);if(el)el.value=capataz;}
   },50);
 }
@@ -2335,12 +2372,21 @@ function guardarMaquinaria(){
   const operador=document.getElementById('maq-operador').value.trim();
   if(!operador||!selectedEquipoObj){showToast('⚠️ Faltan datos obligatorios','warn');return;}
 
-  // Recolectar actividades
   const actividades=[];
   document.querySelectorAll('[id^="act-card-"]').forEach(card=>{
     const idx=card.id.split('-')[2];
-    const desc=document.getElementById(`act-desc-${idx}`)?.value.trim();
-    if(desc) actividades.push({descripcion:desc,frente:document.getElementById(`act-frente-${idx}`)?.value||'',capataz:document.getElementById(`act-capataz-${idx}`)?.value||''});
+    const tipo    = document.getElementById(`act-tipo-${idx}`)?.value||'';
+    const tipoDat = ACTIVIDADES_DATA.find(a=>a.cod===tipo);
+    const desc    = document.getElementById(`act-desc-${idx}`)?.value.trim()||tipoDat?.desc||'';
+    if(!tipo && !desc) return;
+    actividades.push({
+      descripcion: desc,
+      codigo:      tipo,
+      actividadNombre: tipoDat?.desc||'',
+      frente:      document.getElementById(`act-frente-${idx}`)?.value||'',
+      subfrente:   document.getElementById(`act-subfrente-${idx}`)?.value||'',
+      capataz:     document.getElementById(`act-capataz-${idx}`)?.value||'',
+    });
   });
 
   // Recolectar tiempos
@@ -2459,8 +2505,9 @@ function renderRecords(){
   if(!list) return;
   const fechaFil=document.getElementById('filterFecha')?.value;
 
-  // Combinar maquinaria + terreno
-  const all=[...records,...recordsTerreno].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  // Combinar maquinaria + terreno (terreno no visible para operadores)
+  const terrenoVisible = currentUser?.rol !== 'operador';
+  const all=[...records, ...(terrenoVisible ? recordsTerreno : [])].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   let filtered=all;
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
   if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
@@ -2601,8 +2648,12 @@ function openModal(id){
     <div class="modal-section-title">Actividades</div>
     ${(r.actividades||[]).map((a,i)=>`
       <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:6px">
-        <div style="font-size:10px;color:var(--blue);margin-bottom:4px;font-family:'DM Mono',monospace">Actividad ${i+1}</div>
-        ${dr('Descripción',a.descripcion||a||'—')}${dr('Frente',a.frente||'—')}${dr('Capataz',a.capataz||'—')}
+        <div style="font-size:10px;color:var(--blue);margin-bottom:4px;font-family:'DM Mono',monospace">Actividad ${i+1}${a.codigo?' · '+a.codigo:''}</div>
+        ${dr('Actividad',a.actividadNombre||a.descripcion||'—')}
+        ${a.descripcion&&a.actividadNombre&&a.descripcion!==a.actividadNombre?dr('Detalle',a.descripcion):''}
+        ${dr('Frente',a.frente||'—')}
+        ${a.subfrente?dr('Sub-frente',a.subfrente):''}
+        ${dr('Capataz',a.capataz||'—')}
       </div>`).join('')}
     ${r.datosEspecificos?`
       <div class="modal-section-title">${r.datosEspecificos.tipo}</div>
@@ -2711,7 +2762,8 @@ function openModalTerreno(id){
           <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 8px;border-radius:4px;font-weight:700">${a.codigo||'ACT.'+(i+1)}</span>
           <span style="font-size:12px;font-weight:600">${a.descripcion||'—'}</span>
         </div>
-        ${a.frente?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px">📍 ${a.frente}</div>`:''}
+        ${a.frente?`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">📍 ${a.frente}</div>`:''}
+        ${a.subfrente?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">🔖 <span style="font-family:'DM Mono',monospace">${a.subfrente}</span></div>`:'<div style="margin-bottom:8px"></div>'}
         ${(a.personal||[]).length?`
           <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">👷 Personal</div>
           ${a.personal.map(p=>`
@@ -2903,6 +2955,8 @@ async function cargarDesdeFirebase(){
 
 async function cargarTerrenoDesdeFirebase(){
   if(!isOnline||!window._firebaseReady)return;
+  // Operadores no tienen acceso a reportes de terreno
+  if(currentUser?.rol==='operador') return;
   try{
     const snap=await window._fsGetDocs(window._fsCollection(window._db,'reportes_terreno'));
     const remote=[];snap.forEach(doc=>remote.push(doc.data()));
@@ -3611,10 +3665,6 @@ function renderPersonalCapataz(){
           <select id="newPersonaCargo">
             <option value="M1">M1</option>
             <option value="M2">M2</option>
-            <option value="M3">M3</option>
-            <option value="Jornal">Jornal</option>
-            <option value="Ayudante">Ayudante</option>
-            <option value="Otro">Otro</option>
           </select>
         </div>
       </div>
@@ -3889,53 +3939,64 @@ function showToast(msg,type){
    v2 — Estructura por Actividad
 ══════════════════════════════════════ */
 
-const ACTIVIDADES_TERRENO = [
-  {cod:'101010', desc:'INSTALACIÓN DE FAENAS'},
-  {cod:'101020', desc:'MOVILIZACIÓN'},
-  {cod:'101030', desc:'DESMOVILIZACIÓN'},
-  {cod:'101040', desc:'MANTENCIÓN I. DE FAENAS'},
-  {cod:'101050', desc:'MUROS DE MAMPOSTERÍA'},
-  {cod:'101060', desc:'ENROCADO CONSOLIDADO'},
-  {cod:'101070', desc:'CAMA DE APOYO'},
-  {cod:'101080', desc:'RELLENO ESTRUCTURAL'},
-  {cod:'101090', desc:'RELLENOS MASIVOS'},
-  {cod:'101100', desc:'BADÉN TIPO FUSIBLE'},
-  {cod:'101110', desc:'TUBERÍAS'},
-  {cod:'101120', desc:'HORMIGÓN G30'},
-  {cod:'101130', desc:'EXCAVACIÓN EN ZANJA'},
-  {cod:'101140', desc:'EXCAVACIÓN EN ROCA'},
-  {cod:'101150', desc:'EXCAVACIÓN S. RIPIABLE'},
-  {cod:'101160', desc:'EXCAVACIÓN SUELO COMÚN'},
-  {cod:'101170', desc:'EXCAVACIÓN MASIVA'},
-  {cod:'101180', desc:'HUELLA DE ACCESO'},
-  {cod:'101190', desc:'CERCADO PERIMETRAL'},
-  {cod:'101200', desc:'CARPETA DE RODADO'},
-  {cod:'101210', desc:'BASE GRANULAR'},
-  {cod:'101220', desc:'ESCARPE Y SUBRASANTE'},
-  {cod:'101230', desc:'SEÑALÉTICA'},
-  {cod:'101240', desc:'GEOMEMBRANA'},
-  {cod:'101250', desc:'LUMINARIA'},
-  {cod:'101260', desc:'CACHIMBA'},
-  {cod:'101270', desc:'AGUA A CACHIMBAS'},
-  {cod:'101280', desc:'AGUA EN PISCINAS'},
+const ACTIVIDADES_DATA = [
+  {cod:"101010",desc:"INSTALACIÓN DE FAENAS",frentes:{"INSTALACION DE FAENAS":[]}},
+  {cod:"101020",desc:"MOVILIZACIÓN",frentes:{"MOVILIZACIÓN":[]}},
+  {cod:"101030",desc:"DESMOVILIZACIÓN",frentes:{"DESMOVILIZACIÓN":[]}},
+  {cod:"101040",desc:"MANTENCIÓN I. DE FAENAS",frentes:{"MANTENCIÓN I. DE FAENAS":[]}},
+  {cod:"101050",desc:"MUROS DE MAMPOSTERÍA",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.1",un:"m3"}],"Cruce Camino Minero PS-OXE con canal contorno sur DMC":[{cod:"2.3.5",un:"m3"}],"Obras de Arte Camino Vehículos Livianos PS-OXE":[{cod:"2.4.4",un:"m3"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.1",un:"m3"}],"Camino a Piscina en Barrio Civico":[{cod:"2.9.3",un:"m3"}]}},
+  {cod:"101060",desc:"ENROCADO CONSOLIDADO",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.2",un:"m3"}],"Cruce Camino Minero PS-OXE con canal contorno sur DMC":[{cod:"2.3.3",un:"m3"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.3",un:"m3"}],"Canal de Contorno 2 (largo 2,3 km)":[{cod:"2.6.2",un:"m3"}],"Canal de Contorno 3 (largo 3,2 km)":[{cod:"2.7.2",un:"m3"}]}},
+  {cod:"101070",desc:"CAMA DE APOYO",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.9",un:"m3"}],"Cruce Camino Minero PS-OXE con canal contorno sur DMC":[{cod:"2.3.2",un:"m3"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.6",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.16",un:"m3"}]}},
+  {cod:"101080",desc:"RELLENO ESTRUCTURAL",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.10",un:"m3"}],"Cruce Camino Minero PS-OXE con canal contorno sur DMC":[{cod:"2.3.4",un:"m3"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.11",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.6",un:"m3"}]}},
+  {cod:"101090",desc:"RELLENOS MASIVOS",frentes:{"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.10",un:"m3"}],"Camino a Piscina en Barrio Civico":[{cod:"2.9.15",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.3",un:"m3"},{cod:"2.10.4",un:"m3"},{cod:"2.10.5",un:"m3"},{cod:"2.10.25",un:"m3"},{cod:"2.10.26",un:"m3"}]}},
+  {cod:"101100",desc:"BADÉN TIPO FUSIBLE",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.3",un:"m"}]}},
+  {cod:"101110",desc:"TUBERÍAS",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.4",un:"m"},{cod:"2.2.5",un:"m"},{cod:"2.2.6",un:"m"}],"Cruce Camino Minero PS-OXE con canal contorno sur DMC":[{cod:"2.3.6",un:"m"}],"Obras de Arte Camino Vehículos Livianos PS-OXE":[{cod:"2.4.1",un:"m"},{cod:"2.4.6",un:"m"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.4",un:"m"}],"Camino a Piscina en Barrio Civico":[{cod:"2.9.10",un:"m"},{cod:"2.9.11",un:"m"}]}},
+  {cod:"101120",desc:"HORMIGÓN G30",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.7",un:"m3"}],"Obras de Arte Camino Vehículos Livianos PS-OXE":[{cod:"2.4.5",un:"m3"}],"Camino a Piscina en Barrio Civico":[{cod:"2.9.16",un:"m3"}]}},
+  {cod:"101130",desc:"EXCAVACIÓN EN ZANJA",frentes:{"Obras de Arte Camino CAEX PS-OXE":[{cod:"2.2.8",un:"m3"}],"Cruce Camino Minero PS-OXE con canal contorno sur DMC":[{cod:"2.3.1",un:"m3"}],"Camino a Piscina en Barrio Civico":[{cod:"2.9.13",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.2",un:"m3"}]}},
+  {cod:"101140",desc:"EXCAVACIÓN EN ROCA",frentes:{"Obras de Arte Camino Vehículos Livianos PS-OXE":[{cod:"2.4.3",un:"ea"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.9",un:"m3"}],"Canal de Contorno 2 (largo 2,3 km)":[{cod:"2.6.6",un:"m3"}],"Canal de Contorno 3 (largo 3,2 km)":[{cod:"2.7.6",un:"m3"}]}},
+  {cod:"101150",desc:"EXCAVACIÓN S. RIPIABLE",frentes:{"Obras de Arte Camino Vehículos Livianos PS-OXE":[{cod:"2.4.2",un:"ea"}],"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.8",un:"m3"}],"Canal de Contorno 2 (largo 2,3 km)":[{cod:"2.6.5",un:"m3"}],"Canal de Contorno 3 (largo 3,2 km)":[{cod:"2.7.5",un:"m3"}],"Camino a Piscina en Barrio Civico":[{cod:"2.9.12",un:"m3"}]}},
+  {cod:"101160",desc:"EXCAVACIÓN SUELO COMÚN",frentes:{"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.7",un:"m3"}],"Canal de Contorno 2 (largo 2,3 km)":[{cod:"2.6.4",un:"m3"}],"Canal de Contorno 3 (largo 3,2 km)":[{cod:"2.7.4",un:"m3"}]}},
+  {cod:"101170",desc:"EXCAVACIÓN MASIVA",frentes:{"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.1",un:"m3"}]}},
+  {cod:"101180",desc:"HUELLA DE ACCESO",frentes:{"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.5",un:"km"}],"Canal de Contorno 2 (largo 2,3 km)":[{cod:"2.6.3",un:"km"}],"Canal de Contorno 3 (largo 3,2 km)":[{cod:"2.7.3",un:"km"}]}},
+  {cod:"101190",desc:"CERCADO PERIMETRAL",frentes:{"Canal de Contorno 1 (largo 3,3 km)":[{cod:"2.5.12",un:"m"}],"Canal de Contorno 2 (largo 2,3 km)":[{cod:"2.6.7",un:"m3"}],"Canal de Contorno 3 (largo 3,2 km)":[{cod:"2.7.7",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.17",un:"m"},{cod:"2.10.18",un:"un"}]}},
+  {cod:"101200",desc:"CARPETA DE RODADO",frentes:{"Camino a Piscina en Barrio Civico":[{cod:"2.9.2",un:"m2"},{cod:"2.9.6",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.20",un:"m3"},{cod:"2.10.24",un:"m2"}]}},
+  {cod:"101210",desc:"BASE GRANULAR",frentes:{"Camino a Piscina en Barrio Civico":[{cod:"2.9.4",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.21",un:"m3"}]}},
+  {cod:"101220",desc:"ESCARPE Y SUBRASANTE",frentes:{"Camino a Piscina en Barrio Civico":[{cod:"2.9.5",un:"m3"}],"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.7",un:"m3"},{cod:"2.10.9",un:"m2"},{cod:"2.10.22",un:"m2"},{cod:"2.10.23",un:"m2"}]}},
+  {cod:"101230",desc:"SEÑALÉTICA",frentes:{"Camino a Piscina en Barrio Civico":[{cod:"2.9.8",un:"ea"},{cod:"2.9.9",un:"ea"}]}},
+  {cod:"101240",desc:"GEOMEMBRANA",frentes:{"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.10",un:"m2"},{cod:"2.10.11",un:"m2"},{cod:"2.10.12",un:"m2"},{cod:"2.10.13",un:"m2"},{cod:"2.10.14",un:"m2"},{cod:"2.10.15",un:"m"}]}},
+  {cod:"101250",desc:"LUMINARIA",frentes:{"Piscina Agua de Mar y plataforma anexa":[{cod:"2.10.19",un:"un"}]}},
+  {cod:"101260",desc:"CACHIMBA",frentes:{"Cachimba Mina Polo Sur":[{cod:"2.11.1",un:"m3"},{cod:"2.11.2",un:"m3"},{cod:"2.11.3",un:"m3"},{cod:"2.11.4",un:"m3"},{cod:"2.11.5",un:"kg"},{cod:"2.11.6",un:"ton"},{cod:"2.11.7",un:"ton"},{cod:"2.11.8",un:"ton"}]}},
+  {cod:"101270",desc:"AGUA A CACHIMBAS",frentes:{"Suministro agua a cachimbas":[{cod:"2.12.1",un:"m"},{cod:"2.12.2",un:"c/u"},{cod:"2.12.3",un:"c/u"},{cod:"2.12.4",un:"c/u"},{cod:"2.12.5",un:"c/u"},{cod:"2.12.6",un:"c/u"},{cod:"2.12.7",un:"c/u"},{cod:"2.12.8",un:"m"},{cod:"2.12.9",un:"c/u"},{cod:"2.12.10",un:"c/u"},{cod:"2.12.11",un:"c/u"},{cod:"2.12.12",un:"m3"},{cod:"2.12.13",un:"m3"},{cod:"2.12.14",un:"m3"},{cod:"2.12.15",un:"kg"},{cod:"2.12.16",un:"kg"},{cod:"2.12.17",un:"c/u"},{cod:"2.12.18",un:"c/u"},{cod:"2.12.19",un:"c/u"},{cod:"2.12.20",un:"c/u"},{cod:"2.12.21",un:"m"},{cod:"2.12.22",un:"m"},{cod:"2.12.23",un:"m"},{cod:"2.12.24",un:"m3"}]}},
+  {cod:"101280",desc:"AGUA EN PISCINAS",frentes:{"Recepción agua en Piscina":[{cod:"2.13.1",un:"m"},{cod:"2.13.2",un:"c/u"},{cod:"2.13.3",un:"c/u"},{cod:"2.13.4",un:"c/u"},{cod:"2.13.5",un:"c/u"},{cod:"2.13.6",un:"c/u"},{cod:"2.13.7",un:"c/u"},{cod:"2.13.8",un:"gl"},{cod:"2.13.9",un:"kg"},{cod:"2.13.10",un:"m3"},{cod:"2.13.11",un:"m3"}]}},
 ];
 
-const ACT_OPTS_HTML = ACTIVIDADES_TERRENO.map(a =>
+// Backward compat alias
+const ACTIVIDADES_TERRENO = ACTIVIDADES_DATA;
+
+const ACT_OPTS_HTML = ACTIVIDADES_DATA.map(a =>
   `<option value="${a.cod}">${a.desc}</option>`
 ).join('');
+
+function getActFrentesOpts(cod){
+  const act=ACTIVIDADES_DATA.find(a=>a.cod===cod);
+  if(!act||!Object.keys(act.frentes).length) return '<option value="">Sin frente específico</option>';
+  return '<option value="">Seleccionar frente...</option>'+Object.keys(act.frentes).map(f=>`<option value="${f}">${f}</option>`).join('');
+}
+function getActSubfrentesOpts(cod,frente){
+  const act=ACTIVIDADES_DATA.find(a=>a.cod===cod);
+  if(!act||!frente||!act.frentes[frente]||!act.frentes[frente].length) return '<option value="">Sin sub-frente</option>';
+  return '<option value="">Seleccionar sub-frente (ítem)...</option>'+act.frentes[frente].map(sf=>{
+    const item = typeof sf==='object' ? sf : {cod:sf,un:''};
+    return `<option value="${item.cod}" data-un="${item.un}">${item.cod}${item.un?' ('+item.un+')':''}</option>`;
+  }).join('');
+}
 
 let trTurno     = 'A';
 let trActCount  = 0;
 let trDisciplinaSel = '';
 let trFrentesSel    = [];
 
-const FRENTES_TERRENO = [
-  'OA Camino CAEX PS-OXE','Cruce C Min PS-OXE-c contorno sur',
-  'OA C Vehículos Livianos PS-OXE','Canal de Contorno 1 (largo 3,3 km)',
-  'Canal de Contorno 2 (largo 2,3 km)','Canal de Contorno 3 (largo 3,2 km)',
-  'Pisc. Agua de Mar/plataforma','Cachimba Mina Polo Sur',
-  'Suministro agua a cachimbas','Recepción agua en Piscina',
-];
+
 
 function initFormTerreno(){
   trActCount=0; trTurno='A'; trDisciplinaSel=''; trFrentesSel=[];
@@ -3991,7 +4052,7 @@ function trAddActividad(){
   const n=trActCount;
 
   const eqOpts=listaEquipos.map(e=>`<option value="${e.equipo}">${e.categoria} · ${e.equipo}</option>`).join('');
-  const cargoOpts=['M1','M2','M3','Jornal','Ayudante','Otro'].map(c=>`<option>${c}</option>`).join('');
+  const cargoOpts=['M1','M2'].map(c=>`<option>${c}</option>`).join('');
 
   const div=document.createElement('div');
   div.id=`tr-act-block-${n}`;
@@ -4018,15 +4079,18 @@ function trAddActividad(){
       </select>
       <!-- Indicador de actividad seleccionada -->
       <div id="tr-act-label-${n}" style="display:none;margin-top:8px;padding:7px 12px;background:var(--amber);border-radius:6px;font-size:12px;font-weight:700;color:#000;text-align:center"></div>
-      <!-- Frente de trabajo por actividad -->
+      <!-- Frente de trabajo por actividad — cascada dinámica -->
       <div style="margin-top:10px">
-        <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">📍 Frente de Trabajo</div>
-        <select id="tr-act-frente-${n}" onchange="trOnFrenteChange(${n})" style="width:100%;margin:0;font-size:13px;background:var(--card2);border:1px solid rgba(245,158,11,.4);border-radius:var(--r);color:var(--text);padding:10px 12px;">
-          <option value="">Seleccionar frente...</option>
-          ${FRENTES_TERRENO.map(f=>`<option value="${f}">${f}</option>`).join('')}
-          <option value="__otro__">Otro (especificar)...</option>
+        <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">📍 Frente de Trabajo</div>
+        <select id="tr-act-frente-${n}" onchange="trOnFrenteChange(${n})"
+          style="width:100%;margin:0 0 6px 0;font-size:13px;background:var(--card2);border:1px solid rgba(245,158,11,.4);border-radius:var(--r);color:var(--text);padding:10px 12px;">
+          <option value="">— Primero selecciona la actividad —</option>
         </select>
-        <input type="text" id="tr-act-frente-otro-${n}" placeholder="Especificar frente..." style="display:none;margin-top:6px;border-color:rgba(245,158,11,.4)">
+        <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;margin-top:4px">📌 Sub-Frente (ítem)</div>
+        <select id="tr-act-subfrente-${n}"
+          style="width:100%;margin:0;font-size:13px;background:var(--card2);border:1px solid rgba(245,158,11,.3);border-radius:var(--r);color:var(--text);padding:10px 12px;">
+          <option value="">— Primero selecciona el frente —</option>
+        </select>
       </div>
     </div>
 
@@ -4068,27 +4132,35 @@ function trAddActividad(){
 function trOnActChange(n){
   const sel   = document.getElementById(`tr-act-sel-${n}`);
   const label = document.getElementById(`tr-act-label-${n}`);
+  const frenteSel = document.getElementById(`tr-act-frente-${n}`);
+  const subfrenteSel = document.getElementById(`tr-act-subfrente-${n}`);
   if(!sel) return;
-  const opt   = sel.options[sel.selectedIndex];
-  const desc  = opt?.value ? opt.text : '';  // text = descripción sin código
-  // Resaltar borde según selección
+  const cod  = sel.value;
+  const desc = cod ? sel.options[sel.selectedIndex].text : '';
   const block = document.getElementById(`tr-act-block-${n}`);
-  if(block) block.style.borderColor = opt?.value ? 'var(--amber)' : 'rgba(245,158,11,.4)';
-  // Mostrar label confirmatorio
-  if(label){
-    if(opt?.value){
-      label.style.display = 'block';
-      label.textContent   = '✔ ' + desc;
-    } else {
-      label.style.display = 'none';
-    }
+  if(block) block.style.borderColor = cod ? 'var(--amber)' : 'rgba(245,158,11,.4)';
+  if(label){ label.style.display = cod?'block':'none'; if(cod) label.textContent='✔ '+desc; }
+  // Actualizar frentes según actividad seleccionada
+  if(frenteSel){
+    frenteSel.innerHTML = getActFrentesOpts(cod);
+    frenteSel.value = '';
+  }
+  if(subfrenteSel){
+    subfrenteSel.innerHTML = '<option value="">Seleccionar frente primero</option>';
   }
 }
 
 function trOnFrenteChange(n){
-  const sel   = document.getElementById(`tr-act-frente-${n}`);
-  const otro  = document.getElementById(`tr-act-frente-otro-${n}`);
-  if(otro) otro.style.display = sel?.value === '__otro__' ? 'block' : 'none';
+  const selAct = document.getElementById(`tr-act-sel-${n}`);
+  const sel    = document.getElementById(`tr-act-frente-${n}`);
+  const subsel = document.getElementById(`tr-act-subfrente-${n}`);
+  const cod    = selAct?.value;
+  const frente = sel?.value;
+  if(subsel){
+    subsel.innerHTML = cod && frente
+      ? getActSubfrentesOpts(cod, frente)
+      : '<option value="">— Primero selecciona el frente —</option>';
+  }
 }
 
 function trRemoveActBlock(n){
@@ -4151,7 +4223,7 @@ function trRefreshPersonaDropdowns(actN){
 function trAddPersona(actN){
   trPersonaCount++;
   const pn = trPersonaCount;
-  const cargoOpts = ['M1','M2','M3','Jornal','Ayudante','Otro'].map(c=>`<option>${c}</option>`).join('');
+  const cargoOpts = ['M1','M2'].map(c=>`<option>${c}</option>`).join('');
   const container = document.getElementById(`tr-hh-list-${actN}`);
   if(!container) return;
 
@@ -4314,10 +4386,9 @@ function confirmarGuardadoTerreno(){
     const codOpt=ACTIVIDADES_TERRENO.find(a=>a.cod===sel?.value);
     if(!sel?.value) return; // actividad sin seleccionar se omite
 
-    // Frente de esta actividad
-    const frenteSel  = document.getElementById(`tr-act-frente-${actN}`)?.value||'';
-    const frenteOtro = document.getElementById(`tr-act-frente-otro-${actN}`)?.value.trim()||'';
-    const frente     = frenteSel === '__otro__' ? frenteOtro : frenteSel;
+    // Frente y sub-frente de esta actividad
+    const frente    = document.getElementById(`tr-act-frente-${actN}`)?.value||'';
+    const subfrente = document.getElementById(`tr-act-subfrente-${actN}`)?.value||'';
 
     // Personal — solo los de esta actividad
     const personal=[];
@@ -4393,7 +4464,7 @@ function confirmarGuardadoTerreno(){
       n:      parseInt(actN),
       codigo: sel.value,
       descripcion: codOpt?.desc||sel.options[sel.selectedIndex]?.text||'',
-      frente,
+      frente, subfrente,
       totalHH: personal.reduce((s,p)=>s+p.hh,0),
       totalHMOp: equipos.reduce((s,e)=>s+e.hmOperativas,0),
       personal, equipos, produccion,
