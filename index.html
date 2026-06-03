@@ -1243,23 +1243,25 @@ const EQUIPOS_INICIALES = [
 let listaEquipos = []; // se llena desde Firebase o con los iniciales
 
 const FRENTES = [
-  'Instalación de Faenas',
-  'OA Camino CAEX PS-OXE',
-  'Cruce C Min PS-OXE-c contorno sur',
-  'OA C Vehículos Livianos PS-OXE',
+  'INSTALACION DE FAENAS',
+  'Obras de Arte Camino CAEX PS-OXE',
+  'Cruce Camino Minero PS-OXE con canal contorno sur DMC',
+  'Obras de Arte Camino Vehículos Livianos PS-OXE',
   'Canal de Contorno 1 (largo 3,3 km)',
   'Canal de Contorno 2 (largo 2,3 km)',
   'Canal de Contorno 3 (largo 3,2 km)',
-  'Piscina Agua de Mar/plataforma anexa',
+  'Piscina Agua de Mar y plataforma anexa',
+  'Camino a Piscina en Barrio Civico',
   'Cachimba Mina Polo Sur',
-  'Suministro Agua a Cachimbas',
-  'Recepción Agua en Piscina',
+  'Suministro agua a cachimbas',
+  'Recepción agua en Piscina',
 ];
 
 // Sub-frentes por frente de trabajo
 const SUBFRENTES = {
-  'Instalación de Faenas': ['No Aplica'],
-  'OA Camino CAEX PS-OXE': [
+  // Claves alineadas con nombres exactos de ACTIVIDADES_DATA
+  'INSTALACION DE FAENAS': ['No Aplica'],
+  'Obras de Arte Camino CAEX PS-OXE': [
     'OA CAEX PS-OXE (pk 6+470)',
     'OA CAEX PS-OXE (pk 6+146)',
     'OA CAEX PS-OXE (pk 6+882)',
@@ -1267,8 +1269,8 @@ const SUBFRENTES = {
     'OA CAEX PS-OXE (pk 13+835)',
     'OA CAEX PS-OXE (Sección Quebrada)',
   ],
-  'Cruce C Min PS-OXE-c contorno sur': ['No Aplica'],
-  'OA C Vehículos Livianos PS-OXE': [
+  'Cruce Camino Minero PS-OXE con canal contorno sur DMC': ['No Aplica'],
+  'Obras de Arte Camino Vehículos Livianos PS-OXE': [
     'CVL PS-OXE (pk 5+900) Cuenta Baden',
     'CVL PS-OXE (pk 3+700) Cuneta Baden',
     'CVL PS-OXE (pk 14+120) Cuneta Baden',
@@ -1291,10 +1293,11 @@ const SUBFRENTES = {
     'CC3 (pk 0+000 al 1+600)',
     'CC3 (pk 1+600 al 3+104)',
   ],
-  'Piscina Agua de Mar/plataforma anexa': ['No Aplica'],
+  'Piscina Agua de Mar y plataforma anexa': ['No Aplica'],
+  'Camino a Piscina en Barrio Civico': ['No Aplica'],
   'Cachimba Mina Polo Sur': ['No Aplica'],
-  'Suministro Agua a Cachimbas': ['No Aplica'],
-  'Recepción Agua en Piscina': ['No Aplica'],
+  'Suministro agua a cachimbas': ['No Aplica'],
+  'Recepción agua en Piscina': ['No Aplica'],
 };
 
 const TIEMPO_FIELDS = [
