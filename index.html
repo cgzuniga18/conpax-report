@@ -1974,6 +1974,13 @@ function autorellenar(){
           if(badge&&txt){badge.style.display='inline-flex';txt.textContent=`${last.equipoObj.categoria} · ${last.equipoObj.equipo}`;}
           if(info){info.style.display='block';info.innerHTML=`🚧 <strong>${last.equipoObj.categoria}</strong>${last.equipoObj.tipo?' · '+last.equipoObj.tipo:''}${last.equipoObj.marca?' · '+last.equipoObj.marca:''}${last.equipoObj.modelo?' · '+last.equipoObj.modelo:''}`;}
           const nEl=document.getElementById('maq-nEquipo');if(nEl)nEl.value=last.equipoObj.equipo;
+          const patEl=document.getElementById('maq-patente');
+          if(patEl && last.equipoObj.patente) patEl.value=last.equipoObj.patente.toUpperCase();
+          else if(patEl){
+            // Buscar patente en listaEquipos por si el objeto guardado no la tiene
+            const found=listaEquipos.find(e=>e.equipo===last.equipoObj.equipo&&e.categoria===last.equipoObj.categoria);
+            if(found&&found.patente) patEl.value=found.patente.toUpperCase();
+          }
         }
       },300);
     }
