@@ -1210,7 +1210,27 @@ const STORAGE_KEY_TERRENO = 'conpax_v4_terreno';
 const DRAFT_KEY           = 'conpax_v4_draft';
 const LASTUSED_KEY        = 'conpax_v4_lastused';
 
-const DISCIPLINAS = ['Movimiento de Tierra','Estructuras','Hormigones','Electricidad','Cañerías','Mecánica'];
+let DISCIPLINAS = [];
+
+// Carga disciplinas desde Google Sheets
+(async () => {
+  const URL_DISCIPLINAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPwSPUFX-KaurafTi-hAkA3q3pC4IYrjbHUbKCCjuQib7-xHyqKEOI0QNNczXmg/pub?gid=1093277463&single=true&output=tsv';
+  try {
+    const response = await fetch(URL_DISCIPLINAS);
+    if (!response.ok) throw new Error('Error al obtener disciplinas: ' + response.status);
+    const texto = await response.text();
+    const lineas = texto.split('\n').filter(l => l.trim() !== '');
+    const encabezados = lineas[0].split('\t').map(h => h.trim());
+    DISCIPLINAS = lineas.slice(1).map(linea => {
+      const valores = linea.split('\t');
+      const hash = {};
+      encabezados.forEach((clave, i) => { hash[clave] = (valores[i] || '').trim(); });
+      return hash;
+    });
+  } catch(e) {
+    console.error('No se pudieron cargar las disciplinas:', e);
+  }
+})();
 
 const CENTROS_COSTO = [
   '2.1 Plataforma Inst. Faena','2.2 OA Camino CAEX PS-OXE',
@@ -2210,12 +2230,21 @@ function usarPlantilla(descripcion){
 }
 
 /* ── ACTIVIDADES ── */
+function refreshCapatacesEnActividades(){
+  // Actualiza todos los selects de capataz en actividades abiertas
+  document.querySelectorAll('[id^="act-capataz-"]').forEach(sel=>{
+    const val=sel.value;
+    sel.innerHTML='<option value="">Seleccionar capataz...</option>'
+      +(listaCapataces.length
+        ?listaCapataces.map(c=>`<option value="${c}">${c}</option>`).join('')
+        :'<option value="" disabled>Sin capataces cargados</option>');
+    if(val) sel.value=val; // preservar selección actual
+  });
+}
+
 function addActividad(desc=''){
   actividadCount++;
   const idx=actividadCount;
-  const capOpts=listaCapataces.length
-    ?listaCapataces.map(c=>`<option value="${c}">${c}</option>`).join('')
-    :'<option value="">Sin capataces cargados</option>';
   const c=document.getElementById('actividadesContainer');
   const div=document.createElement('div');
   div.className='actividad-card';div.id=`act-card-${idx}`;
@@ -2253,7 +2282,6 @@ function addActividad(desc=''){
     <div class="field"><label>Capataz Responsable</label>
       <select id="act-capataz-${idx}">
         <option value="">Seleccionar capataz...</option>
-        ${capOpts}
       </select>
     </div>
     <div class="field" style="margin:0">
@@ -2263,6 +2291,7 @@ function addActividad(desc=''){
         oninput="calcHrsOpActTotal()">
     </div>`;
   c.appendChild(div);
+  refreshCapatacesEnActividades();
 }
 
 function maqOnActChange(idx){
@@ -2624,7 +2653,11 @@ function renderRecords(){
 
   // Combinar maquinaria + terreno (terreno no visible para operadores)
   const terrenoVisible = currentUser?.rol !== 'operador';
-  const all=[...records, ...(terrenoVisible ? recordsTerreno : [])].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const esCapataz = currentUser?.rol === 'capataz';
+  let terrenoFiltrado = terrenoVisible ? recordsTerreno : [];
+  // Capataz solo ve sus propios reportes de terreno
+  if(esCapataz) terrenoFiltrado = terrenoFiltrado.filter(r => r.creadoPor?.uid === currentUser?.uid);
+  const all=[...records, ...terrenoFiltrado].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   let filtered=all;
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
   if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
@@ -3121,7 +3154,22 @@ async function cargarTerrenoDesdeFirebase(){
 
 async function cargarCapataces(){
   if(!isOnline||!window._firebaseReady) return;
-  try{const snap=await window._fsGetDoc(window._fsDoc(window._db,'configuracion','capataces'));if(snap.exists())listaCapataces=snap.data().lista||[];}
+  try{
+    // Fuente 1: lista manual en configuracion/capataces
+    const snap=await window._fsGetDoc(window._fsDoc(window._db,'configuracion','capataces'));
+    const listaManual=snap.exists()?snap.data().lista||[]:[]; 
+    // Fuente 2: usuarios registrados con rol capataz
+    const snapUsers=await window._fsGetDocs(window._fsCollection(window._db,'Usuarios'));
+    const capsUsuarios=[];
+    snapUsers.forEach(doc=>{const d=doc.data();if(d.rol==='capataz'&&d.nombre)capsUsuarios.push(d.nombre);});
+    // Fusionar y deduplicar, ordenar alfabéticamente
+    const merged=[...new Set([...listaManual,...capsUsuarios])].sort();
+    listaCapataces=merged;
+    // Persistir la lista fusionada para que quede consistente
+    if(merged.length>listaManual.length){
+      await window._fsSetDoc(window._fsDoc(window._db,'configuracion','capataces'),{lista:merged});
+    }
+  }
   catch(e){}
 }
 
@@ -3912,6 +3960,7 @@ async function agregarCapataz(){
   if(!nombre){showToast('⚠️ Ingresa el nombre','warn');return;}
   if(listaCapataces.includes(nombre)){showToast('⚠️ Ese capataz ya existe','warn');return;}
   listaCapataces.push(nombre);listaCapataces.sort();
+  refreshCapatacesEnActividades();
   try{await window._fsSetDoc(window._fsDoc(window._db,'configuracion','capataces'),{lista:listaCapataces});input.value='';showToast(`✔ Capataz "${nombre}" agregado`);renderAdminPanel();}
   catch(e){showToast('⚠️ Error guardando','err');listaCapataces.pop();}
 }
@@ -4151,7 +4200,7 @@ function initFormTerreno(){
 
   // Disciplinas
   const dC=document.getElementById('tr-disciplinas');
-  if(dC) dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d}')">${d}</div>`).join('');
+  if(dC) dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d['disciplina']}')">${d['disciplina']}</div>`).join('');
 
   // Frentes — ahora son por actividad, no globales
   // (se eliminó tr-frentes-check del HTML)
