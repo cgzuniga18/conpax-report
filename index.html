@@ -4073,13 +4073,21 @@ async function crearUsuario(){
         let existingUid=null;
         usersSnap.forEach(d=>{ if(d.data().email===email) existingUid=d.id; });
         if(!existingUid){
-          errEl.textContent='RUT ya registrado en Firebase Auth pero sin documento en Firestore. Contacta soporte técnico.';
-          errEl.style.display='block';return;
+          // Doc no existe en Firestore — hacer sign in con la contraseña ingresada
+          // para obtener el UID de la cuenta Auth existente
+          try{
+            const tmpCred = await window._signIn(window._auth, email, pass);
+            uid = tmpCred.user.uid;
+            await window._signOut(window._auth);
+            showToast('⚠️ Cuenta reactivada con contraseña ingresada','warn');
+          }catch(signInErr){
+            errEl.textContent='RUT ya existe en Firebase Auth pero la contraseña no coincide. Intenta con la contraseña anterior del usuario o usa la opción Solicitar acceso para resetearla.';
+            errEl.style.display='block';return;
+          }
+        } else {
+          uid=existingUid;
+          showToast('⚠️ Cuenta reactivada — contraseña anterior sigue vigente','warn');
         }
-        uid=existingUid;
-        // Nota: no podemos cambiar la contraseña desde aquí sin el SDK admin.
-        // El usuario deberá usar la contraseña anterior o solicitar recuperación.
-        showToast('⚠️ Cuenta reactivada — contraseña anterior sigue vigente','warn');
       }else{
         throw authErr;
       }
