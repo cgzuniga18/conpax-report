@@ -1406,6 +1406,19 @@ document.addEventListener('firebaseReady',()=>{
           currentUser={uid:fbUser.uid,rut:d.rut||'',nombre:d.nombre||fbUser.email,rol:d.rol||'operador',capataces:d.capataces||[],turno:d.turno||'A',supervisores:d.supervisores||[]};
         } else currentUser={uid:fbUser.uid,rut:'',nombre:fbUser.email.split('@')[0],rol:'operador',capataces:[]};
       } catch(e){currentUser={uid:fbUser.uid,rut:'',nombre:fbUser.email.split('@')[0],rol:'operador',capataces:[]};}
+
+      // Purgar localStorage: operador solo conserva sus propios registros
+      if(currentUser.rol==='operador'){
+        const _filtrarPropios = (arr) => arr.filter(r =>
+          r.creadoPor?.uid === currentUser.uid ||
+          r.operador?.nombre === currentUser.nombre
+        );
+        const recsFiltrados = _filtrarPropios(records);
+        if(recsFiltrados.length !== records.length){
+          records = recsFiltrados;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        }
+      }
       showApp();
     } else showLoginScreen();
   });
