@@ -781,73 +781,14 @@ label .req { color:var(--red); }
           <div class="section-body">
             <div id="actividadesContainer"></div>
             <button class="add-btn" onclick="addActividad()">+ Agregar actividad</button>
+            <button class="add-btn" id="btn-add-huella"
+              style="display:none;background:var(--amber-dim);border-color:rgba(245,158,11,.4);color:var(--amber);margin-top:6px"
+              onclick="addActividad('',true)">🛣 Agregar Huella</button>
             <div id="act-hrsOp-total" style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'DM Mono',monospace;text-align:right"></div>
           </div>
         </div>
 
-        <!-- Camión Tolva — visible solo cuando selectedEquipo === 'Camión Tolva' -->
-        <div class="especial-card" id="section-tolva">
-          <div class="section-head" style="border-radius:var(--rr) var(--rr) 0 0;border:none;border-bottom:1px solid var(--border);margin:-14px -14px 14px;padding:10px 14px;">
-            <span class="section-num">🚛</span><span class="section-title">Datos Camión Tolva</span>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Cant. de Vueltas</label>
-              <input type="number" id="tolva-vueltas" placeholder="0" min="0">
-            </div>
-            <div class="field">
-              <label>M³ Producidos</label>
-              <input type="number" id="tolva-m3" placeholder="0.0" step="0.1" min="0" style="font-family:'DM Mono',monospace;text-align:right">
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Desde</label>
-              <select id="tolva-desde">
-                <option value="">Seleccionar origen...</option>
-                <option value="Empréstito">Empréstito</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Hasta</label>
-              <select id="tolva-hasta">
-                <option value="">Seleccionar destino...</option>
-                <option value="Botadero">Botadero</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
-        <!-- Camión Aljibe — visible solo cuando selectedEquipo === 'Camión Aljibe' -->
-        <div class="especial-card" id="section-aljibe">
-          <div class="section-head" style="border-radius:var(--rr) var(--rr) 0 0;border:none;border-bottom:1px solid var(--border);margin:-14px -14px 14px;padding:10px 14px;">
-            <span class="section-num">🚒</span><span class="section-title">Datos Camión Aljibe</span>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Cant. de Vueltas</label>
-              <input type="number" id="aljibe-vueltas" placeholder="0" min="0">
-            </div>
-            <div class="field">
-              <label>M³ Producidos</label>
-              <input type="number" id="aljibe-m3" placeholder="0.0" step="0.1" min="0" style="font-family:'DM Mono',monospace;text-align:right">
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Desde</label>
-              <select id="aljibe-desde">
-                <option value="Cachimba">Cachimba</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Hasta</label>
-              <select id="aljibe-hasta">
-                <option value="">Seleccionar destino...</option>
-              </select>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- PASO 4: Operatividad -->
@@ -1411,6 +1352,7 @@ let isOnline         = navigator.onLine;
 let selectedTurno    = 'A';
 let selectedEquipo   = '';   // nomenclatura interna, ej: "RH-94"
 let selectedEquipoObj= null; // objeto completo {categoria,tipo,marca,modelo,equipo}
+let _skipAutorellenarEquipo = false;
 let selectedTipoMaterial = null;
 let actividadCount   = 0;
 let activeFilter     = 'all';
@@ -1607,12 +1549,15 @@ function _dashGreeting(){
 }
 
 function _dashKPIs(labelA, labelB, labelC){
-  const pending = records.filter(r=>!r.estado?.synced).length;
-  const synced  = records.filter(r=> r.estado?.synced).length;
+  const src = (currentUser?.rol==='operador')
+    ? records.filter(r => r.creadoPor?.uid===currentUser.uid || r.operador?.nombre===currentUser.nombre)
+    : records;
+  const pending = src.filter(r=>!r.estado?.synced).length;
+  const synced  = src.filter(r=> r.estado?.synced).length;
   return `
     <div class="dv2-kpi-row">
       <div class="dv2-kpi">
-        <div class="dv2-kpi-val" style="color:var(--blue)" id="dash-total">${records.length}</div>
+        <div class="dv2-kpi-val" style="color:var(--blue)" id="dash-total">${src.length}</div>
         <div class="dv2-kpi-label">${labelA||'Total'}</div>
       </div>
       <div class="dv2-kpi">
@@ -1627,7 +1572,14 @@ function _dashKPIs(labelA, labelB, labelC){
 }
 
 function _dashRecientes(max){
-  const recent = records.slice(0,max||4);
+  const rol = currentUser?.rol;
+  const misRecords = (rol==='operador')
+    ? records.filter(r =>
+        r.creadoPor?.uid === currentUser.uid ||
+        r.operador?.nombre === currentUser.nombre
+      )
+    : records;
+  const recent = misRecords.slice(0,max||4);
   if(!recent.length) return `<div class="no-records"><div class="no-records-ico">📋</div><div class="no-records-txt">Sin reportes aún.</div></div>`;
   return recent.map(r=>{
     const synced = r.estado?.synced;
@@ -1820,9 +1772,13 @@ function dashCapataz(){
 
 /* ─── DASHBOARD OPERADOR ─── */
 function dashOperador(){
-  const pending = records.filter(r=>!r.estado?.synced).length;
+  const misRec  = records.filter(r =>
+    r.creadoPor?.uid === currentUser?.uid ||
+    r.operador?.nombre === currentUser?.nombre
+  );
+  const pending = misRec.filter(r=>!r.estado?.synced).length;
   const hoyStr  = new Date().toISOString().slice(0,10);
-  const hoy     = records.filter(r=>r.fecha===hoyStr);
+  const hoy     = misRec.filter(r=>r.fecha===hoyStr);
   return `
     ${_dashGreeting()}
     ${_dashKPIs('Total','Pendientes','Sincronizados')}
@@ -1853,8 +1809,26 @@ function dashOperador(){
 }
 
 function nuevoReporte(){
+  // Limpiar equipo seleccionado para que el formulario parta desde cero
+  selectedEquipoObj = null;
+  selectedEquipo    = null;
+  // Limpiar UI del selector de equipo
+  const cat = document.getElementById('equipoCategoria');
+  if(cat) cat.value = '';
+  const nomencEl = document.getElementById('equipoNomenclatura');
+  if(nomencEl){ nomencEl.innerHTML = '<option value="">Primero selecciona categoría...</option>'; nomencEl.value = ''; }
+  const badge = document.getElementById('equipoSelectedBadge');
+  if(badge) badge.style.display = 'none';
+  const info = document.getElementById('equipoInfoBox');
+  if(info){ info.style.display = 'none'; info.innerHTML = ''; }
+  const nEl = document.getElementById('maq-nEquipo');
+  if(nEl) nEl.value = '';
+  const patEl = document.getElementById('maq-patente');
+  if(patEl) patEl.value = '';
+  _skipAutorellenarEquipo = true;
   showTab('form-maq');
   wizardInit();
+  _skipAutorellenarEquipo = false;
 }
 
 /* ── WIZARD ── */
@@ -1920,22 +1894,7 @@ function wizardRender(){
     if(tiemposAvanzado) document.getElementById('tiemposAvanzado')?.classList.add('show');
   }
   // Mostrar info del horómetro como referencia
-  if(wizStep===3){
-    // Poblar selects desde/hasta con FRENTES
-    const frentesOpts = FRENTES.map(f=>`<option value="${f}">${f}</option>`).join('');
-    const tolvaDesde = document.getElementById('tolva-desde');
-    const tolvaHasta = document.getElementById('tolva-hasta');
-    const aljibeHasta = document.getElementById('aljibe-hasta');
-    if(tolvaDesde && tolvaDesde.options.length <= 2){
-      tolvaDesde.innerHTML = '<option value="">Seleccionar origen...</option><option value="Empréstito">Empréstito</option>' + frentesOpts;
-    }
-    if(tolvaHasta && tolvaHasta.options.length <= 2){
-      tolvaHasta.innerHTML = '<option value="">Seleccionar destino...</option><option value="Botadero">Botadero</option>' + frentesOpts;
-    }
-    if(aljibeHasta && aljibeHasta.options.length <= 1){
-      aljibeHasta.innerHTML = '<option value="">Seleccionar destino...</option>' + frentesOpts;
-    }
-  }
+  // paso 3: los selects de frentes se generan en addActividad() directamente
   if(wizStep===4){
     const horoIni=parseFloat(document.getElementById('maq-horoIni').value)||0;
     const horoFin=parseFloat(document.getElementById('maq-horoFin').value)||0;
@@ -2017,7 +1976,7 @@ function autoSave(){
 function autorellenar(){
   try{
     const last=JSON.parse(localStorage.getItem(LASTUSED_KEY)||'{}');
-    if(last.equipoObj && !selectedEquipoObj){
+    if(last.equipoObj && !selectedEquipoObj && !_skipAutorellenarEquipo){
       selectedEquipoObj = last.equipoObj;
       selectedEquipo    = last.equipoObj.equipo;
       // Restaurar dropdowns después de que listaEquipos esté cargada
@@ -2127,6 +2086,8 @@ function onNomenclaturaChange(){
   const esCamionAljibe = obj.categoria === 'Camión Aljibe';
   document.getElementById('section-tolva')?.classList.toggle('show', esCamionTolva);
   document.getElementById('section-aljibe')?.classList.toggle('show', esCamionAljibe);
+  const btnHuella = document.getElementById('btn-add-huella');
+  if(btnHuella) btnHuella.style.display = esCamionAljibe ? 'block' : 'none';
 }
 
 function clearEquipo(){
@@ -2279,28 +2240,119 @@ function refreshCapatacesEnActividades(){
   });
 }
 
-function addActividad(desc=''){
+function _actFrentesOpts(incluirCachimba=false, incluirEmprestito=false, incluirBotadero=false){
+  const fOpts = FRENTES.map(f=>`<option value="${f}">${f}</option>`).join('');
+  const pre = [
+    incluirCachimba   ? '<option value="Cachimba">Cachimba</option>'   : '',
+    incluirEmprestito ? '<option value="Empréstito">Empréstito</option>' : '',
+    incluirBotadero   ? '<option value="Botadero">Botadero</option>'   : '',
+  ].join('');
+  return '<option value="">Seleccionar...</option>' + pre + fOpts;
+}
+
+function addActividad(desc='', esHuella=false){
   actividadCount++;
   const idx=actividadCount;
+  const cat = selectedEquipoObj?.categoria || '';
+  const esTolva  = cat === 'Camión Tolva';
+  const esAljibe = cat === 'Camión Aljibe';
   const c=document.getElementById('actividadesContainer');
   const div=document.createElement('div');
   div.className='actividad-card';div.id=`act-card-${idx}`;
+
+  // Campos extra según equipo
+  let extraCampos = '';
+  if(esTolva){
+    extraCampos = `
+    <div class="field-row" style="margin-top:8px">
+      <div class="field" style="margin:0">
+        <label>Cant. Vueltas</label>
+        <input type="number" id="act-vueltas-${idx}" placeholder="0" min="0"
+          style="font-family:'DM Mono',monospace;text-align:right">
+      </div>
+      <div class="field" style="margin:0">
+        <label>M³ Producidos</label>
+        <input type="number" id="act-m3-${idx}" placeholder="0.0" step="0.1" min="0"
+          style="font-family:'DM Mono',monospace;text-align:right">
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:6px">
+      <div class="field" style="margin:0">
+        <label>Desde</label>
+        <select id="act-desde-${idx}">
+          ${_actFrentesOpts(false,true,false)}
+        </select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Hasta</label>
+        <select id="act-hasta-${idx}">
+          ${_actFrentesOpts(false,false,true)}
+        </select>
+      </div>
+    </div>`;
+  } else if(esAljibe){
+    const desdeOpts = esHuella
+      ? _actFrentesOpts(true,false,false)   // Huella: Cachimba + frentes
+      : '<option value="Cachimba">Cachimba</option>'; // Normal: solo Cachimba
+    extraCampos = `
+    <div class="field-row" style="margin-top:8px">
+      <div class="field" style="margin:0">
+        <label>Cant. Vueltas</label>
+        <input type="number" id="act-vueltas-${idx}" placeholder="0" min="0"
+          style="font-family:'DM Mono',monospace;text-align:right">
+      </div>
+      <div class="field" style="margin:0">
+        <label>M³ Producidos</label>
+        <input type="number" id="act-m3-${idx}" placeholder="0.0" step="0.1" min="0"
+          style="font-family:'DM Mono',monospace;text-align:right">
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:6px">
+      <div class="field" style="margin:0">
+        <label>Desde</label>
+        <select id="act-desde-${idx}">${desdeOpts}</select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Hasta</label>
+        <select id="act-hasta-${idx}">
+          ${_actFrentesOpts(false,false,false)}
+        </select>
+      </div>
+    </div>`;
+  } else {
+    extraCampos = `
+    <div class="field" style="margin-top:8px;margin-bottom:0">
+      <label>M³ Producidos</label>
+      <input type="number" id="act-m3-${idx}" placeholder="0.0" step="0.1" min="0"
+        style="font-family:'DM Mono',monospace;text-align:right">
+    </div>`;
+  }
+
+  // Selector de actividad: aljibe huella tiene tipo fijo
+  const tipoField = esHuella
+    ? `<div class="field">
+        <label>Tipo de Actividad</label>
+        <div style="background:var(--amber-dim);border:1px solid rgba(245,158,11,.3);border-radius:var(--r);padding:9px 12px;font-size:13px;font-weight:700;color:var(--amber)">🛣 Huella</div>
+        <input type="hidden" id="act-tipo-${idx}" value="HUELLA">
+       </div>`
+    : `<div class="field">
+        <label>Tipo de Actividad</label>
+        <select id="act-tipo-${idx}" onchange="maqOnActChange(${idx})" style="font-size:14px;font-weight:600;border-color:var(--border2)">
+          <option value="">Seleccionar actividad...</option>
+          ${ACT_OPTS_HTML}
+        </select>
+       </div>`;
+
   div.innerHTML=`
     <div class="actividad-card-head">
-      <span class="actividad-card-num">Actividad ${idx}</span>
+      <span class="actividad-card-num">${esHuella?'🛣 Huella':'Actividad '+idx}</span>
       <div style="display:flex;gap:6px;align-items:center">
-        <button class="act-dup-btn" onclick="duplicarActividad(${idx})">⧉ Duplicar</button>
+        ${!esHuella?`<button class="act-dup-btn" onclick="duplicarActividad(${idx})">⧉ Duplicar</button>`:''}
         ${idx>1?`<button class="actividad-del" onclick="removeActividad(${idx})">✕</button>`:''}
       </div>
     </div>
-    <div class="field">
-      <label>Tipo de Actividad</label>
-      <select id="act-tipo-${idx}" onchange="maqOnActChange(${idx})" style="font-size:14px;font-weight:600;border-color:var(--border2)">
-        <option value="">Seleccionar actividad...</option>
-        ${ACT_OPTS_HTML}
-      </select>
-    </div>
-    <div class="field">
+    ${tipoField}
+    ${!esHuella?`<div class="field">
       <label>Descripción adicional</label>
       <input type="text" id="act-desc-${idx}" placeholder="Detalle específico (opcional)..." value="${desc}">
     </div>
@@ -2315,7 +2367,7 @@ function addActividad(desc=''){
       <select id="act-subfrente-${idx}">
         <option value="">Seleccionar frente primero...</option>
       </select>
-    </div>
+    </div>`:''}
     <div class="field"><label>Capataz Responsable</label>
       <select id="act-capataz-${idx}">
         <option value="">Seleccionar capataz...</option>
@@ -2327,11 +2379,7 @@ function addActividad(desc=''){
         style="font-family:'DM Mono',monospace;text-align:right"
         oninput="calcHrsOpActTotal()">
     </div>
-    <div class="field" style="margin-top:8px;margin-bottom:0">
-      <label>M³ Producidos</label>
-      <input type="number" id="act-m3-${idx}" placeholder="0.0" step="0.1" min="0"
-        style="font-family:'DM Mono',monospace;text-align:right">
-    </div>`;
+    ${extraCampos}`;
   c.appendChild(div);
   refreshCapatacesEnActividades();
 }
@@ -2507,6 +2555,11 @@ function editarRegistro(id){
         const cEl=document.getElementById(`act-capataz-${idx}`);if(cEl&&a.capataz)cEl.value=a.capataz;
         const hEl=document.getElementById(`act-hrsOp-${idx}`);if(hEl&&a.hrsOp)hEl.value=a.hrsOp;
         const mEl=document.getElementById(`act-m3-${idx}`);if(mEl&&a.m3)mEl.value=a.m3;
+        const vEl=document.getElementById(`act-vueltas-${idx}`);if(vEl&&a.vueltas)vEl.value=a.vueltas;
+        setTimeout(()=>{
+          const dEl=document.getElementById(`act-desde-${idx}`);if(dEl&&a.desde)dEl.value=a.desde;
+          const hEl2=document.getElementById(`act-hasta-${idx}`);if(hEl2&&a.hasta)hEl2.value=a.hasta;
+        },100);
         calcHrsOpActTotal();
       },100);
     });
@@ -2523,21 +2576,7 @@ function editarRegistro(id){
     // Observaciones
     const obsEl=document.getElementById('maq-observaciones');if(obsEl)obsEl.value=r.observaciones||'';
     // Datos especiales
-    if(r.datosEspecificos?.tipo==='Camión Tolva'){
-      setTimeout(()=>{
-        const tv=document.getElementById('tolva-vueltas');if(tv)tv.value=r.datosEspecificos.vueltas||0;
-        const tm=document.getElementById('tolva-m3');if(tm)tm.value=r.datosEspecificos.m3||0;
-        const td=document.getElementById('tolva-desde');if(td&&r.datosEspecificos.desde)td.value=r.datosEspecificos.desde;
-        const th=document.getElementById('tolva-hasta');if(th&&r.datosEspecificos.hasta)th.value=r.datosEspecificos.hasta;
-      },200);
-    }
-    if(r.datosEspecificos?.tipo==='Camión Aljibe'){
-      setTimeout(()=>{
-        const av=document.getElementById('aljibe-vueltas');if(av)av.value=r.datosEspecificos.vueltas||0;
-        const am=document.getElementById('aljibe-m3');if(am)am.value=r.datosEspecificos.m3||0;
-        const ah=document.getElementById('aljibe-hasta');if(ah&&r.datosEspecificos.hasta)ah.value=r.datosEspecificos.hasta;
-      },200);
-    }
+    // Datos específicos de tolva/aljibe ahora van en cada actividad — no hay campos globales
     showToast('✏️ Editando registro — modifica y guarda');
   },100);
 }
@@ -2567,8 +2606,12 @@ function guardarMaquinaria(){
       frente:          frenteSel,
       subfrente:       subSel,
       capataz:         document.getElementById(`act-capataz-${idx}`)?.value||'',
-      hrsOp:           parseFloat(document.getElementById(`act-hrsOp-${idx}`)?.value)||0,
-      m3:              parseFloat(document.getElementById(`act-m3-${idx}`)?.value)||0,
+      hrsOp:   parseFloat(document.getElementById(`act-hrsOp-${idx}`)?.value)||0,
+      m3:      parseFloat(document.getElementById(`act-m3-${idx}`)?.value)||0,
+      vueltas: parseFloat(document.getElementById(`act-vueltas-${idx}`)?.value)||0,
+      desde:   document.getElementById(`act-desde-${idx}`)?.value||'',
+      hasta:   document.getElementById(`act-hasta-${idx}`)?.value||'',
+      esHuella: document.getElementById(`act-tipo-${idx}`)?.value==='HUELLA',
     });
   });
 
@@ -2578,23 +2621,9 @@ function guardarMaquinaria(){
 
   // Datos especiales
   let datosEspecificos=null;
-  if(selectedEquipo==='Camión Tolva'){
-    datosEspecificos={
-      tipo:'Camión Tolva',
-      vueltas: parseFloat(document.getElementById('tolva-vueltas').value)||0,
-      m3:      parseFloat(document.getElementById('tolva-m3').value)||0,
-      desde:   document.getElementById('tolva-desde').value,
-      hasta:   document.getElementById('tolva-hasta').value,
-    };
-  }else if(selectedEquipo==='Camión Aljibe'){
-    datosEspecificos={
-      tipo:'Camión Aljibe',
-      vueltas: parseFloat(document.getElementById('aljibe-vueltas').value)||0,
-      m3:      parseFloat(document.getElementById('aljibe-m3').value)||0,
-      desde:   document.getElementById('aljibe-desde').value||'Cachimba',
-      hasta:   document.getElementById('aljibe-hasta').value,
-    };
-  }
+  // Datos especiales ahora van embebidos en cada actividad (vueltas/desde/hasta)
+  if(selectedEquipo==='Camión Tolva')   datosEspecificos={tipo:'Camión Tolva'};
+  else if(selectedEquipo==='Camión Aljibe') datosEspecificos={tipo:'Camión Aljibe'};
 
   const record={
     id:Date.now(),tipo:'maquinaria',timestamp:new Date().toISOString(),
@@ -2664,7 +2693,7 @@ function guardarMaquinaria(){
 function resetForm(){
   ['maq-operador','maq-nEquipo','maq-patente','maq-horoIni','maq-horoFin','maq-kmIni','maq-kmFin',
    'maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador','maq-colacionTraslado',
-   'maq-observaciones','tolva-vueltas','tolva-m3','aljibe-vueltas','aljibe-m3',
+   'maq-observaciones',
    't-simple-mant','t-simple-espera','t-simple-demoras'
   ].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   TIEMPO_FIELDS.forEach(f=>{const el=document.getElementById(f.id);if(el)el.value='';});
@@ -2702,9 +2731,14 @@ function renderRecords(){
   const terrenoVisible = currentUser?.rol !== 'operador';
   const all=[...records, ...(terrenoVisible ? recordsTerreno : [])].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
 
-  // Capataz solo ve sus propios registros
+  // Filtro por rol: cada usuario solo ve sus propios registros
   let filtered = all;
-  if(currentUser?.rol === 'capataz'){
+  if(currentUser?.rol === 'operador'){
+    filtered = all.filter(r =>
+      r.creadoPor?.uid === currentUser.uid ||
+      r.operador?.nombre === currentUser.nombre
+    );
+  } else if(currentUser?.rol === 'capataz'){
     filtered = all.filter(r =>
       r.creadoPor?.uid === currentUser.uid ||
       r.capataz === currentUser.nombre
@@ -2849,19 +2883,17 @@ function openModal(id){
     <div class="modal-section-title">Actividades</div>
     ${(r.actividades||[]).map((a,i)=>`
       <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:6px">
-        <div style="font-size:10px;color:var(--blue);margin-bottom:4px;font-family:'DM Mono',monospace">Actividad ${i+1}${a.codigo?' · '+a.codigo:''}</div>
-        ${dr('Actividad',a.actividadNombre||a.descripcion||'—')}
+        <div style="font-size:10px;color:${a.esHuella?'var(--amber)':'var(--blue)'};margin-bottom:4px;font-family:'DM Mono',monospace">${a.esHuella?'🛣 Huella':'Actividad '+(i+1)+(a.codigo?' · '+a.codigo:'')}</div>
+        ${!a.esHuella?dr('Actividad',a.actividadNombre||a.descripcion||'—'):''}
         ${a.descripcion&&a.actividadNombre&&a.descripcion!==a.actividadNombre?dr('Detalle',a.descripcion):''}
-        ${dr('Frente',a.frente||'—')}
-        ${a.subfrente?dr('Sub-frente',a.subfrente):''}
+        ${!a.esHuella&&a.frente?dr('Frente',a.frente):''}
+        ${!a.esHuella&&a.subfrente?dr('Sub-frente',a.subfrente):''}
+        ${a.desde?dr('Desde',a.desde):''}
+        ${a.hasta?dr('Hasta',a.hasta):''}
+        ${a.vueltas?dr('Vueltas',a.vueltas):''}
+        ${a.m3?dr('M³',a.m3):''}
         ${dr('Capataz',a.capataz||'—')}
       </div>`).join('')}
-    ${r.datosEspecificos?`
-      <div class="modal-section-title">${r.datosEspecificos.tipo}</div>
-      ${r.datosEspecificos.desde?dr('Desde',r.datosEspecificos.desde):''}
-      ${r.datosEspecificos.hasta?dr('Hasta',r.datosEspecificos.hasta):''}
-      ${dr('Vueltas',r.datosEspecificos.vueltas||0)}${dr('M³',r.datosEspecificos.m3||0)}
-    `:''}
     ${r.observaciones?`<div class="modal-section-title">Observaciones</div><div style="font-size:13px;color:var(--text2);padding:8px 0;line-height:1.6">${r.observaciones}</div>`:''}
     <div class="modal-section-title">Metadata</div>
     ${dr('Creado por',r.creadoPor?.nombre||'—')}${dr('Timestamp',new Date(r.timestamp).toLocaleString('es-CL'))}
@@ -3118,7 +3150,10 @@ async function cargarDesdeFirebase(){
     let filtered=remote;
 
     if(rol==='operador'){
-      filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);
+      filtered=remote.filter(r=>
+        r.creadoPor?.uid===currentUser.uid ||
+        r.operador?.nombre===currentUser.nombre
+      );
     } else if(rol==='capataz'){
       filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);
     } else if(rol==='supervisor'){
