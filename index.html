@@ -784,6 +784,70 @@ label .req { color:var(--red); }
             <div id="act-hrsOp-total" style="font-size:11px;color:var(--text3);margin-top:8px;font-family:'DM Mono',monospace;text-align:right"></div>
           </div>
         </div>
+
+        <!-- Camión Tolva — visible solo cuando selectedEquipo === 'Camión Tolva' -->
+        <div class="especial-card" id="section-tolva">
+          <div class="section-head" style="border-radius:var(--rr) var(--rr) 0 0;border:none;border-bottom:1px solid var(--border);margin:-14px -14px 14px;padding:10px 14px;">
+            <span class="section-num">🚛</span><span class="section-title">Datos Camión Tolva</span>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Cant. de Vueltas</label>
+              <input type="number" id="tolva-vueltas" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>M³ Producidos</label>
+              <input type="number" id="tolva-m3" placeholder="0.0" step="0.1" min="0" style="font-family:'DM Mono',monospace;text-align:right">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Desde</label>
+              <select id="tolva-desde">
+                <option value="">Seleccionar origen...</option>
+                <option value="Empréstito">Empréstito</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Hasta</label>
+              <select id="tolva-hasta">
+                <option value="">Seleccionar destino...</option>
+                <option value="Botadero">Botadero</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camión Aljibe — visible solo cuando selectedEquipo === 'Camión Aljibe' -->
+        <div class="especial-card" id="section-aljibe">
+          <div class="section-head" style="border-radius:var(--rr) var(--rr) 0 0;border:none;border-bottom:1px solid var(--border);margin:-14px -14px 14px;padding:10px 14px;">
+            <span class="section-num">🚒</span><span class="section-title">Datos Camión Aljibe</span>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Cant. de Vueltas</label>
+              <input type="number" id="aljibe-vueltas" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>M³ Producidos</label>
+              <input type="number" id="aljibe-m3" placeholder="0.0" step="0.1" min="0" style="font-family:'DM Mono',monospace;text-align:right">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Desde</label>
+              <select id="aljibe-desde">
+                <option value="Cachimba">Cachimba</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Hasta</label>
+              <select id="aljibe-hasta">
+                <option value="">Seleccionar destino...</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- PASO 4: Operatividad -->
@@ -908,41 +972,7 @@ label .req { color:var(--red); }
           </div>
         </div>
 
-        <!-- Camión Tolva -->
-        <div class="especial-card" id="section-tolva">
-          <div class="section-head" style="border-radius:var(--rr) var(--rr) 0 0;border:none;border-bottom:1px solid var(--border);margin:-14px -14px 14px;padding:10px 14px;">
-            <span class="section-num">🚛</span><span class="section-title">Datos Camión Tolva</span>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:12px">
-            <button class="turno-btn" id="tolva-relleno-btn" onclick="selectTipoMaterial('relleno')">Material de Relleno</button>
-            <button class="turno-btn" id="tolva-excav-btn" onclick="selectTipoMaterial('excavacion')">Material de Excavación</button>
-          </div>
-          <div id="tolva-relleno" style="display:none">
-            <div class="field"><label>Nombre o Pozo de Extracción</label><input type="text" id="tolva-pozo" placeholder="Nombre del pozo"></div>
-            <div class="field-row">
-              <div class="field"><label>Cant. de Vueltas</label><input type="number" id="tolva-vueltas-rell" placeholder="0"></div>
-              <div class="field"><label>M³ de Relleno</label><input type="number" id="tolva-m3-rell" placeholder="0.0" step="0.1"></div>
-            </div>
-          </div>
-          <div id="tolva-excavacion" style="display:none">
-            <div class="field-row">
-              <div class="field"><label>Cant. de Vueltas</label><input type="number" id="tolva-vueltas-excav" placeholder="0"></div>
-              <div class="field"><label>M³ de Material</label><input type="number" id="tolva-m3-excav" placeholder="0.0" step="0.1"></div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Camión Aljibe -->
-        <div class="especial-card" id="section-aljibe">
-          <div class="section-head" style="border-radius:var(--rr) var(--rr) 0 0;border:none;border-bottom:1px solid var(--border);margin:-14px -14px 14px;padding:10px 14px;">
-            <span class="section-num">🚒</span><span class="section-title">Datos Camión Aljibe</span>
-          </div>
-          <div class="field"><label>Nombre Cachimba</label><input type="text" id="aljibe-cachimba" placeholder="Nombre de la cachimba"></div>
-          <div class="field-row">
-            <div class="field"><label>Cant. de Vueltas</label><input type="number" id="aljibe-vueltas" placeholder="0"></div>
-            <div class="field"><label>M³</label><input type="number" id="aljibe-m3" placeholder="0.0" step="0.1"></div>
-          </div>
-        </div>
 
         <!-- Observaciones -->
         <div class="section-card">
@@ -1890,6 +1920,22 @@ function wizardRender(){
     if(tiemposAvanzado) document.getElementById('tiemposAvanzado')?.classList.add('show');
   }
   // Mostrar info del horómetro como referencia
+  if(wizStep===3){
+    // Poblar selects desde/hasta con FRENTES
+    const frentesOpts = FRENTES.map(f=>`<option value="${f}">${f}</option>`).join('');
+    const tolvaDesde = document.getElementById('tolva-desde');
+    const tolvaHasta = document.getElementById('tolva-hasta');
+    const aljibeHasta = document.getElementById('aljibe-hasta');
+    if(tolvaDesde && tolvaDesde.options.length <= 2){
+      tolvaDesde.innerHTML = '<option value="">Seleccionar origen...</option><option value="Empréstito">Empréstito</option>' + frentesOpts;
+    }
+    if(tolvaHasta && tolvaHasta.options.length <= 2){
+      tolvaHasta.innerHTML = '<option value="">Seleccionar destino...</option><option value="Botadero">Botadero</option>' + frentesOpts;
+    }
+    if(aljibeHasta && aljibeHasta.options.length <= 1){
+      aljibeHasta.innerHTML = '<option value="">Seleccionar destino...</option>' + frentesOpts;
+    }
+  }
   if(wizStep===4){
     const horoIni=parseFloat(document.getElementById('maq-horoIni').value)||0;
     const horoFin=parseFloat(document.getElementById('maq-horoFin').value)||0;
@@ -2280,6 +2326,11 @@ function addActividad(desc=''){
       <input type="number" id="act-hrsOp-${idx}" placeholder="0.0" step="0.5" min="0"
         style="font-family:'DM Mono',monospace;text-align:right"
         oninput="calcHrsOpActTotal()">
+    </div>
+    <div class="field" style="margin-top:8px;margin-bottom:0">
+      <label>M³ Producidos</label>
+      <input type="number" id="act-m3-${idx}" placeholder="0.0" step="0.1" min="0"
+        style="font-family:'DM Mono',monospace;text-align:right">
     </div>`;
   c.appendChild(div);
   refreshCapatacesEnActividades();
@@ -2454,7 +2505,9 @@ function editarRegistro(id){
       setTimeout(()=>{
         const fEl=document.getElementById(`act-frente-${idx}`);if(fEl&&a.frente)fEl.value=a.frente;
         const cEl=document.getElementById(`act-capataz-${idx}`);if(cEl&&a.capataz)cEl.value=a.capataz;
-        const hEl=document.getElementById(`act-hrsOp-${idx}`);if(hEl&&a.hrsOp)hEl.value=a.hrsOp;calcHrsOpActTotal();
+        const hEl=document.getElementById(`act-hrsOp-${idx}`);if(hEl&&a.hrsOp)hEl.value=a.hrsOp;
+        const mEl=document.getElementById(`act-m3-${idx}`);if(mEl&&a.m3)mEl.value=a.m3;
+        calcHrsOpActTotal();
       },100);
     });
     // Operatividad
@@ -2471,26 +2524,18 @@ function editarRegistro(id){
     const obsEl=document.getElementById('maq-observaciones');if(obsEl)obsEl.value=r.observaciones||'';
     // Datos especiales
     if(r.datosEspecificos?.tipo==='Camión Tolva'){
-      selectedTipoMaterial=r.datosEspecificos.material==='Relleno'?'relleno':'excavacion';
       setTimeout(()=>{
-        document.getElementById('section-tolva')?.classList.add('show');
-        selectTipoMaterial(selectedTipoMaterial);
-        if(selectedTipoMaterial==='relleno'){
-          const el=document.getElementById('tolva-pozo');if(el)el.value=r.datosEspecificos.pozo||'';
-          const v=document.getElementById('tolva-vueltas-rell');if(v)v.value=r.datosEspecificos.vueltas||'';
-          const m=document.getElementById('tolva-m3-rell');if(m)m.value=r.datosEspecificos.m3||'';
-        }else{
-          const v=document.getElementById('tolva-vueltas-excav');if(v)v.value=r.datosEspecificos.vueltas||'';
-          const m=document.getElementById('tolva-m3-excav');if(m)m.value=r.datosEspecificos.m3||'';
-        }
+        const tv=document.getElementById('tolva-vueltas');if(tv)tv.value=r.datosEspecificos.vueltas||0;
+        const tm=document.getElementById('tolva-m3');if(tm)tm.value=r.datosEspecificos.m3||0;
+        const td=document.getElementById('tolva-desde');if(td&&r.datosEspecificos.desde)td.value=r.datosEspecificos.desde;
+        const th=document.getElementById('tolva-hasta');if(th&&r.datosEspecificos.hasta)th.value=r.datosEspecificos.hasta;
       },200);
     }
     if(r.datosEspecificos?.tipo==='Camión Aljibe'){
       setTimeout(()=>{
-        document.getElementById('section-aljibe')?.classList.add('show');
-        const c=document.getElementById('aljibe-cachimba');if(c)c.value=r.datosEspecificos.cachimba||'';
-        const v=document.getElementById('aljibe-vueltas');if(v)v.value=r.datosEspecificos.vueltas||'';
-        const m=document.getElementById('aljibe-m3');if(m)m.value=r.datosEspecificos.m3||'';
+        const av=document.getElementById('aljibe-vueltas');if(av)av.value=r.datosEspecificos.vueltas||0;
+        const am=document.getElementById('aljibe-m3');if(am)am.value=r.datosEspecificos.m3||0;
+        const ah=document.getElementById('aljibe-hasta');if(ah&&r.datosEspecificos.hasta)ah.value=r.datosEspecificos.hasta;
       },200);
     }
     showToast('✏️ Editando registro — modifica y guarda');
@@ -2523,6 +2568,7 @@ function guardarMaquinaria(){
       subfrente:       subSel,
       capataz:         document.getElementById(`act-capataz-${idx}`)?.value||'',
       hrsOp:           parseFloat(document.getElementById(`act-hrsOp-${idx}`)?.value)||0,
+      m3:              parseFloat(document.getElementById(`act-m3-${idx}`)?.value)||0,
     });
   });
 
@@ -2533,12 +2579,21 @@ function guardarMaquinaria(){
   // Datos especiales
   let datosEspecificos=null;
   if(selectedEquipo==='Camión Tolva'){
-    if(!selectedTipoMaterial){showToast('⚠️ Selecciona tipo de material (Tolva)','warn');return;}
-    datosEspecificos=selectedTipoMaterial==='relleno'
-      ?{tipo:'Camión Tolva',material:'Relleno',pozo:document.getElementById('tolva-pozo').value.trim(),vueltas:parseFloat(document.getElementById('tolva-vueltas-rell').value)||0,m3:parseFloat(document.getElementById('tolva-m3-rell').value)||0}
-      :{tipo:'Camión Tolva',material:'Excavación',vueltas:parseFloat(document.getElementById('tolva-vueltas-excav').value)||0,m3:parseFloat(document.getElementById('tolva-m3-excav').value)||0};
+    datosEspecificos={
+      tipo:'Camión Tolva',
+      vueltas: parseFloat(document.getElementById('tolva-vueltas').value)||0,
+      m3:      parseFloat(document.getElementById('tolva-m3').value)||0,
+      desde:   document.getElementById('tolva-desde').value,
+      hasta:   document.getElementById('tolva-hasta').value,
+    };
   }else if(selectedEquipo==='Camión Aljibe'){
-    datosEspecificos={tipo:'Camión Aljibe',cachimba:document.getElementById('aljibe-cachimba').value.trim(),vueltas:parseFloat(document.getElementById('aljibe-vueltas').value)||0,m3:parseFloat(document.getElementById('aljibe-m3').value)||0};
+    datosEspecificos={
+      tipo:'Camión Aljibe',
+      vueltas: parseFloat(document.getElementById('aljibe-vueltas').value)||0,
+      m3:      parseFloat(document.getElementById('aljibe-m3').value)||0,
+      desde:   document.getElementById('aljibe-desde').value||'Cachimba',
+      hasta:   document.getElementById('aljibe-hasta').value,
+    };
   }
 
   const record={
@@ -2609,8 +2664,8 @@ function guardarMaquinaria(){
 function resetForm(){
   ['maq-operador','maq-nEquipo','maq-patente','maq-horoIni','maq-horoFin','maq-kmIni','maq-kmFin',
    'maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador','maq-colacionTraslado',
-   'maq-observaciones','tolva-pozo','tolva-vueltas-rell','tolva-m3-rell','tolva-vueltas-excav','tolva-m3-excav',
-   'aljibe-cachimba','aljibe-vueltas','aljibe-m3','t-simple-mant','t-simple-espera','t-simple-demoras'
+   'maq-observaciones','tolva-vueltas','tolva-m3','aljibe-vueltas','aljibe-m3',
+   't-simple-mant','t-simple-espera','t-simple-demoras'
   ].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   TIEMPO_FIELDS.forEach(f=>{const el=document.getElementById(f.id);if(el)el.value='';});
   document.getElementById('actividadesContainer').innerHTML='';
@@ -2803,9 +2858,8 @@ function openModal(id){
       </div>`).join('')}
     ${r.datosEspecificos?`
       <div class="modal-section-title">${r.datosEspecificos.tipo}</div>
-      ${r.datosEspecificos.material?dr('Material',r.datosEspecificos.material):''}
-      ${r.datosEspecificos.pozo?dr('Pozo',r.datosEspecificos.pozo):''}
-      ${r.datosEspecificos.cachimba?dr('Cachimba',r.datosEspecificos.cachimba):''}
+      ${r.datosEspecificos.desde?dr('Desde',r.datosEspecificos.desde):''}
+      ${r.datosEspecificos.hasta?dr('Hasta',r.datosEspecificos.hasta):''}
       ${dr('Vueltas',r.datosEspecificos.vueltas||0)}${dr('M³',r.datosEspecificos.m3||0)}
     `:''}
     ${r.observaciones?`<div class="modal-section-title">Observaciones</div><div style="font-size:13px;color:var(--text2);padding:8px 0;line-height:1.6">${r.observaciones}</div>`:''}
@@ -3192,7 +3246,7 @@ async function guardarPersonalCapataces(){
 
 async function cargarUsuarios(){
   if(!isOnline||!window._firebaseReady) return;
-  try{const snap=await window._fsGetDocs(window._fsCollection(window._db,'Usuarios'));listaUsuarios=[];snap.forEach(doc=>listaUsuarios.push({uid:doc.id,...doc.data()}));}
+  try{const snap=await window._fsGetDocs(window._fsCollection(window._db,'Usuarios'));listaUsuarios=[];snap.forEach(doc=>{const d=doc.data();if(d.rol!=='eliminado')listaUsuarios.push({uid:doc.id,...d});});}
   catch(e){}
 }
 
@@ -4006,13 +4060,36 @@ async function crearUsuario(){
   if(!pass||pass.length<6){errEl.textContent='Contraseña mínimo 6 caracteres.';errEl.style.display='block';return;}
   try{
     const email=rutToEmail(rut);
-    const cred=await window._createUser(window._auth,email,pass);
-    await window._fsSetDoc(window._fsDoc(window._db,'Usuarios',cred.user.uid),{nombre,rut,email,rol,creadoEn:new Date().toISOString()});
-    await window._signOut(window._auth);
+    let uid=null;
+    try{
+      // Intentar crear cuenta nueva
+      const cred=await window._createUser(window._auth,email,pass);
+      uid=cred.user.uid;
+      await window._signOut(window._auth);
+    }catch(authErr){
+      if(authErr.code==='auth/email-already-in-use'){
+        // Cuenta Auth ya existe — buscar el doc en Firestore por email para reactivar
+        const usersSnap=await window._fsGetDocs(window._fsCollection(window._db,'Usuarios'));
+        let existingUid=null;
+        usersSnap.forEach(d=>{ if(d.data().email===email) existingUid=d.id; });
+        if(!existingUid){
+          errEl.textContent='RUT ya registrado en Firebase Auth pero sin documento en Firestore. Contacta soporte técnico.';
+          errEl.style.display='block';return;
+        }
+        uid=existingUid;
+        // Nota: no podemos cambiar la contraseña desde aquí sin el SDK admin.
+        // El usuario deberá usar la contraseña anterior o solicitar recuperación.
+        showToast('⚠️ Cuenta reactivada — contraseña anterior sigue vigente','warn');
+      }else{
+        throw authErr;
+      }
+    }
+    // Escribir/reescribir doc Firestore con nuevos datos
+    await window._fsSetDoc(window._fsDoc(window._db,'Usuarios',uid),{nombre,rut,email,rol,creadoEn:new Date().toISOString()});
     okEl.textContent=`✅ Usuario "${nombre}" creado. RUT: ${rut} · Rol: ${rol}`;okEl.style.display='block';
     ['newUserNombre','newUserRut','newUserPass'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     await cargarUsuarios();renderAdminPanel();showToast(`✔ Usuario ${nombre} creado`);
-  }catch(e){errEl.textContent=traducirErrorAuth(e.code);errEl.style.display='block';}
+  }catch(e){errEl.textContent=traducirErrorAuth(e.code)||e.message;errEl.style.display='block';}
 }
 
 /* ── ADMIN: EDITAR / ELIMINAR USUARIO ── */
@@ -4097,14 +4174,15 @@ async function confirmarEliminarUsuario(){
   const nombre = u?.nombre||'este usuario';
 
   try{
-    // Eliminar de Firestore (la cuenta Firebase Auth se mantiene pero sin acceso)
-    await window._fsDoc(window._db,'Usuarios',uid);
-    // Usamos deleteDoc si está disponible, sino marcamos como eliminado
-    if(window._fsDeleteDoc){
-      await window._fsDeleteDoc(window._fsDoc(window._db,'Usuarios',uid));
-    } else {
-      await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{rol:'eliminado',eliminadoEn:new Date().toISOString()});
-    }
+    // Marcar como eliminado en Firestore (la cuenta Firebase Auth se mantiene)
+    // NO borramos el doc para poder reutilizar el UID si se recrea el mismo RUT
+    await window._fsUpdateDoc(window._fsDoc(window._db,'Usuarios',uid),{
+      rol:'eliminado',
+      eliminadoEn:new Date().toISOString(),
+      nombre: u?.nombre||'',
+      rut: u?.rut||'',
+      email: u?.email||'',
+    });
     // Quitar de lista local
     listaUsuarios = listaUsuarios.filter(x=>x.uid!==uid);
     showToast(`✔ Usuario "${nombre}" eliminado`);
