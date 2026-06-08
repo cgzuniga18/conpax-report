@@ -4199,9 +4199,32 @@ function initFormTerreno(){
   // Turno buttons reset
   document.querySelectorAll('#screen-form-terreno .turno-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
 
-  // Disciplinas
+  // Disciplinas — cargar si aún no están disponibles
   const dC=document.getElementById('tr-disciplinas');
-  if(dC) dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d['disciplina']}')">${d['disciplina']}</div>`).join('');
+  if(dC){
+    const renderDiscs = () => {
+      dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d['disciplina']}')">${d['disciplina']}</div>`).join('');
+    };
+    if(DISCIPLINAS.length > 0){
+      renderDiscs();
+    } else {
+      dC.innerHTML='<span style="font-size:12px;color:var(--text3)">⏳ Cargando disciplinas...</span>';
+      const URL_DISC='https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPwSPUFX-KaurafTi-hAkA3q3pC4IYrjbHUbKCCjuQib7-xHyqKEOI0QNNczXmg/pub?gid=1093277463&single=true&output=tsv';
+      fetch(URL_DISC).then(r=>r.text()).then(texto=>{
+        const lineas=texto.split('\n').filter(l=>l.trim()!=='');
+        const enc=lineas[0].split('\t').map(h=>h.trim());
+        DISCIPLINAS=lineas.slice(1).map(linea=>{
+          const vals=linea.split('\t');
+          const hash={};
+          enc.forEach((c,i)=>{hash[c]=(vals[i]||'').trim();});
+          return hash;
+        });
+        renderDiscs();
+      }).catch(()=>{
+        dC.innerHTML='<span style="font-size:12px;color:var(--red)">⚠️ Error al cargar — revisa conexión</span>';
+      });
+    }
+  }
 
   // Frentes — ahora son por actividad, no globales
   // (se eliminó tr-frentes-check del HTML)
@@ -4562,7 +4585,7 @@ function editarReporteTerreno(id){
 }
 
 /* ── GUARDAR ── */
-function confirmarGuardadoTerreno(){
+async function confirmarGuardadoTerreno(){
   const capataz=document.getElementById('tr-capataz')?.value.trim();
   const fecha=document.getElementById('tr-fecha')?.value;
   if(!capataz||!fecha){ showToast('⚠️ Capataz y fecha son obligatorios','warn'); return; }
