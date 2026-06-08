@@ -2653,11 +2653,7 @@ function renderRecords(){
 
   // Combinar maquinaria + terreno (terreno no visible para operadores)
   const terrenoVisible = currentUser?.rol !== 'operador';
-  const esCapataz = currentUser?.rol === 'capataz';
-  let terrenoFiltrado = terrenoVisible ? recordsTerreno : [];
-  // Capataz solo ve sus propios reportes de terreno
-  if(esCapataz) terrenoFiltrado = terrenoFiltrado.filter(r => r.creadoPor?.uid === currentUser?.uid);
-  const all=[...records, ...terrenoFiltrado].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const all=[...records, ...(terrenoVisible ? recordsTerreno : [])].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
   let filtered=all;
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
   if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
@@ -2850,9 +2846,14 @@ function _puedeEditar(r){
     return rol === 'jefe';
   }
 
-  // Capataz aprobó → capataz y supervisor pueden editar
+  // Antes de que el supervisor apruebe → capataz creador puede editar
+  if(rol === 'capataz'){
+    return r.creadoPor?.uid === currentUser?.uid;
+  }
+
+  // Capataz aprobó → supervisor puede editar
   if(capEstado === 'aprobado'){
-    return rol === 'supervisor' || rol === 'capataz';
+    return rol === 'supervisor';
   }
 
   // Aún pendiente de capataz → solo el creador puede editar
@@ -4689,7 +4690,20 @@ function confirmarGuardadoTerreno(){
 
   recordsTerreno.unshift(record);
   localStorage.setItem(STORAGE_KEY_TERRENO, JSON.stringify(recordsTerreno));
-  showToast('✅ Report de terreno guardado — pendiente validación supervisor');
+
+  // Subir a Firebase de inmediato para que supervisor/jefe/admin lo vean
+  if(isOnline && window._firebaseReady){
+    try{
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(record.id)),{...record});
+      showToast('✅ Report guardado y enviado — pendiente validación supervisor');
+    }catch(e){
+      console.error(e);
+      showToast('✅ Report guardado localmente — se subirá al reconectar','warn');
+    }
+  } else {
+    showToast('✅ Report guardado — sin conexión, se subirá al reconectar','warn');
+  }
+
   renderRecords(); initDashboard(); showTab('records');
 }
 
