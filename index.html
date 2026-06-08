@@ -792,17 +792,18 @@ label .req { color:var(--red); }
           <div class="section-head"><span class="section-num">04</span><span class="section-title">Operatividad HM</span></div>
           <div class="section-body">
             <div style="background:var(--blue-dim);border:1px solid var(--blue-glow);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--blue);margin-bottom:12px;">
-              💡 <b>HM Operativos</b> se calculó automáticamente desde el horómetro. <b>HM Jornada</b> es la duración total del turno (ej: 12 hrs).
+              💡 <b>HM Operativos</b> se completa automáticamente desde el horómetro. <b>HM Jornada</b> es fija en 12 hrs. La suma de todos los ítems debe igualar 12.
               <br>Referencia horómetro: <strong id="hmJornadaRef">—</strong>
             </div>
             <div class="op-grid">
-              <div class="op-item"><label>HM Jornada Total</label><input type="number" id="maq-hmJornada" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+              <div class="op-item"><label>HM Jornada Total</label><input type="number" id="maq-hmJornada" value="12" step="0.5" oninput="calcOpTotal()" style="opacity:.65;pointer-events:none" readonly></div>
               <div class="op-item"><label>HM Operativos</label><input type="number" id="maq-hrsOp" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
               <div class="op-item"><label>Mantención Correctiva</label><input type="number" id="maq-mantCorrectiva" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
               <div class="op-item"><label>Mantención Preventiva</label><input type="number" id="maq-mantPreventiva" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
               <div class="op-item"><label>Fuera de Servicio</label><input type="number" id="maq-fueraServicio" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
               <div class="op-item"><label>En Espera / Stand By</label><input type="number" id="maq-enEspera" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
               <div class="op-item"><label>Sin Operador</label><input type="number" id="maq-sinOperador" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
+              <div class="op-item"><label>Colación / Traslado</label><input type="number" id="maq-colacionTraslado" placeholder="0" step="0.5" oninput="calcOpTotal()"></div>
             </div>
             <div class="op-total" id="opTotalBox">
               <span class="ot-label">Total HM ingresados</span>
@@ -1091,7 +1092,7 @@ label .req { color:var(--red); }
       </div>
 
       <!-- ── GUARDAR ── -->
-      <button class="wiz-save-btn" onclick="confirmarGuardadoTerreno()" style="margin-bottom:8px">💾 Guardar Report de Terreno</button>
+      <button id="tr-btn-guardar" class="wiz-save-btn" onclick="confirmarGuardadoTerreno()" style="margin-bottom:8px">💾 Guardar Report de Terreno</button>
 
     </div>
   </div>
@@ -1520,7 +1521,10 @@ function showTab(id){
   if(id==='admin') renderAdminPanel();
   if(id==='dash') initDashboard();
   if(id==='cuadrilla') renderCuadrilla();
-  if(id==='form-terreno') initFormTerreno();
+  if(id==='form-terreno'){
+    // Si navegamos al form manualmente (no desde editarReporteTerreno), cancelar edición
+    if(!editandoIdTerreno) initFormTerreno();
+  }
 }
 
 function updateUserHeader(){
@@ -1889,9 +1893,16 @@ function wizardRender(){
   if(wizStep===4){
     const horoIni=parseFloat(document.getElementById('maq-horoIni').value)||0;
     const horoFin=parseFloat(document.getElementById('maq-horoFin').value)||0;
-    const diff=horoFin>horoIni?(horoFin-horoIni).toFixed(1):'—';
+    const diff=horoFin>horoIni?(horoFin-horoIni).toFixed(1):null;
     const ref=document.getElementById('hmJornadaRef');
-    if(ref) ref.textContent=diff!=='—'?diff+' hrs (hrs motor encendido)':'No calculado aún';
+    if(ref) ref.textContent=diff?diff+' hrs (hrs motor encendido)':'No calculado aún';
+    // Precargar HM Jornada = 12 siempre
+    const jEl=document.getElementById('maq-hmJornada');
+    if(jEl) jEl.value='12';
+    // Precargar HM Operativos desde horómetro
+    const hmOp=document.getElementById('maq-hrsOp');
+    if(hmOp && diff) hmOp.value=diff;
+    calcOpTotal();
   }
   // Scroll top
   document.getElementById('screen-form-maq').scrollTo(0,0);
@@ -2147,9 +2158,9 @@ function calcHoro(){
     el.textContent=diff+' hrs';
     el.style.color='var(--green)';
     warn.classList.remove('show');
-    // Auto-rellenar HM Operativos con la diferencia del horómetro
+    // Auto-rellenar HM Operativos siempre con la diferencia del horómetro
     const hmOp=document.getElementById('maq-hrsOp');
-    if(hmOp&&!hmOp.value) hmOp.value=diff;
+    if(hmOp) hmOp.value=diff;
     calcOpTotal();
   }else if(fin>0&&fin<=ini){
     el.textContent='Verificar valores';
@@ -2164,7 +2175,7 @@ function calcHoro(){
 
 /* ── OPERATIVIDAD ── */
 function calcOpTotal(){
-  const ids=['maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador'];
+  const ids=['maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador','maq-colacionTraslado'];
   const jornada=parseFloat(document.getElementById('maq-hmJornada').value)||0;
   const subTotal=ids.slice(1).map(id=>parseFloat(document.getElementById(id).value)||0).reduce((a,b)=>a+b,0);
   const el=document.getElementById('opTotal');
@@ -2448,9 +2459,9 @@ function editarRegistro(id){
     });
     // Operatividad
     const op=r.operatividad||{};
-    ['hmJornada','hrsOp','mantCorrectiva','mantPreventiva','fueraServicio','enEspera','sinOperador'].forEach(k=>{
+    ['hmJornada','hrsOp','mantCorrectiva','mantPreventiva','fueraServicio','enEspera','sinOperador','colacionTraslado'].forEach(k=>{
       const el=document.getElementById('maq-'+k.replace('hrsOp','hrsOp').replace('hmJornada','hmJornada'));
-      const map={'hmJornada':'maq-hmJornada','hrsOp':'maq-hrsOp','mantCorrectiva':'maq-mantCorrectiva','mantPreventiva':'maq-mantPreventiva','fueraServicio':'maq-fueraServicio','enEspera':'maq-enEspera','sinOperador':'maq-sinOperador'};
+      const map={'hmJornada':'maq-hmJornada','hrsOp':'maq-hrsOp','mantCorrectiva':'maq-mantCorrectiva','mantPreventiva':'maq-mantPreventiva','fueraServicio':'maq-fueraServicio','enEspera':'maq-enEspera','sinOperador':'maq-sinOperador','colacionTraslado':'maq-colacionTraslado'};
       const el2=document.getElementById(map[k]);if(el2)el2.value=op[k]||'';
     });
     calcOpTotal();
@@ -2555,6 +2566,7 @@ function guardarMaquinaria(){
       fueraServicio:parseFloat(document.getElementById('maq-fueraServicio').value)||0,
       enEspera:parseFloat(document.getElementById('maq-enEspera').value)||0,
       sinOperador:parseFloat(document.getElementById('maq-sinOperador').value)||0,
+      colacionTraslado:parseFloat(document.getElementById('maq-colacionTraslado').value)||0,
     },
     tiempos,datosEspecificos,
     observaciones:document.getElementById('maq-observaciones').value.trim(),
@@ -2596,7 +2608,7 @@ function guardarMaquinaria(){
 
 function resetForm(){
   ['maq-operador','maq-nEquipo','maq-patente','maq-horoIni','maq-horoFin','maq-kmIni','maq-kmFin',
-   'maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador',
+   'maq-hmJornada','maq-hrsOp','maq-mantCorrectiva','maq-mantPreventiva','maq-fueraServicio','maq-enEspera','maq-sinOperador','maq-colacionTraslado',
    'maq-observaciones','tolva-pozo','tolva-vueltas-rell','tolva-m3-rell','tolva-vueltas-excav','tolva-m3-excav',
    'aljibe-cachimba','aljibe-vueltas','aljibe-m3','t-simple-mant','t-simple-espera','t-simple-demoras'
   ].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -2634,7 +2646,15 @@ function renderRecords(){
   // Combinar maquinaria + terreno (terreno no visible para operadores)
   const terrenoVisible = currentUser?.rol !== 'operador';
   const all=[...records, ...(terrenoVisible ? recordsTerreno : [])].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-  let filtered=all;
+
+  // Capataz solo ve sus propios registros
+  let filtered = all;
+  if(currentUser?.rol === 'capataz'){
+    filtered = all.filter(r =>
+      r.creadoPor?.uid === currentUser.uid ||
+      r.capataz === currentUser.nombre
+    );
+  }
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
   if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
   if(activeFilter==='synced')  filtered=filtered.filter(r=> r.estado?.synced);
@@ -2770,7 +2790,7 @@ function openModal(id){
     <div class="modal-section-title">Operatividad</div>
     ${dr('HM Jornada',(op.hmJornada||0)+' hrs')}${dr('Operativas',(op.hrsOperativas||0)+' hrs')}
     ${dr('Mant. Correctiva',(op.mantCorrectiva||0)+' hrs')}${dr('Mant. Preventiva',(op.mantPreventiva||0)+' hrs')}
-    ${dr('En Espera',(op.enEspera||0)+' hrs')}${dr('Sin Operador',(op.sinOperador||0)+' hrs')}
+    ${dr('En Espera',(op.enEspera||0)+' hrs')}${dr('Sin Operador',(op.sinOperador||0)+' hrs')}${op.colacionTraslado?dr('Colación / Traslado',(op.colacionTraslado||0)+' hrs'):''}
     <div class="modal-section-title">Actividades</div>
     ${(r.actividades||[]).map((a,i)=>`
       <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 11px;margin-bottom:6px">
@@ -2812,26 +2832,33 @@ function dr(label,val){return `<div class="detail-row"><span class="detail-label
 function _puedeEditar(r){
   const rol = currentUser?.rol;
   const val = r.validacion || {};
-  const capEstado = val.capataz?.estado  || 'pendiente';
-  const supEstado = val.supervisor?.estado || 'pendiente';
-  const jefeEstado= val.jefe?.estado      || 'pendiente';
+  const supEstado  = val.supervisor?.estado || 'pendiente';
+  const jefeEstado = val.jefe?.estado       || 'pendiente';
 
   // Una vez que el jefe aprueba → nadie puede editar
   if(jefeEstado === 'aprobado') return false;
 
-  if(rol === 'admin') return true; // admin siempre puede editar (hasta aprobación jefe)
+  // Admin siempre puede editar (hasta aprobación jefe)
+  if(rol === 'admin') return true;
 
-  // Supervisor aprobó → solo el jefe puede editar
+  // Supervisor aprobó → solo el jefe puede editar; capataz queda bloqueado
   if(supEstado === 'aprobado'){
     return rol === 'jefe';
   }
 
-  // Capataz aprobó → capataz y supervisor pueden editar
-  if(capEstado === 'aprobado'){
-    return rol === 'supervisor' || rol === 'capataz';
+  // Supervisor aún NO ha aprobado → capataz puede editar sus propios registros
+  if(rol === 'capataz'){
+    return r.creadoPor?.uid === currentUser?.uid ||
+           r.capataz === currentUser?.nombre;
   }
 
-  // Aún pendiente de capataz → solo el creador puede editar
+  // Supervisor puede editar mientras jefe no apruebe
+  if(rol === 'supervisor') return true;
+
+  // Jefe puede editar siempre (hasta su propia aprobación)
+  if(rol === 'jefe') return true;
+
+  // Otros roles (operador) → solo el creador
   return r.creadoPor?.uid === currentUser?.uid;
 }
 
@@ -4530,10 +4557,182 @@ function trAddProdAct(actN){
   container.appendChild(div);
 }
 
+let editandoIdTerreno = null;
+
 function editarReporteTerreno(id){
-  showToast('✏️ Edición de report terreno — próximamente','warn');
+  const r = recordsTerreno.find(x => String(x.id) === String(id));
+  if(!r){ showToast('⚠️ Registro no encontrado','warn'); return; }
+
+  // Cerrar modal y navegar al formulario
   document.getElementById('modalOverlay')?.classList.remove('show');
-  // TODO: cargar datos del reporte en el formulario y marcar editandoIdTerreno
+  editandoIdTerreno = id;
+
+  // Inicializar el formulario (limpia todo)
+  initFormTerreno();
+
+  // Después de que el DOM se actualice, rellenar con los datos del reporte
+  setTimeout(() => {
+    // Campos básicos
+    const fEl = document.getElementById('tr-fecha');
+    if(fEl) fEl.value = r.fecha || '';
+
+    const cEl = document.getElementById('tr-capataz');
+    if(cEl) cEl.value = r.capataz || '';
+
+    const supEl = document.getElementById('tr-supervisor');
+    if(supEl) supEl.value = r.supervisor || '';
+
+    // Horarios
+    ['llegadaFrente','salidaFrente','salidaColacion','llegadaColacion'].forEach(k => {
+      const mapId = {
+        llegadaFrente:   'tr-hora-llegada-frente',
+        salidaFrente:    'tr-hora-salida-frente',
+        salidaColacion:  'tr-hora-salida-colacion',
+        llegadaColacion: 'tr-hora-llegada-colacion',
+      };
+      const el = document.getElementById(mapId[k]);
+      if(el) el.value = r.horarios?.[k] || '';
+    });
+
+    // Observaciones
+    const obsEl = document.getElementById('tr-observaciones');
+    if(obsEl) obsEl.value = r.observaciones || '';
+
+    // Turno
+    trTurno = r.turno || 'A';
+    document.querySelectorAll('#screen-form-terreno .turno-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.val === trTurno || btn.textContent.trim() === trTurno);
+    });
+
+    // Disciplina
+    trDisciplinaSel = r.disciplina || '';
+    if(trDisciplinaSel){
+      document.querySelectorAll('#tr-disciplinas .tr-chip').forEach(chip => {
+        if(chip.textContent.trim() === trDisciplinaSel){
+          chip.classList.add('selected');
+        }
+      });
+    }
+
+    // Actividades — limpiar el contenedor y reconstruir desde los datos
+    const ac = document.getElementById('tr-actividades-container');
+    if(ac) ac.innerHTML = '';
+    trActCount = 0;
+
+    (r.actividades || []).forEach(act => {
+      trAddActividad(); // agrega bloque vacío con trActCount incrementado
+      const n = trActCount;
+
+      // Seleccionar actividad
+      const selAct = document.getElementById(`tr-act-sel-${n}`);
+      if(selAct){
+        selAct.value = act.codigo || '';
+        trOnActChange(n); // carga frentes
+      }
+
+      // Frente y sub-frente (después de que trOnActChange cargue las opciones)
+      setTimeout(() => {
+        const frenteEl = document.getElementById(`tr-act-frente-${n}`);
+        if(frenteEl){ frenteEl.value = act.frente || ''; trOnFrenteChange(n); }
+        setTimeout(() => {
+          const subEl = document.getElementById(`tr-act-subfrente-${n}`);
+          if(subEl) subEl.value = act.subfrente || '';
+        }, 80);
+      }, 80);
+
+      // Personal — limpiar el que viene por defecto y rellenar
+      const hhContainer = document.getElementById(`tr-hh-list-${n}`);
+      if(hhContainer) hhContainer.innerHTML = '';
+
+      (act.personal || []).forEach(p => {
+        trPersonaCount++;
+        const pn = trPersonaCount;
+        const cargoOpts = ['M1','M2'].map(c=>`<option${c===p.cargo?' selected':''}>${c}</option>`).join('');
+        const div = document.createElement('div');
+        div.id = `tr-persona-${n}-${pn}`;
+        div.style.cssText = 'background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px';
+        div.innerHTML = `
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <input type="text" id="tr-p-nombre-${n}-${pn}" value="${p.nombre||''}" placeholder="Nombre completo" style="flex:1;margin:0">
+            <button onclick="trEliminarPersona(${n},${pn})"
+              style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="tr-p-rut-${n}-${pn}" placeholder="RUT" value="${p.rut||''}" style="flex:1;margin:0">
+            <select id="tr-p-cargo-${n}-${pn}" style="flex:1;margin:0">${cargoOpts}</select>
+            <div style="flex:none;display:flex;align-items:center;gap:4px">
+              <label style="font-size:10px;color:var(--text3);margin:0;white-space:nowrap">HH:</label>
+              <input type="number" id="tr-p-hh-${n}-${pn}" value="${p.hh||0}" min="0" step="0.5"
+                style="width:64px;margin:0;text-align:right;font-family:'DM Mono',monospace">
+            </div>
+          </div>`;
+        if(hhContainer) hhContainer.appendChild(div);
+      });
+
+      // Equipos
+      const hmContainer = document.getElementById(`tr-hm-list-${n}`);
+      if(hmContainer) hmContainer.innerHTML = '';
+
+      (act.equipos || []).forEach(e => {
+        trEquipoActCount++;
+        const en = trEquipoActCount;
+        const eqOpts = listaEquipos.map(eq =>
+          `<option value="${eq.equipo}"${eq.equipo===e.equipo?' selected':''}>${eq.categoria} · ${eq.equipo}</option>`
+        ).join('');
+        const div = document.createElement('div');
+        div.id = `tr-equipo-${n}-${en}`;
+        div.style.cssText = 'background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:6px';
+        div.innerHTML = `
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <select id="tr-e-sel-${n}-${en}" style="flex:1;margin:0">
+              <option value="">Seleccionar equipo...</option>${eqOpts}
+            </select>
+            <button onclick="document.getElementById('tr-equipo-${n}-${en}').remove()"
+              style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM Operativas</label>
+              <input type="number" id="tr-e-op-${n}-${en}" value="${e.hmOperativas||0}" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right"></div>
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM No Operativas</label>
+              <input type="number" id="tr-e-nop-${n}-${en}" value="${e.hmNoOperativas||0}" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right"></div>
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM Mantención</label>
+              <input type="number" id="tr-e-mant-${n}-${en}" value="${e.hmMantenimiento||0}" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right"></div>
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">HM Fuera Servicio</label>
+              <input type="number" id="tr-e-fs-${n}-${en}" value="${e.hmFueraServicio||0}" step="0.5" style="margin:0;font-family:'DM Mono',monospace;text-align:right"></div>
+          </div>`;
+        if(hmContainer) hmContainer.appendChild(div);
+      });
+
+      // Producción
+      const prodContainer = document.getElementById(`tr-prod-list-${n}`);
+      if(prodContainer) prodContainer.innerHTML = '';
+
+      (act.produccion || []).forEach(p => {
+        trProdActCount++;
+        const pn = trProdActCount;
+        const div = document.createElement('div');
+        div.id = `tr-prod-${n}-${pn}`;
+        div.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px';
+        div.innerHTML = `
+          <input type="text" placeholder="Tipo" id="tr-prod-tipo-${n}-${pn}" value="${p.tipo||''}" style="flex:1;margin:0">
+          <input type="text" placeholder="UM" id="tr-prod-um-${n}-${pn}" value="${p.unidad||''}" style="width:60px;flex:none;margin:0">
+          <input type="number" placeholder="Cant." id="tr-prod-qty-${n}-${pn}" value="${p.cantidad||0}" style="width:72px;flex:none;margin:0;font-family:'DM Mono',monospace;text-align:right" step="0.01">
+          <button onclick="document.getElementById('tr-prod-${n}-${pn}').remove()"
+            style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;flex-shrink:0;padding:0 4px">✕</button>`;
+        if(prodContainer) prodContainer.appendChild(div);
+      });
+    });
+
+    // Indicador visual de modo edición
+    const btnGuardar = document.getElementById('tr-btn-guardar');
+    if(btnGuardar){
+      btnGuardar.textContent = '💾 Actualizar Reporte';
+      btnGuardar.style.background = 'var(--amber)';
+    }
+
+    showToast('✏️ Editando reporte — modifica y guarda al terminar');
+    showTab('form-terreno');
+  }, 50);
 }
 
 /* ── GUARDAR ── */
@@ -4663,9 +4862,31 @@ function confirmarGuardadoTerreno(){
     estado:{synced:false, syncedAt:null},
   };
 
-  recordsTerreno.unshift(record);
+  // Modo edición: reemplazar registro existente preservando metadatos
+  if(editandoIdTerreno){
+    record.id = editandoIdTerreno;
+    record.editadoEn = new Date().toISOString();
+    // Preservar creadoPor y validacion originales
+    const original = recordsTerreno.find(x => String(x.id) === String(editandoIdTerreno));
+    if(original){
+      record.creadoPor   = original.creadoPor;
+      record.validacion  = original.validacion;
+      record.estado      = original.estado;
+    }
+    const idx = recordsTerreno.findIndex(x => String(x.id) === String(editandoIdTerreno));
+    if(idx > -1) recordsTerreno[idx] = record;
+    else recordsTerreno.unshift(record);
+    editandoIdTerreno = null;
+    // Restaurar botón
+    const btnGuardar = document.getElementById('tr-btn-guardar');
+    if(btnGuardar){ btnGuardar.textContent = '✅ Guardar Reporte'; btnGuardar.style.background = ''; }
+    showToast('✅ Reporte actualizado correctamente');
+  } else {
+    recordsTerreno.unshift(record);
+    showToast('✅ Report de terreno guardado — pendiente validación supervisor');
+  }
+
   localStorage.setItem(STORAGE_KEY_TERRENO, JSON.stringify(recordsTerreno));
-  showToast('✅ Report de terreno guardado — pendiente validación supervisor');
   renderRecords(); initDashboard(); showTab('records');
 }
 
