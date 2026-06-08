@@ -1210,27 +1210,7 @@ const STORAGE_KEY_TERRENO = 'conpax_v4_terreno';
 const DRAFT_KEY           = 'conpax_v4_draft';
 const LASTUSED_KEY        = 'conpax_v4_lastused';
 
-let DISCIPLINAS = [];
-
-// Carga disciplinas desde Google Sheets
-(async () => {
-  const URL_DISCIPLINAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPwSPUFX-KaurafTi-hAkA3q3pC4IYrjbHUbKCCjuQib7-xHyqKEOI0QNNczXmg/pub?gid=1093277463&single=true&output=tsv';
-  try {
-    const response = await fetch(URL_DISCIPLINAS);
-    if (!response.ok) throw new Error('Error al obtener disciplinas: ' + response.status);
-    const texto = await response.text();
-    const lineas = texto.split('\n').filter(l => l.trim() !== '');
-    const encabezados = lineas[0].split('\t').map(h => h.trim());
-    DISCIPLINAS = lineas.slice(1).map(linea => {
-      const valores = linea.split('\t');
-      const hash = {};
-      encabezados.forEach((clave, i) => { hash[clave] = (valores[i] || '').trim(); });
-      return hash;
-    });
-  } catch(e) {
-    console.error('No se pudieron cargar las disciplinas:', e);
-  }
-})();
+const DISCIPLINAS = ['Movimiento de Tierra','Estructuras','Hormigones','Electricidad','Cañerías','Mecánica'];
 
 const CENTROS_COSTO = [
   '2.1 Plataforma Inst. Faena','2.2 OA Camino CAEX PS-OXE',
@@ -2846,14 +2826,9 @@ function _puedeEditar(r){
     return rol === 'jefe';
   }
 
-  // Antes de que el supervisor apruebe → capataz creador puede editar
-  if(rol === 'capataz'){
-    return r.creadoPor?.uid === currentUser?.uid;
-  }
-
-  // Capataz aprobó → supervisor puede editar
+  // Capataz aprobó → capataz y supervisor pueden editar
   if(capEstado === 'aprobado'){
-    return rol === 'supervisor';
+    return rol === 'supervisor' || rol === 'capataz';
   }
 
   // Aún pendiente de capataz → solo el creador puede editar
@@ -4199,32 +4174,9 @@ function initFormTerreno(){
   // Turno buttons reset
   document.querySelectorAll('#screen-form-terreno .turno-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
 
-  // Disciplinas — cargar si aún no están disponibles
+  // Disciplinas
   const dC=document.getElementById('tr-disciplinas');
-  if(dC){
-    const renderDiscs = () => {
-      dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d['disciplina']}')">${d['disciplina']}</div>`).join('');
-    };
-    if(DISCIPLINAS.length > 0){
-      renderDiscs();
-    } else {
-      dC.innerHTML='<span style="font-size:12px;color:var(--text3)">⏳ Cargando disciplinas...</span>';
-      const URL_DISC='https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPwSPUFX-KaurafTi-hAkA3q3pC4IYrjbHUbKCCjuQib7-xHyqKEOI0QNNczXmg/pub?gid=1093277463&single=true&output=tsv';
-      fetch(URL_DISC).then(r=>r.text()).then(texto=>{
-        const lineas=texto.split('\n').filter(l=>l.trim()!=='');
-        const enc=lineas[0].split('\t').map(h=>h.trim());
-        DISCIPLINAS=lineas.slice(1).map(linea=>{
-          const vals=linea.split('\t');
-          const hash={};
-          enc.forEach((c,i)=>{hash[c]=(vals[i]||'').trim();});
-          return hash;
-        });
-        renderDiscs();
-      }).catch(()=>{
-        dC.innerHTML='<span style="font-size:12px;color:var(--red)">⚠️ Error al cargar — revisa conexión</span>';
-      });
-    }
-  }
+  if(dC) dC.innerHTML=DISCIPLINAS.map(d=>`<div class="tr-chip" onclick="trSelectDisciplina(this,'${d}')">${d}</div>`).join('');
 
   // Frentes — ahora son por actividad, no globales
   // (se eliminó tr-frentes-check del HTML)
@@ -4585,7 +4537,7 @@ function editarReporteTerreno(id){
 }
 
 /* ── GUARDAR ── */
-async function confirmarGuardadoTerreno(){
+function confirmarGuardadoTerreno(){
   const capataz=document.getElementById('tr-capataz')?.value.trim();
   const fecha=document.getElementById('tr-fecha')?.value;
   if(!capataz||!fecha){ showToast('⚠️ Capataz y fecha son obligatorios','warn'); return; }
@@ -4713,20 +4665,7 @@ async function confirmarGuardadoTerreno(){
 
   recordsTerreno.unshift(record);
   localStorage.setItem(STORAGE_KEY_TERRENO, JSON.stringify(recordsTerreno));
-
-  // Subir a Firebase de inmediato para que supervisor/jefe/admin lo vean
-  if(isOnline && window._firebaseReady){
-    try{
-      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(record.id)),{...record});
-      showToast('✅ Report guardado y enviado — pendiente validación supervisor');
-    }catch(e){
-      console.error(e);
-      showToast('✅ Report guardado localmente — se subirá al reconectar','warn');
-    }
-  } else {
-    showToast('✅ Report guardado — sin conexión, se subirá al reconectar','warn');
-  }
-
+  showToast('✅ Report de terreno guardado — pendiente validación supervisor');
   renderRecords(); initDashboard(); showTab('records');
 }
 
