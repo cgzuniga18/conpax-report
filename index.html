@@ -1517,7 +1517,7 @@ function updateUserHeader(){
   const initials=currentUser.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   const av=document.getElementById('userAvatar');
   av.textContent=initials;av.style.background=rolCfg.bg;av.style.color=rolCfg.color;av.style.border=`1px solid ${rolCfg.color}33`;
-  document.getElementById('userName').textContent=currentUser.nombre.split(' ')[0];
+  document.getElementById('userName').textContent=currentUser.nombre.split(' ')[0].toLowerCase().replace(/^./,c=>c.toUpperCase());
   document.getElementById('userRoleLabel').textContent=rolCfg.label;
 }
 
@@ -1541,7 +1541,8 @@ function _dashGreeting(){
                  'septiembre','octubre','noviembre','diciembre'];
   const hora  = now.getHours();
   const saludo = hora<12?'Buenos días':hora<19?'Buenas tardes':'Buenas noches';
-  const nombre = (currentUser?.nombre||'').split(' ')[0];
+  const nombre = (currentUser?.nombre||'').split(' ')[0]
+    .toLowerCase().replace(/^./, c => c.toUpperCase()); // nombre de pila capitalizado
   const rolCfg = ROL_CONFIG[currentUser?.rol]||ROL_CONFIG.operador;
   const initials = (currentUser?.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   const fechaStr = `${dias[now.getDay()]} ${now.getDate()} de ${meses[now.getMonth()]}`;
@@ -1841,7 +1842,8 @@ function nuevoReporte(){
   _skipAutorellenarEquipo = true;
   showTab('form-maq');
   wizardInit();
-  _skipAutorellenarEquipo = false;
+  // Mantener el flag activo hasta después del setTimeout(300ms) de autorellenar
+  setTimeout(()=>{ _skipAutorellenarEquipo = false; }, 500);
 }
 
 /* ── WIZARD ── */
@@ -1993,7 +1995,11 @@ function autorellenar(){
       selectedEquipoObj = last.equipoObj;
       selectedEquipo    = last.equipoObj.equipo;
       // Restaurar dropdowns después de que listaEquipos esté cargada
+      // IMPORTANTE: el flag _skipAutorellenarEquipo se evalúa TAMBIÉN dentro del timeout
+      // para que si viene de nuevoReporte() (que pone el flag en true y lo baja a false),
+      // el setTimeout no restaure igualmente el equipo.
       setTimeout(()=>{
+        if(_skipAutorellenarEquipo) return; // cancelar si nuevoReporte() ya limpió
         const selCat = document.getElementById('equipoCategoria');
         if(selCat && listaEquipos.length){
           initEquipoDropdowns(); // reconstruye con selección
@@ -2668,9 +2674,9 @@ function guardarMaquinaria(){
     tiempos,datosEspecificos,
     observaciones:document.getElementById('maq-observaciones').value.trim(),
     validacion:{
-      capataces: {},
-      supervisor:{estado:'pendiente', nombre:'', fecha:''},
-      jefe:     {estado:'pendiente', nombre:'', fecha:''},
+      capataces:   {},
+      supervisores:{},
+      jefe:        {estado:'pendiente', nombre:'', fecha:''},
     },
     estado:{synced:false,syncedAt:null},
   };
@@ -2777,11 +2783,13 @@ function renderRecords(){
     const valJefe = val.jefe?.estado || 'pendiente';
     const valSup  = val.supervisor?.estado || 'pendiente';
     let valLabel = '';
-    if(valJefe==='aprobado')     valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Jefe</span>';
-    else if(valSup==='aprobado') valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
-    else if(!esTerreno && _todosCapatacesAprobaron(r)) valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Sup.</span>';
-    else if(!esTerreno && _algunCapatazRechazo(r)) valLabel='<span class="val-badge val-rejected" style="font-size:9px">✕ Cap.</span>';
-    else valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Cap.</span>';
+    if(valJefe==='aprobado')                                           valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Jefe</span>';
+    else if(!esTerreno && _todosSupervisoresAprobaron(r))              valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
+    else if(!esTerreno && _algunSupervisorRechazo(r))                  valLabel='<span class="val-badge val-rejected" style="font-size:9px">✕ Sup.</span>';
+    else if(!esTerreno && _todosCapatacesAprobaron(r))                 valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Sup.</span>';
+    else if(!esTerreno && _algunCapatazRechazo(r))                     valLabel='<span class="val-badge val-rejected" style="font-size:9px">✕ Cap.</span>';
+    else if(esTerreno && val.supervisor?.estado==='aprobado')          valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
+    else                                                               valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Cap.</span>';
 
     if(esTerreno){
       const totalHH  = (r.horasHombre||[]).reduce((s,w)=>s+(w.totalHH||0),0);
@@ -2893,8 +2901,25 @@ function openModal(id){
           : '<span style="font-size:11px;color:var(--text3)">Capataz ${_valBadge(val.capataz)}</span>';
         return `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:6px">${capsBadges}</div>`;
       })()}
+      <div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px">
+        ${(()=>{
+          const sups = _supervisoresDelReporte(r);
+          const valSups = val.supervisores || {};
+          if(sups.length){
+            return sups.map(s => {
+              const sv = valSups[s];
+              const badge = !sv||sv.estado==='pendiente'
+                ? '<span class="val-badge val-pending">⏳ Pendiente</span>'
+                : sv.estado==='aprobado'
+                  ? '<span class="val-badge val-approved">✔ Aprobado</span>'
+                  : '<span class="val-badge val-rejected">✕ Rechazado</span>';
+              return `<span style="font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:4px;margin-right:8px;margin-bottom:4px">🦺 ${s} ${badge}</span>`;
+            }).join('');
+          }
+          return `<span style="font-size:11px;color:var(--text3)">Supervisor ${_valBadge(val.supervisor)}</span>`;
+        })()}
+      </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--text3)">Supervisor ${_valBadge(val.supervisor)}</span>
         <span style="font-size:11px;color:var(--text3)">Jefe ${_valBadge(val.jefe)}</span>
       </div>
     </div>
@@ -3248,7 +3273,11 @@ async function cargarTerrenoDesdeFirebase(){
         r.creadoPor?.uid===currentUser.uid || r.capataz===currentUser.nombre
       );
     } else if(rol==='supervisor'){
-      filtered=remote.filter(r=>r.supervisor===currentUser.nombre);
+      // Supervisor ve reportes donde al menos uno de sus capataces está en las actividades
+      filtered=remote.filter(r=>{
+        const misCaps = currentUser.capataces||[];
+        return (r.actividades||[]).some(a=>typeof a==='object' && misCaps.includes(a?.capataz||''));
+      });
     } else if(rol==='jefe'){
       const turnoJefe=currentUser.turno||'A';
       filtered=remote.filter(r=>r.turno===turnoJefe);
@@ -3414,7 +3443,7 @@ function exportExcel(){
           aObj?.capataz||'',
           aObj?.hrsOp||'',
           r.observaciones||'',
-          (_todosCapatacesAprobaron(r)?'aprobado':_algunCapatazRechazo(r)?'rechazado':'pendiente'), val.supervisor?.estado||'pendiente', val.jefe?.estado||'pendiente'
+          (_todosCapatacesAprobaron(r)?'aprobado':_algunCapatazRechazo(r)?'rechazado':'pendiente'), (_todosSupervisoresAprobaron(r)?'aprobado':_algunSupervisorRechazo(r)?'rechazado':'pendiente'), val.jefe?.estado||'pendiente'
         ]);
       });
     });
@@ -5058,6 +5087,37 @@ async function syncTerreno(){
   localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
 }
 
+// ── Helpers multi-capataz / multi-supervisor ─────────────────────────────
+
+// Devuelve lista única de supervisores involucrados en un reporte,
+// cruzando los capataces de las actividades con los perfiles de usuarios cargados
+function _supervisoresDelReporte(r){
+  const caps = _capatacesDelReporte(r);
+  if(!caps.length) return [];
+  // listaUsuarios es el array global de usuarios cargados desde Firebase
+  const supervisores = (window._listaUsuarios || listaUsuarios || []).filter(u => u.rol === 'supervisor');
+  const supSet = new Set();
+  supervisores.forEach(sup => {
+    const susCaps = sup.capataces || [];
+    if(caps.some(c => susCaps.includes(c))) supSet.add(sup.nombre);
+  });
+  return [...supSet];
+}
+
+// Devuelve true si TODOS los supervisores del reporte han aprobado
+function _todosSupervisoresAprobaron(r){
+  const sups = _supervisoresDelReporte(r);
+  if(!sups.length) return false;
+  const valSups = r.validacion?.supervisores || {};
+  return sups.every(s => valSups[s]?.estado === 'aprobado');
+}
+
+// Devuelve true si AL MENOS UN supervisor rechazó
+function _algunSupervisorRechazo(r){
+  const valSups = r.validacion?.supervisores || {};
+  return Object.values(valSups).some(v => v?.estado === 'rechazado');
+}
+
 // ── Helpers multi-capataz ──────────────────────────────────────────────────
 // Devuelve lista única de capataces involucrados en un reporte de maquinaria
 function _capatacesDelReporte(r){
@@ -5089,11 +5149,11 @@ async function validarReport(id,tipo,nivel,accion){
 
   // Inicializar validacion si no existe
   if(!r.validacion) r.validacion={
-    capataces: {},
-    supervisor:{estado:'pendiente',nombre:'',fecha:''},
-    jefe:     {estado:'pendiente',nombre:'',fecha:''},
+    capataces:   {},
+    supervisores:{},
+    jefe:        {estado:'pendiente',nombre:'',fecha:''},
   };
-  // Migrar formato antiguo: si existe r.validacion.capataz (objeto plano) → convertir
+  // Migrar formato antiguo: capataz plano → capataces dict
   if(r.validacion.capataz && !r.validacion.capataces){
     r.validacion.capataces = {};
     if(r.validacion.capataz.nombre){
@@ -5101,11 +5161,26 @@ async function validarReport(id,tipo,nivel,accion){
     }
     delete r.validacion.capataz;
   }
-  if(!r.validacion.capataces) r.validacion.capataces = {};
+  // Migrar formato antiguo: supervisor plano → supervisores dict
+  if(r.validacion.supervisor && !r.validacion.supervisores){
+    r.validacion.supervisores = {};
+    if(r.validacion.supervisor.nombre){
+      r.validacion.supervisores[r.validacion.supervisor.nombre] = r.validacion.supervisor;
+    }
+    delete r.validacion.supervisor;
+  }
+  if(!r.validacion.capataces)    r.validacion.capataces    = {};
+  if(!r.validacion.supervisores) r.validacion.supervisores = {};
 
   // Registrar la acción
   if(nivel === 'capataz'){
     r.validacion.capataces[currentUser.nombre] = {
+      estado: accion,
+      nombre: currentUser.nombre,
+      fecha:  new Date().toISOString()
+    };
+  } else if(nivel === 'supervisor'){
+    r.validacion.supervisores[currentUser.nombre] = {
       estado: accion,
       nombre: currentUser.nombre,
       fecha:  new Date().toISOString()
@@ -5143,7 +5218,15 @@ async function validarReport(id,tipo,nivel,accion){
     if(faltan.length > 0){
       showToast(`✔ Aprobado — faltan ${faltan.length} capataz(ces) por validar`);
     } else {
-      showToast('✔ Todos los capataces aprobaron — listo para Supervisor');
+      showToast('✔ Todos los capataces aprobaron — listo para Supervisor(es)');
+    }
+  } else if(nivel==='supervisor'){
+    const sups   = _supervisoresDelReporte(r);
+    const faltan = sups.filter(s => r.validacion.supervisores[s]?.estado !== 'aprobado');
+    if(faltan.length > 0){
+      showToast(`✔ Aprobado — faltan ${faltan.length} supervisor(es) por validar`);
+    } else {
+      showToast('✔ Todos los supervisores aprobaron — listo para Jefe');
     }
   } else {
     showToast(`✔ Aprobado por ${nivel} — pendiente siguiente nivel`);
@@ -5181,21 +5264,22 @@ function _puedeValidar(r,nivel){
     if(rol!=='supervisor'&&rol!=='admin') return false;
     // Todos los capataces deben haber aprobado primero
     if(!_todosCapatacesAprobaron(r)) return false;
-    // Solo si aún está pendiente
-    if(val.supervisor?.estado!=='pendiente') return false;
-    // Si el supervisor tiene nombre declarado en el report, verificar con tolerancia
-    // (comparación case-insensitive y trim para evitar errores de tipeo)
-    if(rol==='supervisor' && r.supervisor){
-      const supRep  = r.supervisor.trim().toLowerCase();
-      const supUser = currentUser.nombre.trim().toLowerCase();
-      // Permitir si el nombre del report contiene el del usuario o viceversa
-      if(!supRep.includes(supUser) && !supUser.includes(supRep)) return false;
+    // El supervisor solo puede validar si tiene algún capataz involucrado en el reporte
+    if(rol==='supervisor'){
+      const misCaps       = currentUser.capataces || [];
+      const capsDelReporte = _capatacesDelReporte(r);
+      if(!capsDelReporte.some(c => misCaps.includes(c))) return false;
     }
+    // No puede volver a validar si ya lo hizo
+    const miValSup = (val.supervisores||{})[currentUser.nombre];
+    if(miValSup && miValSup.estado !== 'pendiente') return false;
+    // No puede validar si otro supervisor ya rechazó
+    if(_algunSupervisorRechazo(r)) return false;
     return true;
   }
   if(nivel==='jefe'){
     if(rol!=='jefe'&&rol!=='admin') return false;
-    if(val.supervisor?.estado!=='aprobado') return false;
+    if(!_todosSupervisoresAprobaron(r)) return false;
     if(val.jefe?.estado!=='pendiente') return false;
     // Jefe solo valida reportes de su turno asignado
     if(rol==='jefe' && r.turno && r.turno !== (currentUser.turno||'A')) return false;
@@ -5220,20 +5304,30 @@ function _valButtons(r,tipo){
       </div>`);
   }
 
-  // Niveles supervisor y jefe
-  ['supervisor','jefe'].forEach(nivel=>{
-    if(_puedeValidar(r,nivel)){
-      const label = nivel==='supervisor'?'Supervisor':'Jefe de Terreno';
-      html.push(`
-        <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-top:8px">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tu turno de validar como <strong style="color:var(--text)">${label}</strong></div>
-          <div style="display:flex;gap:8px">
-            <button class="val-btn val-btn-approve" onclick="validarReport('${r.id}','${tipo}','${nivel}','aprobado')" style="flex:1">✔ Aprobar</button>
-            <button class="val-btn val-btn-reject"  onclick="validarReport('${r.id}','${tipo}','${nivel}','rechazado')" style="flex:1">✕ Rechazar</button>
-          </div>
-        </div>`);
-    }
-  });
+  // Nivel supervisor
+  if(_puedeValidar(r,'supervisor')){
+    html.push(`
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-top:8px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Tu turno de validar como <strong style="color:var(--text)">Supervisor</strong></div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Firmando como: ${currentUser.nombre}</div>
+        <div style="display:flex;gap:8px">
+          <button class="val-btn val-btn-approve" onclick="validarReport('${r.id}','${tipo}','supervisor','aprobado')" style="flex:1">✔ Aprobar</button>
+          <button class="val-btn val-btn-reject"  onclick="validarReport('${r.id}','${tipo}','supervisor','rechazado')" style="flex:1">✕ Rechazar</button>
+        </div>
+      </div>`);
+  }
+
+  // Nivel jefe
+  if(_puedeValidar(r,'jefe')){
+    html.push(`
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-top:8px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tu turno de validar como <strong style="color:var(--text)">Jefe de Terreno</strong></div>
+        <div style="display:flex;gap:8px">
+          <button class="val-btn val-btn-approve" onclick="validarReport('${r.id}','${tipo}','jefe','aprobado')" style="flex:1">✔ Aprobar</button>
+          <button class="val-btn val-btn-reject"  onclick="validarReport('${r.id}','${tipo}','jefe','rechazado')" style="flex:1">✕ Rechazar</button>
+        </div>
+      </div>`);
+  }
   return html.join('');
 }
 
@@ -5456,8 +5550,8 @@ function renderEquipoCardHTML(r){
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
           <span class="cq-badge ${sinced?'cq-badge-green':'cq-badge-amber'}">${sinced?'✓':'⏳'}</span>
-          <span class="cq-badge ${valJefe==='aprobado'?'cq-badge-green':valSup==='aprobado'?'cq-badge-blue':_todosCapatacesAprobaron(r)?'cq-badge-blue':_algunCapatazRechazo(r)?'cq-badge-red':'cq-badge-amber'}" style="font-size:9px">
-            ${valJefe==='aprobado'?'✔ Jefe':valSup==='aprobado'?'✔ Sup.':_todosCapatacesAprobaron(r)?'⏳ Sup.':_algunCapatazRechazo(r)?'✕ Cap.':'⏳ Cap.'}
+          <span class="cq-badge ${valJefe==='aprobado'?'cq-badge-green':_todosSupervisoresAprobaron(r)?'cq-badge-blue':_algunSupervisorRechazo(r)?'cq-badge-red':_todosCapatacesAprobaron(r)?'cq-badge-blue':_algunCapatazRechazo(r)?'cq-badge-red':'cq-badge-amber'}" style="font-size:9px">
+            ${valJefe==='aprobado'?'✔ Jefe':_todosSupervisoresAprobaron(r)?'✔ Sup.':_algunSupervisorRechazo(r)?'✕ Sup.':_todosCapatacesAprobaron(r)?'⏳ Sup.':_algunCapatazRechazo(r)?'✕ Cap.':'⏳ Cap.'}
           </span>
         </div>
       </div>
