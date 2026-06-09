@@ -2754,7 +2754,8 @@ function renderRecords(){
   } else if(currentUser?.rol === 'capataz'){
     filtered = all.filter(r =>
       r.creadoPor?.uid === currentUser.uid ||
-      r.capataz === currentUser.nombre
+      r.capataz === currentUser.nombre ||
+      (r.actividades||[]).some(a => typeof a==='object' && a?.capataz === currentUser.nombre)
     );
   }
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
@@ -3168,7 +3169,10 @@ async function cargarDesdeFirebase(){
         r.operador?.nombre===currentUser.nombre
       );
     } else if(rol==='capataz'){
-      filtered=remote.filter(r=>r.creadoPor?.uid===currentUser.uid);
+      filtered=remote.filter(r=>
+        r.creadoPor?.uid===currentUser.uid ||
+        (r.actividades||[]).some(a=>typeof a==='object' && a?.capataz===currentUser.nombre)
+      );
     } else if(rol==='supervisor'){
       const mc=currentUser.capataces||[];
       filtered=remote.filter(r=>
