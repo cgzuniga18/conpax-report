@@ -3170,29 +3170,34 @@ async function syncNow(){
   if(btn){btn.textContent='⏳ Sincronizando...';btn.disabled=true;}
   let ok=0,err=0;
 
-  // Solo sincronizar records aprobados por jefe que quedaron pendientes sin conexión
-  const pendingMaq = records.filter(r=>!r.estado?.synced && r.estado?.readyToSync && r.validacion?.jefe?.estado==='aprobado');
+  // Sincronizar todos los records con readyToSync=true (aprobados por cualquier nivel sin conexión)
+  // Los aprobados por jefe se marcan como synced:true; los de nivel intermedio quedan synced:false
+  const pendingMaq = records.filter(r=>!r.estado?.synced && r.estado?.readyToSync);
   for(const r of pendingMaq){
     try{
-      await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(r.id)),{...r,estado:{synced:true,syncedAt:new Date().toISOString()}});
-      r.estado={synced:true,syncedAt:new Date().toISOString()};ok++;
+      const esFinal = r.validacion?.jefe?.estado==='aprobado';
+      const estado  = esFinal ? {synced:true,syncedAt:new Date().toISOString()} : r.estado;
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(r.id)),{...r,estado});
+      r.estado=estado; ok++;
     }catch(e){console.error(e);err++;}
   }
   if(pendingMaq.length) localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
 
-  const pendingTer = recordsTerreno.filter(r=>!r.estado?.synced && r.estado?.readyToSync && r.validacion?.jefe?.estado==='aprobado');
+  const pendingTer = recordsTerreno.filter(r=>!r.estado?.synced && r.estado?.readyToSync);
   for(const r of pendingTer){
     try{
-      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(r.id)),{...r,estado:{synced:true,syncedAt:new Date().toISOString()}});
-      r.estado={synced:true,syncedAt:new Date().toISOString()};ok++;
+      const esFinal = r.validacion?.jefe?.estado==='aprobado';
+      const estado  = esFinal ? {synced:true,syncedAt:new Date().toISOString()} : r.estado;
+      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(r.id)),{...r,estado});
+      r.estado=estado; ok++;
     }catch(e){console.error(e);err++;}
   }
   if(pendingTer.length) localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
 
   if(ok>0||err>0){renderRecords();updateStats();initDashboard();}
   if(btn){btn.textContent='🔄 Sincronizar ahora';btn.disabled=false;}
-  if(ok>0) showToast(`✔ ${ok} report(s) aprobados sincronizados`);
-  else if(!err) showToast('Sin pendientes aprobados por Jefe de Terreno','warn');
+  if(ok>0) showToast(`✔ ${ok} report(s) sincronizados`);
+  else if(!err) showToast('Sin pendientes de sincronización','warn');
   if(err>0) showToast(`⚠️ ${err} con error`,'warn');
   updateSyncUI();
 }
@@ -3356,13 +3361,13 @@ function updateSyncUI(){
   const desc=document.getElementById('syncStatusDesc');
   const btn=document.getElementById('syncBtn');
 
-  // "Pendiente de Firebase" = aprobados por jefe pero aún no subidos
-  const readyMaq = records.filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado==='aprobado').length;
-  const readyTer = recordsTerreno.filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado==='aprobado').length;
+  // "Pendiente de Firebase" = tienen readyToSync o están aprobados por jefe sin subir
+  const readyMaq = records.filter(r=>!r.estado?.synced && (r.estado?.readyToSync || r.validacion?.jefe?.estado==='aprobado')).length;
+  const readyTer = recordsTerreno.filter(r=>!r.estado?.synced && (r.estado?.readyToSync || r.validacion?.jefe?.estado==='aprobado')).length;
   const readyTotal = readyMaq + readyTer;
 
-  // "En validación" = aún no llegan al jefe
-  const enVal = [...records,...recordsTerreno].filter(r=>!r.estado?.synced && r.validacion?.jefe?.estado!=='aprobado').length;
+  // "En validación" = no synced y no tienen readyToSync (aún en manos del capataz/operador local)
+  const enVal = [...records,...recordsTerreno].filter(r=>!r.estado?.synced && !r.estado?.readyToSync && r.validacion?.jefe?.estado!=='aprobado').length;
 
   const synced=[...records,...recordsTerreno].filter(r=>r.estado?.synced).length;
 
@@ -5193,41 +5198,67 @@ async function validarReport(id,tipo,nivel,accion){
   const storKey = tipo==='terreno' ? STORAGE_KEY_TERRENO : STORAGE_KEY;
   localStorage.setItem(storKey, JSON.stringify(arr));
 
-  // ── SYNC A FIREBASE: solo cuando el Jefe aprueba ──
-  if(accion==='aprobado' && nivel==='jefe' && isOnline && window._firebaseReady){
-    const col = tipo==='terreno' ? 'reportes_terreno' : 'reportes_maquinaria';
-    r.estado = {synced:true, syncedAt:new Date().toISOString()};
+  // ── SYNC A FIREBASE ──
+  // El reporte sube a Firebase desde el primer nivel que aprueba (capataz),
+  // para que supervisor y jefe puedan verlo y validarlo desde sus dispositivos.
+  // Cada aprobación posterior actualiza el mismo documento en Firestore.
+  const col = tipo==='terreno' ? 'reportes_terreno' : 'reportes_maquinaria';
+  const esAprobacionFinal = accion==='aprobado' && nivel==='jefe';
+  const debeSubir = accion==='aprobado' && (nivel==='capataz' || nivel==='supervisor' || nivel==='jefe');
+
+  if(debeSubir && isOnline && window._firebaseReady){
+    if(esAprobacionFinal) r.estado = {synced:true, syncedAt:new Date().toISOString()};
     try{
       await window._fsSetDoc(window._fsDoc(window._db,col,String(r.id)),{...r});
       localStorage.setItem(storKey, JSON.stringify(arr));
-      showToast('✅ Report aprobado y subido a Firebase');
+      if(esAprobacionFinal){
+        showToast('✅ Report aprobado y subido a Firebase');
+      } else if(nivel==='capataz'){
+        const caps   = _capatacesDelReporte(r);
+        const faltan = caps.filter(c => r.validacion.capataces[c]?.estado !== 'aprobado');
+        if(faltan.length > 0){
+          showToast(`✔ Aprobado — faltan ${faltan.length} capataz(ces) por validar`);
+        } else {
+          showToast('✔ Todos los capataces aprobaron — listo para Supervisor(es)');
+        }
+      } else if(nivel==='supervisor'){
+        const sups   = _supervisoresDelReporte(r);
+        const faltan = sups.filter(s => r.validacion.supervisores[s]?.estado !== 'aprobado');
+        if(faltan.length > 0){
+          showToast(`✔ Aprobado — faltan ${faltan.length} supervisor(es) por validar`);
+        } else {
+          showToast('✔ Todos los supervisores aprobaron — listo para Jefe');
+        }
+      }
     } catch(e){
-      r.estado={synced:false,syncedAt:null};
-      showToast('⚠️ Aprobado localmente — sin conexión para subir','warn');
+      if(esAprobacionFinal) r.estado={synced:false,syncedAt:null};
+      showToast('⚠️ Aprobado localmente — error al subir','warn');
     }
-  } else if(accion==='aprobado' && nivel==='jefe' && !isOnline){
-    // Marcar listo para sync cuando haya conexión
+  } else if(esAprobacionFinal && !isOnline){
+    // Jefe aprobó sin conexión: marcar para sync posterior
     r.estado = {synced:false, syncedAt:null, readyToSync:true};
     localStorage.setItem(storKey, JSON.stringify(arr));
     showToast('✅ Aprobado — se subirá al recuperar conexión','warn');
+  } else if(debeSubir && !isOnline){
+    // Capataz o supervisor aprobó sin conexión: marcar para sync posterior
+    r.estado = r.estado || {};
+    r.estado.readyToSync = true;
+    localStorage.setItem(storKey, JSON.stringify(arr));
+    if(nivel==='capataz'){
+      const caps   = _capatacesDelReporte(r);
+      const faltan = caps.filter(c => r.validacion.capataces[c]?.estado !== 'aprobado');
+      showToast(faltan.length > 0
+        ? `✔ Aprobado sin conexión — faltan ${faltan.length} capataz(ces)`
+        : '✔ Todos aprobaron — se publicará al recuperar conexión','warn');
+    } else {
+      const sups   = _supervisoresDelReporte(r);
+      const faltan = sups.filter(s => r.validacion.supervisores[s]?.estado !== 'aprobado');
+      showToast(faltan.length > 0
+        ? `✔ Aprobado sin conexión — faltan ${faltan.length} supervisor(es)`
+        : '✔ Todos aprobaron — se publicará al recuperar conexión','warn');
+    }
   } else if(accion==='rechazado'){
     showToast(`✕ Report rechazado por ${nivel}`,'warn');
-  } else if(nivel==='capataz'){
-    const caps   = _capatacesDelReporte(r);
-    const faltan = caps.filter(c => r.validacion.capataces[c]?.estado !== 'aprobado');
-    if(faltan.length > 0){
-      showToast(`✔ Aprobado — faltan ${faltan.length} capataz(ces) por validar`);
-    } else {
-      showToast('✔ Todos los capataces aprobaron — listo para Supervisor(es)');
-    }
-  } else if(nivel==='supervisor'){
-    const sups   = _supervisoresDelReporte(r);
-    const faltan = sups.filter(s => r.validacion.supervisores[s]?.estado !== 'aprobado');
-    if(faltan.length > 0){
-      showToast(`✔ Aprobado — faltan ${faltan.length} supervisor(es) por validar`);
-    } else {
-      showToast('✔ Todos los supervisores aprobaron — listo para Jefe');
-    }
   } else {
     showToast(`✔ Aprobado por ${nivel} — pendiente siguiente nivel`);
   }
