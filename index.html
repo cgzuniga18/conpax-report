@@ -1362,6 +1362,7 @@ const WIZ_NAMES = ['Datos Básicos','Horómetro y Km','Actividades','Operativida
 let listaCapataces   = [];
 let listaUsuarios    = [];
 let autosaveTimer    = null;
+let _pollingTimer    = null;   // polling Firebase cada 30s
 let tiemposAvanzado  = false;
 
 /* ── CONECTIVIDAD ── */
@@ -1438,7 +1439,7 @@ async function doLogin(){
   catch(e){err.classList.add('show');err.textContent=traducirErrorAuth(e.code);btn.disabled=false;btn.textContent='Ingresar';}
 }
 document.addEventListener('DOMContentLoaded',()=>{document.getElementById('loginPass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});});
-async function doLogout(){await window._signOut(window._auth);currentUser=null;}
+async function doLogout(){if(_pollingTimer){clearInterval(_pollingTimer);_pollingTimer=null;}await window._signOut(window._auth);currentUser=null;}
 async function doRegister(){
   const nombre=document.getElementById('regNombre').value.trim();
   const rut=document.getElementById('regRut').value.trim();
@@ -1485,7 +1486,14 @@ function showApp(){
   wizardInit();
   renderRecords();updateStats();updateSyncUI();
   showTab('dash');
-  setTimeout(async()=>{await cargarCapataces();await cargarEquipos();await cargarPersonalCapataces();await cargarDesdeFirebase();await cargarTerrenoDesdeFirebase();if(currentUser.rol==='admin')await cargarUsuarios();},1500);
+  setTimeout(async()=>{await cargarCapataces();await cargarEquipos();await cargarPersonalCapataces();await cargarUsuarios();await cargarDesdeFirebase();await cargarTerrenoDesdeFirebase();},1500);
+  // Polling silencioso: re-sincroniza cada 30s para reflejar aprobaciones de otros usuarios
+  if(_pollingTimer) clearInterval(_pollingTimer);
+  _pollingTimer = setInterval(async()=>{
+    if(!isOnline || !window._firebaseReady || !currentUser) return;
+    await cargarDesdeFirebase(true);
+    await cargarTerrenoDesdeFirebase(true);
+  }, 30000);
 }
 
 function buildTabs(){
@@ -2763,6 +2771,12 @@ function renderRecords(){
       r.capataz === currentUser.nombre ||
       (r.actividades||[]).some(a => typeof a==='object' && a?.capataz === currentUser.nombre)
     );
+  } else if(currentUser?.rol === 'supervisor'){
+    // Supervisor ve solo los reportes donde alguna actividad tiene un capataz asignado a él
+    const mc = currentUser.capataces || [];
+    filtered = all.filter(r =>
+      (r.actividades||[]).some(a => mc.includes(typeof a==='object' ? a?.capataz||'' : ''))
+    );
   }
   if(fechaFil) filtered=filtered.filter(r=>r.fecha===fechaFil);
   if(activeFilter==='pending') filtered=filtered.filter(r=>!r.estado?.synced);
@@ -2781,11 +2795,14 @@ function renderRecords(){
 
     // Badge de validación
     const valJefe = val.jefe?.estado || 'pendiente';
-    const valSup  = val.supervisor?.estado || 'pendiente';
+    // Fallback para supervisores: si listaUsuarios aún no cargó, leer val.supervisores directo
+    const _supAprobado = _todosSupervisoresAprobaron(r) ||
+      (Object.values(val.supervisores||{}).length > 0 && Object.values(val.supervisores||{}).every(s=>s?.estado==='aprobado'));
+    const _supRechazado = _algunSupervisorRechazo(r);
     let valLabel = '';
     if(valJefe==='aprobado')                                           valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Jefe</span>';
-    else if(!esTerreno && _todosSupervisoresAprobaron(r))              valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
-    else if(!esTerreno && _algunSupervisorRechazo(r))                  valLabel='<span class="val-badge val-rejected" style="font-size:9px">✕ Sup.</span>';
+    else if(!esTerreno && _supAprobado)                                valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
+    else if(!esTerreno && _supRechazado)                               valLabel='<span class="val-badge val-rejected" style="font-size:9px">✕ Sup.</span>';
     else if(!esTerreno && _todosCapatacesAprobaron(r))                 valLabel='<span class="val-badge val-pending" style="font-size:9px">⏳ Sup.</span>';
     else if(!esTerreno && _algunCapatazRechazo(r))                     valLabel='<span class="val-badge val-rejected" style="font-size:9px">✕ Cap.</span>';
     else if(esTerreno && val.supervisor?.estado==='aprobado')          valLabel='<span class="val-badge val-approved" style="font-size:9px">✔ Sup.</span>';
@@ -2914,6 +2931,18 @@ function openModal(id){
                   ? '<span class="val-badge val-approved">✔ Aprobado</span>'
                   : '<span class="val-badge val-rejected">✕ Rechazado</span>';
               return `<span style="font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:4px;margin-right:8px;margin-bottom:4px">🦺 ${s} ${badge}</span>`;
+            }).join('');
+          }
+          // Fallback: listaUsuarios aún no cargada — leer directamente val.supervisores
+          const supEntries = Object.values(valSups);
+          if(supEntries.length){
+            return supEntries.map(sv => {
+              const badge = !sv||sv.estado==='pendiente'
+                ? '<span class="val-badge val-pending">⏳ Pendiente</span>'
+                : sv.estado==='aprobado'
+                  ? '<span class="val-badge val-approved">✔ Aprobado</span>'
+                  : '<span class="val-badge val-rejected">✕ Rechazado</span>';
+              return `<span style="font-size:11px;color:var(--text3);display:inline-flex;align-items:center;gap:4px;margin-right:8px;margin-bottom:4px">🦺 ${sv.nombre||'Supervisor'} ${badge}</span>`;
             }).join('');
           }
           return `<span style="font-size:11px;color:var(--text3)">Supervisor ${_valBadge(val.supervisor)}</span>`;
@@ -3143,13 +3172,15 @@ async function ejecutarBorrarReport(id, tipo){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }
 
-  // 2. Si estaba en Firebase, eliminarlo también
-  if(synced && isOnline && window._firebaseReady){
+  // 2. Eliminar de Firebase siempre (synced o no — puede existir como doc de validación intermedia)
+  if(isOnline && window._firebaseReady){
     try{
       await window._fsDeleteDoc(window._fsDoc(window._db, colName, String(id)));
-      showToast('🗑 Report eliminado local y de Firebase');
+      showToast('🗑 Report eliminado');
     } catch(e){
-      showToast('🗑 Eliminado local — error en Firebase: '+e.message,'warn');
+      // Si no existía en Firebase (404), igual es correcto — ya fue borrado del local
+      if(!e.message?.includes('NOT_FOUND')) showToast('🗑 Eliminado local — error Firebase: '+e.message,'warn');
+      else showToast('🗑 Report eliminado');
     }
   } else {
     showToast('🗑 Report eliminado localmente');
@@ -3170,15 +3201,22 @@ async function syncNow(){
   if(btn){btn.textContent='⏳ Sincronizando...';btn.disabled=true;}
   let ok=0,err=0;
 
-  // Sincronizar todos los records con readyToSync=true (aprobados por cualquier nivel sin conexión)
-  // Los aprobados por jefe se marcan como synced:true; los de nivel intermedio quedan synced:false
+  // Sincronizar todos los records con readyToSync=true (aprobados sin conexión)
+  // Jefe: setDoc completo con synced:true. Intermedios: updateDoc solo validacion.
   const pendingMaq = records.filter(r=>!r.estado?.synced && r.estado?.readyToSync);
   for(const r of pendingMaq){
     try{
       const esFinal = r.validacion?.jefe?.estado==='aprobado';
-      const estado  = esFinal ? {synced:true,syncedAt:new Date().toISOString()} : r.estado;
-      await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(r.id)),{...r,estado});
-      r.estado=estado; ok++;
+      if(esFinal){
+        const estado = {synced:true,syncedAt:new Date().toISOString()};
+        await window._fsSetDoc(window._fsDoc(window._db,'reportes_maquinaria',String(r.id)),{...r,estado});
+        r.estado=estado;
+      } else {
+        const docRef = window._fsDoc(window._db,'reportes_maquinaria',String(r.id));
+        try{ await window._fsUpdateDoc(docRef,{validacion:r.validacion}); }
+        catch(e2){ await window._fsSetDoc(docRef,{...r}); }
+      }
+      ok++;
     }catch(e){console.error(e);err++;}
   }
   if(pendingMaq.length) localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
@@ -3187,9 +3225,16 @@ async function syncNow(){
   for(const r of pendingTer){
     try{
       const esFinal = r.validacion?.jefe?.estado==='aprobado';
-      const estado  = esFinal ? {synced:true,syncedAt:new Date().toISOString()} : r.estado;
-      await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(r.id)),{...r,estado});
-      r.estado=estado; ok++;
+      if(esFinal){
+        const estado = {synced:true,syncedAt:new Date().toISOString()};
+        await window._fsSetDoc(window._fsDoc(window._db,'reportes_terreno',String(r.id)),{...r,estado});
+        r.estado=estado;
+      } else {
+        const docRef = window._fsDoc(window._db,'reportes_terreno',String(r.id));
+        try{ await window._fsUpdateDoc(docRef,{validacion:r.validacion}); }
+        catch(e2){ await window._fsSetDoc(docRef,{...r}); }
+      }
+      ok++;
     }catch(e){console.error(e);err++;}
   }
   if(pendingTer.length) localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
@@ -3202,7 +3247,7 @@ async function syncNow(){
   updateSyncUI();
 }
 
-async function cargarDesdeFirebase(){
+async function cargarDesdeFirebase(silent=false){
   if(!isOnline||!window._firebaseReady) return;
   try{
     const snap=await window._fsGetDocs(window._fsCollection(window._db,'reportes_maquinaria'));
@@ -3233,34 +3278,58 @@ async function cargarDesdeFirebase(){
     // admin, jefe_costos, jefe_oficina, jefe_prog ven todo — filtered = remote sin cambios
 
     // Purgar registros eliminados: quitar del local los que ya no están en Firebase
+    // Para roles con vista completa (admin, jefe, jefe_*) usamos remote completo.
+    // Para supervisor/capataz/operador usamos filtered para no purgar registros
+    // de otros usuarios que legítimamente existen solo en el local del creador.
     const remoteIds=new Set(remote.map(r=>String(r.id)));
+    const filteredIds=new Set(filtered.map(r=>String(r.id)));
     const localIds =new Set(records.map(r=>String(r.id)));
-    // Solo purgar los que estaban synced (significan que sí estuvieron en Firebase)
-    const eliminados = records.filter(r=>r.estado?.synced && !remoteIds.has(String(r.id)));
+    // Purgar registros que ya no están en Firebase:
+    // - synced:true que desaparecieron → definitivamente eliminados por admin
+    // - synced:false que están en Firebase scope del usuario pero ya no existen →
+    //   subieron en algún momento (validación intermedia) y el admin los borró
+    // EXCEPCIÓN: no purgar registros propios del usuario que aún no subieron nunca
+    //   (creadoPor.uid === currentUser.uid && !readyToSync → son solo locales, legítimos)
+    const esVistaCompleta = ['admin','jefe','jefe_costos','jefe_oficina','jefe_prog'].includes(rol);
+    const scopeIds = esVistaCompleta ? remoteIds : filteredIds;
+    const eliminados = records.filter(r => {
+      const id = String(r.id);
+      if(remoteIds.has(id)) return false; // sigue en Firebase → no purgar
+      if(r.estado?.synced) return true;   // estaba synced y ya no está → purgar
+      // No-synced: purgar solo si NO es un registro local puro del creador
+      // (es decir, si alguna vez estuvo en Firebase — readyToSync o fue subido por capataz)
+      const esSoloLocal = r.creadoPor?.uid === currentUser.uid && !r.estado?.readyToSync;
+      return !esSoloLocal;
+    });
     if(eliminados.length){
       eliminados.forEach(r=>{ const i=records.indexOf(r); if(i>-1) records.splice(i,1); });
       localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
     }
 
-    let added=0;
+    let added=0, updated=0;
     filtered.forEach(r=>{
       if(!localIds.has(String(r.id))){records.push(r);added++;}
       else{
-        const local=records.find(lr=>String(lr.id)===String(r.id));
-        if(local){
-          if(!local.estado?.synced&&r.estado?.synced) local.estado=r.estado;
+        const idx=records.findIndex(lr=>String(lr.id)===String(r.id));
+        if(idx>-1){
+          const local=records[idx];
+          // Detectar si la validacion cambió (para re-render en polling)
+          const valAntes = JSON.stringify(local.validacion||{});
           if(r.validacion) local.validacion=r.validacion;
+          if(!local.estado?.synced && r.estado?.synced) local.estado=r.estado;
+          if(!local.operador && r.operador) records[idx]={...r, validacion:r.validacion, estado:local.estado};
+          if(JSON.stringify(local.validacion||{}) !== valAntes) updated++;
         }
       }
     });
     records.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
-    if(added>0||eliminados.length>0){renderRecords();updateStats();initDashboard();}
-    if(added>0) showToast(`📥 ${added} registro(s) descargados`);
+    if(added>0||updated>0||eliminados.length>0){renderRecords();updateStats();initDashboard();}
+    if(added>0 && !silent) showToast(`📥 ${added} registro(s) descargados`);
   }catch(e){console.error(e);}
 }
 
-async function cargarTerrenoDesdeFirebase(){
+async function cargarTerrenoDesdeFirebase(silent=false){
   if(!isOnline||!window._firebaseReady)return;
   // Operadores no tienen acceso a reportes de terreno
   if(currentUser?.rol==='operador') return;
@@ -3289,27 +3358,38 @@ async function cargarTerrenoDesdeFirebase(){
     }
     // admin, jefe_costos, jefe_oficina, jefe_prog ven todo
 
-    // Purgar eliminados del localStorage
+    // Purgar eliminados del localStorage (synced o no-synced borrados por admin)
     const remoteIds=new Set(remote.map(r=>String(r.id)));
-    const eliminados=recordsTerreno.filter(r=>r.estado?.synced && !remoteIds.has(String(r.id)));
+    const eliminados=recordsTerreno.filter(r => {
+      const id = String(r.id);
+      if(remoteIds.has(id)) return false;
+      if(r.estado?.synced) return true;
+      const esSoloLocal = r.creadoPor?.uid === currentUser.uid && !r.estado?.readyToSync;
+      return !esSoloLocal;
+    });
     if(eliminados.length){
       eliminados.forEach(r=>{ const i=recordsTerreno.indexOf(r); if(i>-1) recordsTerreno.splice(i,1); });
       localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
     }
 
     const localIds=new Set(recordsTerreno.map(r=>String(r.id)));
-    let added=0;
+    let added=0, updated=0;
     filtered.forEach(r=>{
       if(!localIds.has(String(r.id))){recordsTerreno.push(r);added++;}
       else{
-        const local=recordsTerreno.find(lr=>String(lr.id)===String(r.id));
-        if(local&&r.validacion) local.validacion=r.validacion;
+        const idx=recordsTerreno.findIndex(lr=>String(lr.id)===String(r.id));
+        if(idx>-1){
+          const local=recordsTerreno[idx];
+          const valAntes=JSON.stringify(local.validacion||{});
+          if(r.validacion) local.validacion=r.validacion;
+          if(JSON.stringify(local.validacion||{}) !== valAntes) updated++;
+        }
       }
     });
     recordsTerreno.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     localStorage.setItem(STORAGE_KEY_TERRENO,JSON.stringify(recordsTerreno));
-    if(added>0||eliminados.length>0){renderRecords();updateStats();initDashboard();}
-    if(added>0) showToast(`📥 ${added} report(s) terreno descargados`);
+    if(added>0||updated>0||eliminados.length>0){renderRecords();updateStats();initDashboard();}
+    if(added>0 && !silent) showToast(`📥 ${added} report(s) terreno descargados`);
   }catch(e){console.error(e);}
 }
 
@@ -5199,35 +5279,50 @@ async function validarReport(id,tipo,nivel,accion){
   localStorage.setItem(storKey, JSON.stringify(arr));
 
   // ── SYNC A FIREBASE ──
-  // El reporte sube a Firebase desde el primer nivel que aprueba (capataz),
-  // para que supervisor y jefe puedan verlo y validarlo desde sus dispositivos.
-  // Cada aprobación posterior actualiza el mismo documento en Firestore.
+  // Estrategia por nivel:
+  //   capataz/supervisor: updateDoc solo con validacion (si ya existe en Firebase)
+  //                       o setDoc completo (primera vez que sube).
+  //                       Así NO se sobreescribe el reporte original del operador.
+  //   jefe: setDoc completo con synced:true (cierre definitivo).
   const col = tipo==='terreno' ? 'reportes_terreno' : 'reportes_maquinaria';
   const esAprobacionFinal = accion==='aprobado' && nivel==='jefe';
   const debeSubir = accion==='aprobado' && (nivel==='capataz' || nivel==='supervisor' || nivel==='jefe');
 
   if(debeSubir && isOnline && window._firebaseReady){
-    if(esAprobacionFinal) r.estado = {synced:true, syncedAt:new Date().toISOString()};
     try{
-      await window._fsSetDoc(window._fsDoc(window._db,col,String(r.id)),{...r});
-      localStorage.setItem(storKey, JSON.stringify(arr));
       if(esAprobacionFinal){
+        // Jefe aprueba: setDoc completo, marca synced
+        r.estado = {synced:true, syncedAt:new Date().toISOString()};
+        await window._fsSetDoc(window._fsDoc(window._db,col,String(r.id)),{...r});
+        localStorage.setItem(storKey, JSON.stringify(arr));
         showToast('✅ Report aprobado y subido a Firebase');
-      } else if(nivel==='capataz'){
-        const caps   = _capatacesDelReporte(r);
-        const faltan = caps.filter(c => r.validacion.capataces[c]?.estado !== 'aprobado');
-        if(faltan.length > 0){
-          showToast(`✔ Aprobado — faltan ${faltan.length} capataz(ces) por validar`);
-        } else {
-          showToast('✔ Todos los capataces aprobaron — listo para Supervisor(es)');
+      } else {
+        // Capataz o supervisor: intentar updateDoc (solo validacion).
+        // Si el documento no existe aún en Firebase, hacer setDoc completo.
+        const docRef = window._fsDoc(window._db,col,String(r.id));
+        try{
+          await window._fsUpdateDoc(docRef, {validacion: r.validacion});
+        } catch(updateErr){
+          // El documento no existía → primer upload: setDoc completo
+          await window._fsSetDoc(docRef, {...r});
         }
-      } else if(nivel==='supervisor'){
-        const sups   = _supervisoresDelReporte(r);
-        const faltan = sups.filter(s => r.validacion.supervisores[s]?.estado !== 'aprobado');
-        if(faltan.length > 0){
-          showToast(`✔ Aprobado — faltan ${faltan.length} supervisor(es) por validar`);
+        localStorage.setItem(storKey, JSON.stringify(arr));
+        if(nivel==='capataz'){
+          const caps   = _capatacesDelReporte(r);
+          const faltan = caps.filter(c => r.validacion.capataces[c]?.estado !== 'aprobado');
+          if(faltan.length > 0){
+            showToast(`✔ Aprobado — faltan ${faltan.length} capataz(ces) por validar`);
+          } else {
+            showToast('✔ Todos los capataces aprobaron — listo para Supervisor(es)');
+          }
         } else {
-          showToast('✔ Todos los supervisores aprobaron — listo para Jefe');
+          const sups   = _supervisoresDelReporte(r);
+          const faltan = sups.filter(s => r.validacion.supervisores[s]?.estado !== 'aprobado');
+          if(faltan.length > 0){
+            showToast(`✔ Aprobado — faltan ${faltan.length} supervisor(es) por validar`);
+          } else {
+            showToast('✔ Todos los supervisores aprobaron — listo para Jefe');
+          }
         }
       }
     } catch(e){
